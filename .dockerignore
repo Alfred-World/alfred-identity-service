@@ -1,0 +1,53 @@
+# Build output
+**/bin/
+**/obj/
+**/out/
+
+# User-specific files
+*.suo
+*.user
+*.userosdf
+*.sln.docstates
+*.userprefs
+**/.vs/
+
+# Test results
+**/TestResults/
+
+# NuGet packages
+**/packages/
+*.nupkg
+
+# Runtime data
+data/
+logs/
+**/*.log
+
+# Docker files
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs/
+
+# Environment files (security)
+.env*
+!.env*.example

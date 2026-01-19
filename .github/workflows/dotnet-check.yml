@@ -1,0 +1,44 @@
+name: 💎 .NET 9 Quality Check
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  check-quality:
+    name: 🚀 Build, Test & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout Code
+    - name: 📥 Checkout Source Code
+      uses: actions/checkout@v4
+
+    # 2. Setup .NET (Reads version from global.json)
+    - name: 🛠️ Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+        cache: true
+        cache-dependency-path: '**/*.csproj'
+
+    # 3. Restore NuGet Packages
+    - name: 📦 Restore Dependencies
+      run: dotnet restore
+
+    # 4. Build (Catches compilation errors)
+    - name: 🏗️ Build Application
+      run: dotnet build --no-restore --configuration Release
+
+    # 5. Run Tests (NEW STEP)
+    # Automatically fails the pipeline if any test fails
+    - name: 🧪 Run Unit Tests
+      run: dotnet test --no-restore --verbosity normal
+
+    # 6. Format Check (Strict check, fails on style violations)
+    # --verify-no-changes: Ensures the CI fails if code needs formatting. DOES NOT modify files.
+    - name: 🎨 Verify Code Formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic

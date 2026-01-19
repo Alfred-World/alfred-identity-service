@@ -1,0 +1,23 @@
+# Minimal docker-compose for SQL Server only
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: hse-sqlserver-dev
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "${DB_PORT:-1433}:1433"
+    volumes:
+      - sqlserver_vol:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  sqlserver_vol:

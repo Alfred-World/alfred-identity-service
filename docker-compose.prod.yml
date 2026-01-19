@@ -1,0 +1,59 @@
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: hse-sqlserver-prod
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+      - MSSQL_PID=Standard
+    ports:
+      - "${DB_PORT:-1433}:1433"
+    volumes:
+      - ${DATA_PATH:-./data}/sqlserver:/var/opt/mssql
+    networks:
+      - hse-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # HSE API Application
+  hse-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CACHEBUST: ${CACHEBUST:-1}
+    container_name: hse-api-prod
+    ports:
+      - "${API_PORT:-8000}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DB_PROVIDER=${DB_PROVIDER}
+      - DB_HOST=sqlserver
+      - DB_PORT=1433
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_TRUST_SERVER_CERTIFICATE=true
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - hse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  hse-network:
+    driver: bridge

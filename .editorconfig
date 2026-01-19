@@ -1,0 +1,80 @@
+# Top-most editorconfig file
+root = true
+
+# ==========================================================
+# 1. THIẾT LẬP CƠ BẢN (CORE)
+# ==========================================================
+[*]
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ==========================================================
+# 2. THIẾT LẬP C# (.cs) - ĐỒNG BỘ RIDER & DOTNET FORMAT
+# ==========================================================
+[*.cs]
+
+# --- FIX LỖI THỤT LỀ (ALIGNMENT) ---
+csharp_indent_braces = false
+csharp_indent_block_contents = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+
+# --- FIX LỖI MẤT DẤU NGOẶC (BRACES) ---
+csharp_prefer_braces = true:error
+csharp_preserve_braces = true
+
+# --- CẤU HÌNH SỬ DỤNG VAR (VAR STYLE) ---
+# Khuyến khích dùng var thay vì kiểu dữ liệu cụ thể
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# --- SẮP XẾP VÀ TỐI ƯU USING (SORT IMPORT) ---
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+dotnet_remove_unnecessary_imports = true:suggestion
+csharp_using_directive_placement = outside_namespace:suggestion
+
+# --- NEW LINE STYLE (QUY TẮC XUỐNG DÒNG) ---
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_brace_style = larry_wall
+
+# --- KHOẢNG TRẮNG (SPACING) ---
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+
+# --- FIELD NAMING (_fieldName) ---
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = prefix_underscore
+dotnet_naming_rule.private_members_with_underscore.severity = suggestion
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
+# ==========================================================
+# 3. THIẾT LẬP RIÊNG CHO RIDER (JETBRAINS) ĐỂ ĐỒNG BỘ 100%
+# ==========================================================
+resharper_indent_braces = false
+resharper_braces_for_ifelse_force = mandatory
+resharper_braces_for_for_force = mandatory
+resharper_braces_for_foreach_force = mandatory
+resharper_braces_for_while_force = mandatory
+
+# Cho phép và ưu tiên var trong Rider
+resharper_csharp_use_var_style_for_built_in_types = use_var
+resharper_csharp_use_var_style_elsewhere = use_var
+resharper_csharp_use_var_style_when_type_is_apparent = use_var
+
+# Sắp xếp using trong Rider
+resharper_csharp_sort_using_directives_at_the_top = true
+resharper_csharp_place_using_directives_outside_namespace = true
