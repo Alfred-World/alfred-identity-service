@@ -27,9 +27,6 @@ builder.WebHost.ConfigureKestrel((context, options) => { options.ListenAnyIP(app
 // Register AppConfiguration as singleton
 builder.Services.AddSingleton(appConfig);
 
-// Register AuthTokenService for Token Exchange Pattern
-builder.Services.AddSingleton<Alfred.Identity.WebApi.Services.IAuthTokenService, Alfred.Identity.WebApi.Services.InMemoryAuthTokenService>();
-
 // Add services to the container
 builder.Services.AddControllers(options =>
     {

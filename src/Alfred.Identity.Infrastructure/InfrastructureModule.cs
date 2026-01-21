@@ -1,6 +1,7 @@
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
+using Alfred.Identity.Infrastructure.Providers.Cache;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -62,6 +63,12 @@ public static class InfrastructureModule
 
         // Register PostgreSQL database provider
         services.AddPostgreSQL(connectionString);
+
+        // Register Cache Provider (In-Memory for now)
+        services.AddInMemoryCache();
+
+        // Register AuthTokenService for Token Exchange Pattern
+        services.AddSingleton<Domain.Abstractions.IAuthTokenService, Services.AuthTokenService>();
 
         return services;
     }

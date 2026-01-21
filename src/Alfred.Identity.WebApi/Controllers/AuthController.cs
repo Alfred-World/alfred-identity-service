@@ -1,7 +1,7 @@
 using Alfred.Identity.Application.Auth.Commands.Login;
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
-using Alfred.Identity.WebApi.Services;
 
 using MediatR;
 
