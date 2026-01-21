@@ -31,4 +31,3 @@ public sealed record SsoLoginRequest
     /// </summary>
     public bool RememberMe { get; init; } = false;
 }
-

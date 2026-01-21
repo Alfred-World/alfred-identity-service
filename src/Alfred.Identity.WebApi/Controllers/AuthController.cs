@@ -1,6 +1,7 @@
 using Alfred.Identity.Application.Auth.Commands.Login;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Services;
 
 using MediatR;
 
@@ -19,10 +20,12 @@ namespace Alfred.Identity.WebApi.Controllers;
 public class AuthController : BaseApiController
 {
     private readonly IMediator _mediator;
+    private readonly IAuthTokenService _authTokenService;
 
-    public AuthController(IMediator mediator)
+    public AuthController(IMediator mediator, IAuthTokenService authTokenService)
     {
         _mediator = mediator;
+        _authTokenService = authTokenService;
     }
 
     /// <summary>
@@ -83,18 +86,88 @@ public class AuthController : BaseApiController
                 : DateTimeOffset.UtcNow.AddHours(24)
         };
 
-        // Sign in and set cookie
+        // Generate a one-time auth token for cookie exchange
+        // This token will be exchanged for a cookie via browser navigation (first-party context)
+        var authToken = _authTokenService.GenerateToken(new AuthTokenData
+        {
+            UserId = loginData.User.Id,
+            Email = loginData.User.Email,
+            FullName = loginData.User.FullName,
+            UserName = loginData.User.UserName,
+            RememberMe = request.RememberMe,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(60) // Token valid for 60 seconds only
+        });
+
+        // Build the exchange URL - browser will navigate here to get the cookie
+        var gatewayUrl = HttpContext.Request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? "gateway.test";
+        var scheme = HttpContext.Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
+        var exchangeUrl = $"{scheme}://{gatewayUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(request.ReturnUrl ?? "")}";
+
+        return OkResponse(new SsoLoginResponse
+        {
+            ReturnUrl = exchangeUrl,
+            User = loginData.User,
+            ExchangeToken = authToken
+        });
+    }
+
+    /// <summary>
+    /// Exchange one-time auth token for session cookie - browser navigates here directly
+    /// </summary>
+    /// <remarks>
+    /// This endpoint is called via browser navigation (not CORS fetch) so the cookie
+    /// is set in first-party context and won't be blocked by third-party cookie restrictions.
+    /// </remarks>
+    [HttpGet("exchange-token")]
+    public async Task<IActionResult> ExchangeToken([FromQuery] string token, [FromQuery] string? returnUrl)
+    {
+        // Validate and consume the token
+        var tokenData = _authTokenService.ValidateAndConsumeToken(token);
+        if (tokenData == null)
+        {
+            return BadRequest(new { error = "invalid_token", error_description = "Token is invalid, expired, or has already been used" });
+        }
+
+
+
+        // Create claims for cookie authentication
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, tokenData.UserId.ToString()),
+            new(ClaimTypes.Email, tokenData.Email ?? ""),
+            new("sub", tokenData.UserId.ToString())
+        };
+
+        if (!string.IsNullOrEmpty(tokenData.FullName))
+        {
+            claims.Add(new Claim(ClaimTypes.Name, tokenData.FullName));
+        }
+
+        if (!string.IsNullOrEmpty(tokenData.UserName))
+        {
+            claims.Add(new Claim("username", tokenData.UserName));
+        }
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = tokenData.RememberMe,
+            ExpiresUtc = tokenData.RememberMe 
+                ? DateTimeOffset.UtcNow.AddDays(14) 
+                : DateTimeOffset.UtcNow.AddHours(24)
+        };
+
+        // Sign in and set cookie - this is first-party context!
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties
         );
 
-        return OkResponse(new SsoLoginResponse
-        {
-            ReturnUrl = request.ReturnUrl,
-            User = loginData.User
-        });
+        // Redirect to the original returnUrl (e.g., gateway.test/connect/authorize)
+        var redirectUrl = returnUrl ?? "/";
+        
+        return Redirect(redirectUrl);
     }
 
     /// <summary>
@@ -135,7 +208,7 @@ public class AuthController : BaseApiController
         return OkResponse(new SsoSessionResponse
         {
             IsAuthenticated = true,
-            User = new SessionUserInfo
+            User = new SessionUserInfoDto
             {
                 Id = userGuid,
                 Email = email ?? "",
@@ -155,44 +228,4 @@ public class AuthController : BaseApiController
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return OkResponse(new { Success = true, Message = "Logged out successfully" });
     }
-}
-
-/// <summary>
-/// Response for SSO Session check
-/// </summary>
-public record SsoSessionResponse
-{
-    public bool IsAuthenticated { get; init; }
-    public SessionUserInfo? User { get; init; }
-}
-
-/// <summary>
-/// User info for session response
-/// </summary>
-public record SessionUserInfo
-{
-    public Guid Id { get; init; }
-    public string Email { get; init; } = "";
-    public string? FullName { get; init; }
-    public string? UserName { get; init; }
-}
-
-/// <summary>
-/// Response for SSO Login
-/// </summary>
-public record SsoLoginResponse
-{
-    public string? ReturnUrl { get; init; }
-    public UserInfo User { get; init; } = null!;
-}
-
-/// <summary>
-/// Request for SSO Login
-/// </summary>
-public record SsoLoginRequest
-{
-    public required string Identity { get; init; }
-    public required string Password { get; init; }
-    public bool RememberMe { get; init; }
-    public string? ReturnUrl { get; init; }
 }

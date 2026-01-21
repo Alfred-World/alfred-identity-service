@@ -27,6 +27,9 @@ builder.WebHost.ConfigureKestrel((context, options) => { options.ListenAnyIP(app
 // Register AppConfiguration as singleton
 builder.Services.AddSingleton(appConfig);
 
+// Register AuthTokenService for Token Exchange Pattern
+builder.Services.AddSingleton<Alfred.Identity.WebApi.Services.IAuthTokenService, Alfred.Identity.WebApi.Services.InMemoryAuthTokenService>();
+
 // Add services to the container
 builder.Services.AddControllers(options =>
     {
@@ -119,13 +122,19 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 
 // Add Cookie Authentication for SSO
+var ssoCookieDomain = Environment.GetEnvironmentVariable("SSO_COOKIE_DOMAIN");
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = "AlfredSession";
-        // Note: For cross-origin SSO, cookie domain should be shared across *.test
-        // But browsers may reject `.test` TLD cookies. For production, use proper subdomain like *.alfred.com
-        // options.Cookie.Domain = ".test";
+        // Cookie domain is NOT set explicitly because:
+        // 1. Request comes to localhost (via YARP reverse proxy)
+        // 2. ASP.NET refuses to set cookie for different domain than request host
+        // Instead, we rely on ForwardedHeaders middleware to detect the correct host
+        // and the cookie will be set for that host (gateway.test when behind YARP)
+        // 
+        // For cross-subdomain sharing in production (e.g., *.alfred.com),
+        // configure ForwardedHeaders properly and consider using cookie path/domain options
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None; // Allow cross-origin cookie setting
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Required for SameSite=None
@@ -164,6 +173,19 @@ if (app.Environment.IsProduction())
 }
 
 // Configure the HTTP request pipeline
+
+// Add ForwardedHeaders middleware FIRST to properly handle X-Forwarded-* headers from YARP/Caddy
+// This ensures cookies are set with the correct host (gateway.test instead of localhost)
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All,
+    ForwardLimit = null, // No limit on forwards
+};
+// Clear default known networks/proxies to trust all (for development)
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

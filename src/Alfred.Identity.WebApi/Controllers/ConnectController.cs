@@ -28,11 +28,10 @@ public class ConnectController : ControllerBase
     [IgnoreAntiforgeryToken] // For Postman testing ease, but strictly should be secured
     public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequest request)
     {
-        // 1. Check if User is Authenticated
-        // For API, we might rely on Cookie Auth which Identity Service should support for SSO.
-        // Assuming Cookies.
+        // Check if User is Authenticated
         var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         
+
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {
             // If prompt=none, return error
