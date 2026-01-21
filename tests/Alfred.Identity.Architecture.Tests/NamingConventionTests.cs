@@ -1,6 +1,5 @@
 using Alfred.Identity.Application;
 using Alfred.Identity.Domain.Common.Base;
-using Alfred.Identity.Domain.EmailTemplates;
 using Alfred.Identity.Infrastructure;
 using Alfred.Identity.WebApi.Configuration;
 
@@ -90,7 +89,7 @@ public class NamingConventionTests
     public void Exception_Classes_Should_EndWith_Exception()
     {
         // Arrange
-        var domainAssembly = typeof(EmailTemplate).Assembly;
+        var domainAssembly = typeof(BaseEntity<>).Assembly;
         var applicationAssembly = typeof(ApplicationModule).Assembly;
 
         // Act

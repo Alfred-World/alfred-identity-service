@@ -1,23 +1,22 @@
-# Minimal docker-compose for SQL Server only
+# Docker Compose for Alfred Identity Service (PostgreSQL)
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64
-    container_name: hse-sqlserver-dev
+  postgres:
+    image: postgres:17-alpine
+    container_name: alfred-identity-postgres
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD}
-      - MSSQL_PID=Developer
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-alfred_identity}
     ports:
-      - "${DB_PORT:-1433}:1433"
+      - "8110:5432"
     volumes:
-      - sqlserver_vol:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-alfred_identity}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
 volumes:
-  sqlserver_vol:
+  postgres_data:

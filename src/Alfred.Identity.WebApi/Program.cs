@@ -8,6 +8,7 @@ using Alfred.Identity.WebApi.Middleware;
 
 using FluentValidation;
 
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -117,6 +118,27 @@ builder.Services.AddApplication();
 // Add Infrastructure layer (Database)
 builder.Services.AddInfrastructure();
 
+// Add Cookie Authentication for SSO
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "AlfredSession";
+        // Note: For cross-origin SSO, cookie domain should be shared across *.test
+        // But browsers may reject `.test` TLD cookies. For production, use proper subdomain like *.alfred.com
+        // options.Cookie.Domain = ".test";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.None; // Allow cross-origin cookie setting
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Required for SameSite=None
+        options.ExpireTimeSpan = TimeSpan.FromDays(14);
+        options.SlidingExpiration = true;
+        // For API-based auth, return 401 instead of redirect
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+    });
+
 // Add Health Checks
 builder.Services.AddHealthChecks();
 
@@ -162,6 +184,10 @@ app.UseExceptionHandler();
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
+
+// Authentication & Authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map Health Check endpoint
 app.MapHealthChecks("/health");

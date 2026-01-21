@@ -1,5 +1,5 @@
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Email;
+using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Repositories;
 
@@ -14,15 +14,19 @@ namespace Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 public class DefaultUnitOfWork : IUnitOfWork
 {
     private readonly IDbContext _context;
-    private IEmailTemplateRepository? _emailTemplates;
+    private IUserRepository? _users;
+    private ITokenRepository? _tokens;
 
     public DefaultUnitOfWork(IDbContext context)
     {
         _context = context;
     }
 
-    public IEmailTemplateRepository EmailTemplates =>
-        _emailTemplates ??= new EmailTemplateRepository(_context);
+    public IUserRepository Users =>
+        _users ??= new UserRepository((PostgreSqlDbContext)_context);
+
+    public ITokenRepository Tokens =>
+        _tokens ??= new TokenRepository((PostgreSqlDbContext)_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

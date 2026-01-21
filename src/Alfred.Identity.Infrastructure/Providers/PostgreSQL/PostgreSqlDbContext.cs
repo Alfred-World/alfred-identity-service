@@ -1,6 +1,6 @@
 using System.Reflection;
 
-using Alfred.Identity.Domain.EmailTemplates;
+using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Options;
 
@@ -21,20 +21,25 @@ public class PostgreSqlDbContext : DbContext, IDbContext
         _options = options;
     }
 
-    // System entities
-    public DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
-
-    // Add your Identity DbSets here as you develop
-    // Example:
-    // public DbSet<User> Users { get; set; }
-    // public DbSet<RefreshToken> RefreshTokens { get; set; }
+    // Identity entities
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<BackupCode> BackupCodes { get; set; } = null!;
+    
+    // SSO
+    public DbSet<Application> Applications { get; set; } = null!;
+    public DbSet<Authorization> Authorizations { get; set; } = null!;
+    public DbSet<Scope> Scopes { get; set; } = null!;
+    public DbSet<Token> Tokens { get; set; } = null!; // General purpose tokens (AuthCode, Reset, etc)
+    public DbSet<SigningKey> SigningKeys { get; set; } = null!; // JWKS keys
+    public DbSet<Role> Roles { get; set; } = null!;
+    public DbSet<UserRole> UserRoles { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseNpgsql(_options.ConnectionString, npgsqlOptions =>
         {
             // store migrations history table
-            npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+            npgsqlOptions.MigrationsHistoryTable("__ef_migrations_history");
         });
 
         if (_options.EnableDetailedErrors)

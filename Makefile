@@ -1,12 +1,12 @@
-# HSE Backend Makefile - Development & Production
+# Alfred Identity Service Makefile - Development & Production
 
 # Configuration
-PROJECT=src/HSE.Infrastructure
-STARTUP=src/HSE.WebApi
-CLI_PROJECT=src/HSE.Cli
+PROJECT=src/Alfred.Identity.Infrastructure
+STARTUP=src/Alfred.Identity.WebApi
+CLI_PROJECT=src/Alfred.Identity.Cli
 OUTPUT_DIR=Migrations
 
-DOCKER_IMAGE=hse-api
+DOCKER_IMAGE=alfred-identity-api
 DOCKER_TAG=latest
 ENV_FILE=.env.production
 
@@ -28,7 +28,7 @@ DATA_PATH ?= ./data
 
 help:
 	@echo "======================================"
-	@echo "HSE Development & Production Tool"
+	@echo "Alfred Identity Development & Production Tool"
 	@echo "======================================"
 	@echo ""
 	@echo " Migration (Development):"
@@ -60,7 +60,7 @@ help:
 	@echo "  make prod-status       Check container status"
 	@echo "  make prod-health       Health check"
 	@echo "  make prod-seed         Seed production database"
-	@echo "  make prod-db-shell     Connect to SQL Server"
+	@echo "  make prod-db-shell     Connect to PostgreSQL"
 	@echo ""
 	@echo "💾 Data Management:"
 	@echo "  make prod-backup       Backup all production data"
@@ -163,14 +163,14 @@ docker-clean:
 
 prod-deploy:
 	@echo "🚀 [1/4] Creating data directories at $(DATA_PATH)..."
-	@mkdir -p $(DATA_PATH)/sqlserver $(DATA_PATH)/minio $(DATA_PATH)/seq $(DATA_PATH)/redis
+	@mkdir -p $(DATA_PATH)/postgres $(DATA_PATH)/minio $(DATA_PATH)/seq $(DATA_PATH)/redis
 	
 	@echo "🚀 [2/4] Building Docker image..."
 	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) build --build-arg CACHEBUST=$(NOW)
 	
 	@echo "🚀 [3/4] Stopping API and starting services..."
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) stop hse-api 2>/dev/null || true
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) rm -f hse-api 2>/dev/null || true
+	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) stop alfred-identity-api 2>/dev/null || true
+	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) rm -f alfred-identity-api 2>/dev/null || true
 	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) up -d
 	
 	@echo "🚀 [4/4] Cleaning unused images..."
@@ -210,12 +210,12 @@ prod-health:
 
 prod-seed:
 	@echo "🌱 Seeding production database..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec -T hse-api dotnet HSE.Cli.dll seed
+	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec -T alfred-identity-api dotnet Alfred.Identity.Cli.dll seed
 	@echo "✅ Seed complete!"
 
 prod-db-shell:
-	@echo "🗄️  Connecting to SQL Server..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${DB_PASSWORD}"
+	@echo "🗄️  Connecting to PostgreSQL..."
+	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-alfred_identity}
 
 # ============================================
 # Data Backup & Restore

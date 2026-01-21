@@ -14,7 +14,7 @@ public enum DatabaseProvider
 public class PostgreSqlOptions
 {
     public string ConnectionString { get; set; } =
-        "Host=localhost;Database=alfred_identity;Username=postgres;Password=postgres;";
+        "Host=localhost;Database=alfred_identity;Username=alfred;Password=alfred123;";
 
     public bool EnableSensitiveDataLogging { get; set; } = false;
     public bool EnableDetailedErrors { get; set; } = false;

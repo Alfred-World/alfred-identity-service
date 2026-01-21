@@ -166,7 +166,7 @@ public class DataSeederOrchestrator
                     SELECT table_name 
                     FROM information_schema.tables 
                     WHERE table_type = 'BASE TABLE' 
-                    AND table_name NOT IN ('__SeedHistory', '__EFMigrationsHistory')
+                    AND table_name NOT IN ('__seed_history', '__ef_migrations_history')
                     AND table_schema = 'public'
                     ORDER BY table_name DESC";
 
@@ -202,7 +202,12 @@ public class DataSeederOrchestrator
                 using (var clearHistoryCommand = npgsqlConnection.CreateCommand())
                 {
                     clearHistoryCommand.CommandText = @"
-                        TRUNCATE TABLE ""__SeedHistory"" RESTART IDENTITY CASCADE;";
+                        DO $$
+                        BEGIN
+                            IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = '__seed_history') THEN
+                                TRUNCATE TABLE ""__seed_history"" RESTART IDENTITY CASCADE;
+                            END IF;
+                        END $$;";
                     await clearHistoryCommand.ExecuteNonQueryAsync(cancellationToken);
                     _logger.LogInformation("  ✓ Cleared seed history and reset ID to 1");
                 }

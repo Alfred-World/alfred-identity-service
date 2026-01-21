@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Swashbuckle.AspNetCore.Annotations;
 
-namespace FAM.WebApi.Contracts.Common;
+namespace Alfred.Identity.WebApi.Contracts.Common;
 
 /// <summary>
 /// Standard pagination query parameters for list endpoints

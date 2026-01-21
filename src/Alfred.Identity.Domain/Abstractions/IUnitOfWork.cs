@@ -1,4 +1,4 @@
-using Alfred.Identity.Domain.Abstractions.Email;
+using Alfred.Identity.Domain.Abstractions.Repositories;
 
 namespace Alfred.Identity.Domain.Abstractions;
 
@@ -7,13 +7,9 @@ namespace Alfred.Identity.Domain.Abstractions;
 /// </summary>
 public interface IUnitOfWork : IDisposable
 {
-    // System repositories
-    IEmailTemplateRepository EmailTemplates { get; }
-
-    // Add your Identity repositories here as you develop
-    // Example:
-    // IUserRepository Users { get; }
-    // IRefreshTokenRepository RefreshTokens { get; }
+    // Identity repositories
+    IUserRepository Users { get; }
+    ITokenRepository Tokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
