@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents an authorization, aligned with OpenIddictAuthorizations schema
@@ -10,7 +10,7 @@ public class Authorization : BaseEntity
     public long ApplicationId { get; private set; }
     public long UserId { get; private set; } // Subject
     public string? Subject { get; private set; } // String representation of UserId if needed, or strictly UserId
-    
+
     public string Status { get; private set; } = "Valid"; // Valid/Revoked/Inactive
     public string Type { get; private set; } = "Permanent"; // Permanent/AdHoc
     public string? Scopes { get; private set; } // Space delimited
@@ -22,7 +22,9 @@ public class Authorization : BaseEntity
     public virtual Application Application { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
 
-    private Authorization() { }
+    private Authorization()
+    {
+    }
 
     public static Authorization Create(long applicationId, long userId, string scopes, string type = "Permanent")
     {
@@ -39,5 +41,8 @@ public class Authorization : BaseEntity
         };
     }
 
-    public void Revoke() { Status = "Revoked"; }
+    public void Revoke()
+    {
+        Status = "Revoked";
+    }
 }

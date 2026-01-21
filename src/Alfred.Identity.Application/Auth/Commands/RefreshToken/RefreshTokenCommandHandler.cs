@@ -1,7 +1,7 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Domain.Entities; 
+using Alfred.Identity.Domain.Entities;
 
 using MediatR;
 
@@ -56,11 +56,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
                 await _tokenRepository.RevokeAllByUserIdAsync(storedToken.UserId.Value, cancellationToken);
                 await _tokenRepository.SaveChangesAsync(cancellationToken);
             }
+
             return new RefreshTokenResult(false, Error: "Token has been reused - all sessions revoked");
         }
 
         // Check if token is revoked or expired
-        if (storedToken.Status != "Valid" || (storedToken.ExpirationDate.HasValue && DateTime.UtcNow > storedToken.ExpirationDate.Value))
+        if (storedToken.Status != "Valid" ||
+            (storedToken.ExpirationDate.HasValue && DateTime.UtcNow > storedToken.ExpirationDate.Value))
         {
             return new RefreshTokenResult(false, Error: "Refresh token is invalid or expired");
         }
@@ -68,9 +70,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         // Get user
         if (!storedToken.UserId.HasValue)
         {
-             return new RefreshTokenResult(false, Error: "Invalid token state");
+            return new RefreshTokenResult(false, Error: "Invalid token state");
         }
-        
+
         var user = await _userRepository.GetByIdAsync(storedToken.UserId.Value, cancellationToken);
         if (user == null || !user.CanLogin())
         {
@@ -82,7 +84,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         _tokenRepository.Update(storedToken);
 
         // Generate new tokens
-        var accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, storedToken.ApplicationId);
+        var accessToken =
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName,
+                storedToken.ApplicationId);
         var newRefreshTokenValue = _jwtTokenService.GenerateRefreshToken();
         var jwtId = _jwtTokenService.GetJwtIdFromToken(accessToken);
 
@@ -93,22 +97,24 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         // Create and store new refresh token
         var newRefreshTokenHash = _jwtTokenService.HashRefreshToken(newRefreshTokenValue);
-        
-        var properties = location != null ? $"{{\"location\": \"{location}\", \"device\": \"{request.DeviceName ?? "Unknown"}\", \"ip\": \"{request.IpAddress}\"}}" : null;
+
+        var properties = location != null
+            ? $"{{\"location\": \"{location}\", \"device\": \"{request.DeviceName ?? "Unknown"}\", \"ip\": \"{request.IpAddress}\"}}"
+            : null;
 
         var newRefreshToken = Token.Create(
-            type: "refresh_token",
-            applicationId: storedToken.ApplicationId,
-            subject: user.Id.ToString(),
-            userId: user.Id,
-            expirationDate: DateTime.UtcNow.AddSeconds(RefreshTokenLifetimeSeconds),
-            referenceId: newRefreshTokenHash,
-            authorizationId: storedToken.AuthorizationId,
-            payload: null,
-            properties: properties,
-            ipAddress: request.IpAddress,
-            location: location,
-            device: request.DeviceName
+            "refresh_token",
+            storedToken.ApplicationId,
+            user.Id.ToString(),
+            user.Id,
+            DateTime.UtcNow.AddSeconds(RefreshTokenLifetimeSeconds),
+            newRefreshTokenHash,
+            storedToken.AuthorizationId,
+            null,
+            properties,
+            request.IpAddress,
+            location,
+            request.DeviceName
         );
 
         await _tokenRepository.AddAsync(newRefreshToken, cancellationToken);

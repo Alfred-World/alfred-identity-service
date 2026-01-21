@@ -14,7 +14,7 @@ public interface IAuthorizationCodeService
     /// Validates the PKCE code verifier against the challenge
     /// </summary>
     bool ValidatePkce(string codeChallenge, string codeChallengeMethod, string codeVerifier);
-    
+
     /// <summary>
     /// Hashes the authorization code for storage (if we decide to hash it like refresh tokens)
     /// </summary>

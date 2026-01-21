@@ -11,12 +11,12 @@ public sealed record SsoLoginResponse
     /// Exchange URL for browser navigation to set cookie (Token Exchange Pattern)
     /// </summary>
     public string? ReturnUrl { get; init; }
-    
+
     /// <summary>
     /// User information
     /// </summary>
     public UserInfo User { get; init; } = null!;
-    
+
     /// <summary>
     /// One-time exchange token for cookie authentication (Token Exchange Pattern)
     /// </summary>
@@ -32,7 +32,7 @@ public sealed record SsoSessionResponse
     /// Whether user is authenticated
     /// </summary>
     public bool IsAuthenticated { get; init; }
-    
+
     /// <summary>
     /// User info if authenticated
     /// </summary>
@@ -49,4 +49,3 @@ public sealed record SessionUserInfoDto
     public string? FullName { get; init; }
     public string? UserName { get; init; }
 }
-

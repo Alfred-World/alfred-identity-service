@@ -1,8 +1,8 @@
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
-using Alfred.Identity.Domain.Entities;
-using MediatR;
 using Alfred.Identity.Domain.Abstractions.Security;
+
+using MediatR;
 
 namespace Alfred.Identity.Application.Applications.Commands.Create;
 
@@ -39,23 +39,24 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
         string? secretHash = null;
         if (!string.IsNullOrEmpty(request.ClientSecret))
         {
-             secretHash = _passwordHasher.HashPassword(request.ClientSecret); 
-             // Note: PasswordHasher is for Users, verifies against hash. 
-             // Works for secrets too.
+            secretHash = _passwordHasher.HashPassword(request.ClientSecret);
+            // Note: PasswordHasher is for Users, verifies against hash. 
+            // Works for secrets too.
         }
 
         var app = Domain.Entities.Application.Create(
-            clientId: request.ClientId,
+            request.ClientId,
             clientSecret: secretHash, // Storing HASHED secret
             displayName: request.DisplayName,
             redirectUris: request.RedirectUris,
-            postLogoutRedirectUris: request.PostLogoutRedirectUris, // Assuming this is correct or I update it based on view
+            postLogoutRedirectUris: request
+                .PostLogoutRedirectUris, // Assuming this is correct or I update it based on view
             permissions: request.Permissions,
             clientType: request.Type
         );
 
         await _applicationRepository.AddAsync(app, cancellationToken);
-        
+
         // Use UnitOfWork to save? Repos usually don't have SaveChanges in standard DDD unless Repository=UoW.
         // But previously I added SaveChangesAsync to AuthorizationRepository.
         // IApplicationRepository doesn't have it yet? I should check IApplicationRepository.

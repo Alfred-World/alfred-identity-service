@@ -14,13 +14,13 @@ public static class ApplicationRequestMappingExtensions
     public static CreateApplicationCommand ToCreateCommand(this CreateApplicationRequest request)
     {
         return new CreateApplicationCommand(
-            ClientId: request.ClientId,
-            ClientSecret: request.ClientSecret,
-            DisplayName: request.DisplayName,
-            RedirectUris: request.RedirectUris,
-            PostLogoutRedirectUris: request.PostLogoutRedirectUris ?? string.Empty,
-            Permissions: request.Permissions ?? string.Empty,
-            Type: request.Type
+            request.ClientId,
+            request.ClientSecret,
+            request.DisplayName,
+            request.RedirectUris,
+            request.PostLogoutRedirectUris ?? string.Empty,
+            request.Permissions ?? string.Empty,
+            request.Type
         );
     }
 
@@ -30,11 +30,11 @@ public static class ApplicationRequestMappingExtensions
     public static UpdateApplicationCommand ToUpdateCommand(this UpdateApplicationRequest request, long id)
     {
         return new UpdateApplicationCommand(
-            Id: id,
-            DisplayName: request.DisplayName,
-            RedirectUris: request.RedirectUris,
-            PostLogoutRedirectUris: request.PostLogoutRedirectUris,
-            Permissions: request.Permissions
+            id,
+            request.DisplayName,
+            request.RedirectUris,
+            request.PostLogoutRedirectUris,
+            request.Permissions
         );
     }
 }

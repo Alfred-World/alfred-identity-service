@@ -17,7 +17,7 @@ public class AdminUserSeeder : BaseDataSeeder
     private readonly IPasswordHasher _passwordHasher;
 
     public AdminUserSeeder(
-        PostgreSqlDbContext dbContext, 
+        PostgreSqlDbContext dbContext,
         IPasswordHasher passwordHasher,
         ILogger<AdminUserSeeder> logger)
         : base(logger)
@@ -40,14 +40,14 @@ public class AdminUserSeeder : BaseDataSeeder
         }
 
         // Default admin password - should be changed after first login
-        string defaultPassword = "Admin@123";
-        string hashedPassword = _passwordHasher.HashPassword(defaultPassword);
+        var defaultPassword = "Admin@123";
+        var hashedPassword = _passwordHasher.HashPassword(defaultPassword);
 
-        User admin = User.Create(
-            email: "admin@gmail.com",
-            passwordHash: hashedPassword,
-            fullName: "System Administrator",
-            emailConfirmed: true
+        var admin = User.Create(
+            "admin@gmail.com",
+            hashedPassword,
+            "System Administrator",
+            true
         );
 
         // Set username to 'admin' instead of email

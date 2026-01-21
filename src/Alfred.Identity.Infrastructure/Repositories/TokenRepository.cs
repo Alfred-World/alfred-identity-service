@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
@@ -25,7 +27,8 @@ public class TokenRepository : ITokenRepository
         return await _context.Tokens.ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Token>> FindAsync(Expression<Func<Token, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Token>> FindAsync(Expression<Func<Token, bool>> predicate,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Tokens.Where(predicate).ToListAsync(cancellationToken);
     }
@@ -60,9 +63,11 @@ public class TokenRepository : ITokenRepository
         return await _context.Tokens.FirstOrDefaultAsync(t => t.ReferenceId == referenceId, cancellationToken);
     }
 
-    public async Task<Token?> GetByAuthorizationIdAsync(long authorizationId, string type, CancellationToken cancellationToken = default)
+    public async Task<Token?> GetByAuthorizationIdAsync(long authorizationId, string type,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.Tokens.FirstOrDefaultAsync(t => t.AuthorizationId == authorizationId && t.Type == type, cancellationToken);
+        return await _context.Tokens.FirstOrDefaultAsync(t => t.AuthorizationId == authorizationId && t.Type == type,
+            cancellationToken);
     }
 
     public async Task RevokeAllByUserIdAsync(long userId, CancellationToken cancellationToken = default)
@@ -77,7 +82,8 @@ public class TokenRepository : ITokenRepository
         }
     }
 
-    public async Task RevokeAllByAuthorizationIdAsync(long authorizationId, CancellationToken cancellationToken = default)
+    public async Task RevokeAllByAuthorizationIdAsync(long authorizationId,
+        CancellationToken cancellationToken = default)
     {
         var tokens = await _context.Tokens
             .Where(t => t.AuthorizationId == authorizationId && t.Status == "Valid")

@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using Alfred.Identity.Application.Auth.Commands.Login;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.WebApi.Contracts.Auth;
@@ -9,10 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 
-using System.Security.Claims;
-
 namespace Alfred.Identity.WebApi.Controllers;
-
 
 [ApiController]
 [Route("identity/auth")]
@@ -43,11 +42,11 @@ public class AuthController : BaseApiController
     {
         // Validate credentials using existing login logic
         var command = new LoginCommand(
-            Identity: request.Identity,
-            Password: request.Password,
-            RememberMe: request.RememberMe,
-            IpAddress: GetClientIpAddress(),
-            DeviceName: GetUserAgent()
+            request.Identity,
+            request.Password,
+            request.RememberMe,
+            GetClientIpAddress(),
+            GetUserAgent()
         );
 
         var result = await _mediator.Send(command);
@@ -81,8 +80,8 @@ public class AuthController : BaseApiController
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = request.RememberMe,
-            ExpiresUtc = request.RememberMe 
-                ? DateTimeOffset.UtcNow.AddDays(14) 
+            ExpiresUtc = request.RememberMe
+                ? DateTimeOffset.UtcNow.AddDays(14)
                 : DateTimeOffset.UtcNow.AddHours(24)
         };
 
@@ -101,7 +100,8 @@ public class AuthController : BaseApiController
         // Build the exchange URL - browser will navigate here to get the cookie
         var gatewayUrl = HttpContext.Request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? "gateway.test";
         var scheme = HttpContext.Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
-        var exchangeUrl = $"{scheme}://{gatewayUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(request.ReturnUrl ?? "")}";
+        var exchangeUrl =
+            $"{scheme}://{gatewayUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(request.ReturnUrl ?? "")}";
 
         return OkResponse(new SsoLoginResponse
         {
@@ -125,9 +125,9 @@ public class AuthController : BaseApiController
         var tokenData = _authTokenService.ValidateAndConsumeToken(token);
         if (tokenData == null)
         {
-            return BadRequest(new { error = "invalid_token", error_description = "Token is invalid, expired, or has already been used" });
+            return BadRequest(new
+            { error = "invalid_token", error_description = "Token is invalid, expired, or has already been used" });
         }
-
 
 
         // Create claims for cookie authentication
@@ -152,8 +152,8 @@ public class AuthController : BaseApiController
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = tokenData.RememberMe,
-            ExpiresUtc = tokenData.RememberMe 
-                ? DateTimeOffset.UtcNow.AddDays(14) 
+            ExpiresUtc = tokenData.RememberMe
+                ? DateTimeOffset.UtcNow.AddDays(14)
                 : DateTimeOffset.UtcNow.AddHours(24)
         };
 
@@ -166,7 +166,7 @@ public class AuthController : BaseApiController
 
         // Redirect to the original returnUrl (e.g., gateway.test/connect/authorize)
         var redirectUrl = returnUrl ?? "/";
-        
+
         return Redirect(redirectUrl);
     }
 

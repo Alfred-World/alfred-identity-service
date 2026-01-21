@@ -24,7 +24,7 @@ public class PostgreSqlDbContext : DbContext, IDbContext
     // Identity entities
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<BackupCode> BackupCodes { get; set; } = null!;
-    
+
     // SSO
     public DbSet<Application> Applications { get; set; } = null!;
     public DbSet<Authorization> Authorizations { get; set; } = null!;

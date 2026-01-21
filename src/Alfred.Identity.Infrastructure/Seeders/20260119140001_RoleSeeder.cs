@@ -33,7 +33,7 @@ public class RoleSeeder : BaseDataSeeder
             return;
         }
 
-        Role[] roles = new[]
+        var roles = new[]
         {
             Role.Create("Admin"),
             Role.Create("User")

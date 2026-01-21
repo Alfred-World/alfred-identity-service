@@ -18,7 +18,8 @@ public class GetApplicationByIdQueryHandler : IRequestHandler<GetApplicationById
         _applicationRepository = applicationRepository;
     }
 
-    public async Task<Result<ApplicationDto>> Handle(GetApplicationByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<ApplicationDto>> Handle(GetApplicationByIdQuery request,
+        CancellationToken cancellationToken)
     {
         var application = await _applicationRepository.GetByIdAsync(request.Id, cancellationToken);
 

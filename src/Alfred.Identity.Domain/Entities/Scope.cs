@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a scope, aligned with OpenIddictScopes schema
@@ -16,7 +16,8 @@ public class Scope : BaseEntity
     public string? Properties { get; private set; } // JSON
     public string? ConcurrencyToken { get; private set; } = Guid.NewGuid().ToString();
 
-    public static Scope Create(string name, string? displayName = null, string? description = null, string? resources = null)
+    public static Scope Create(string name, string? displayName = null, string? description = null,
+        string? resources = null)
     {
         return new Scope
         {

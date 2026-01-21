@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+
 using Alfred.Identity.Domain.Abstractions.Services;
 
 namespace Alfred.Identity.Infrastructure.Services;
@@ -22,7 +23,7 @@ public class AuthorizationCodeService : IAuthorizationCodeService
             // If PKCE is not used/required, this might depend on policy. 
             // But if params are passed, they must be valid.
             // For this service, simply validation logic.
-            return false; 
+            return false;
         }
 
         if (codeChallengeMethod == "plain")

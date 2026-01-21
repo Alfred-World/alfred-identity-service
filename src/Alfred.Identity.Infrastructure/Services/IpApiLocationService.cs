@@ -30,18 +30,25 @@ public class IpApiLocationService : ILocationService
         try
         {
             // Skip for local/private IPs or null
-            if (string.IsNullOrEmpty(ipAddress)) return "Unknown";
-            
+            if (string.IsNullOrEmpty(ipAddress))
+            {
+                return "Unknown";
+            }
+
             // Basic validation
-            if (!IPAddress.TryParse(ipAddress, out _)) return "Invalid IP";
+            if (!IPAddress.TryParse(ipAddress, out _))
+            {
+                return "Invalid IP";
+            }
 
             // Localhost check logic
-            if (ipAddress == "::1" || ipAddress == "127.0.0.1" || ipAddress.StartsWith("192.168.") || ipAddress.StartsWith("10."))
+            if (ipAddress == "::1" || ipAddress == "127.0.0.1" || ipAddress.StartsWith("192.168.") ||
+                ipAddress.StartsWith("10."))
             {
                 return "Local Network";
             }
 
-            string url = $"{ApiBaseUrl}{ipAddress}.json";
+            var url = $"{ApiBaseUrl}{ipAddress}.json";
             using var response = await _httpClient.GetAsync(url);
 
             if (!response.IsSuccessStatusCode)
@@ -51,8 +58,8 @@ public class IpApiLocationService : ILocationService
                 return null;
             }
 
-            string json = await response.Content.ReadAsStringAsync();
-            IpApiResponse? apiResponse = JsonSerializer.Deserialize<IpApiResponse>(json, new JsonSerializerOptions
+            var json = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonSerializer.Deserialize<IpApiResponse>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });

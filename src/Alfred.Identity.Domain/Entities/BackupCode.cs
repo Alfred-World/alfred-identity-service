@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Backup code for 2FA recovery.
@@ -37,7 +37,9 @@ public class BackupCode : BaseEntity
     public virtual User User { get; private set; } = null!;
 
     // Private constructor for EF Core
-    private BackupCode() { }
+    private BackupCode()
+    {
+    }
 
     /// <summary>
     /// Create a new backup code

@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Abstractions.Services;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
@@ -27,7 +28,7 @@ public class WellKnownController : ControllerBase
     public IActionResult OpenIdConfiguration()
     {
         var issuer = _configuration["Jwt:Issuer"] ?? $"{Request.Scheme}://{Request.Host}";
-        
+
         return Ok(new
         {
             issuer = issuer,

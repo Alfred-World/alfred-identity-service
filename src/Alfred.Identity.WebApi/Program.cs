@@ -9,6 +9,7 @@ using Alfred.Identity.WebApi.Middleware;
 using FluentValidation;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -175,8 +176,8 @@ if (app.Environment.IsProduction())
 // This ensures cookies are set with the correct host (gateway.test instead of localhost)
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All,
-    ForwardLimit = null, // No limit on forwards
+    ForwardedHeaders = ForwardedHeaders.All,
+    ForwardLimit = null // No limit on forwards
 };
 // Clear default known networks/proxies to trust all (for development)
 forwardedHeadersOptions.KnownNetworks.Clear();

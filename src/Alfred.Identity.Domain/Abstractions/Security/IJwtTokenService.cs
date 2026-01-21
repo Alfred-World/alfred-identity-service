@@ -33,7 +33,8 @@ public interface IJwtTokenService
     /// <summary>
     /// Generate an ID token for OIDC (contains user identity claims)
     /// </summary>
-    Task<string> GenerateIdTokenAsync(long userId, string email, string? fullName, string clientId, string? nonce = null);
+    Task<string> GenerateIdTokenAsync(long userId, string email, string? fullName, string clientId,
+        string? nonce = null);
 }
 
 /// <summary>

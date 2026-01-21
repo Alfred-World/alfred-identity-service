@@ -17,7 +17,7 @@ public class DefaultUserSeeder : BaseDataSeeder
     private readonly IPasswordHasher _passwordHasher;
 
     public DefaultUserSeeder(
-        PostgreSqlDbContext dbContext, 
+        PostgreSqlDbContext dbContext,
         IPasswordHasher passwordHasher,
         ILogger<DefaultUserSeeder> logger)
         : base(logger)
@@ -41,14 +41,14 @@ public class DefaultUserSeeder : BaseDataSeeder
         }
 
         // Default user password - should be changed after first login
-        string defaultPassword = "Admin@123";
-        string hashedPassword = _passwordHasher.HashPassword(defaultPassword);
+        var defaultPassword = "Admin@123";
+        var hashedPassword = _passwordHasher.HashPassword(defaultPassword);
 
-        User user = User.Create(
-            email: defaultEmail,
-            passwordHash: hashedPassword,
-            fullName: "Default User",
-            emailConfirmed: true
+        var user = User.Create(
+            defaultEmail,
+            hashedPassword,
+            "Default User",
+            true
         );
         user.SetUserName("user");
 

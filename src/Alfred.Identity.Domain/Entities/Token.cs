@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a token (RefreshToken, AccessToken reference, AuthorizationCode), aligned with OpenIddictTokens schema
@@ -9,7 +9,7 @@ public class Token : BaseEntity
 {
     public long? ApplicationId { get; private set; }
     public long? AuthorizationId { get; private set; }
-    
+
     // User/Subject
     public string? Subject { get; private set; }
     public long? UserId { get; private set; }
@@ -19,11 +19,11 @@ public class Token : BaseEntity
     public string? Status { get; private set; } = "Valid"; // Valid, Revoked, Redeemed, Inactive
     public string? Payload { get; private set; } // Protected payload (JSON)
     public string? Properties { get; private set; } // JSON properties (e.g. device info)
-    
+
     // Tracking info for management
     public string? IpAddress { get; private set; }
     public string? Location { get; private set; }
-    public string? Device { get; private set; } 
+    public string? Device { get; private set; }
 
     public DateTime CreationDate { get; private set; }
     public DateTime? ExpirationDate { get; private set; }
@@ -35,7 +35,9 @@ public class Token : BaseEntity
     public virtual Authorization? Authorization { get; private set; }
     public virtual User? User { get; private set; }
 
-    private Token() { }
+    private Token()
+    {
+    }
 
     public static Token Create(
         string type,

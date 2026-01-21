@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a user identity, aligned with AspNetUsers schema
@@ -21,12 +21,14 @@ public class User : BaseEntity
     public DateTimeOffset? LockoutEnd { get; private set; }
     public bool LockoutEnabled { get; private set; }
     public int AccessFailedCount { get; private set; }
-    
+
     // Custom fields not in standard Identity but useful
     public string FullName { get; private set; } = null!;
     public string Status { get; private set; } = "Active";
 
-    private User() { }
+    private User()
+    {
+    }
 
     public static User Create(string email, string? passwordHash, string fullName, bool emailConfirmed = false)
     {
@@ -76,7 +78,12 @@ public class User : BaseEntity
         NormalizedUserName = userName.ToUpperInvariant();
         UpdatedAt = DateTime.UtcNow;
     }
-    public bool HasPassword() => !string.IsNullOrEmpty(PasswordHash);
+
+    public bool HasPassword()
+    {
+        return !string.IsNullOrEmpty(PasswordHash);
+    }
+
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 }

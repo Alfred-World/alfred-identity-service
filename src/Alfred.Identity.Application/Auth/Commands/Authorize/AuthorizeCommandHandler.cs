@@ -1,9 +1,11 @@
+using System.Text.Json;
+
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
+
 using MediatR;
-using System.Web;
 
 namespace Alfred.Identity.Application.Auth.Commands.Authorize;
 
@@ -11,6 +13,7 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
 {
     private readonly ITokenRepository _tokenRepository;
     private readonly IAuthorizationCodeService _authCodeService;
+
     private readonly IUnitOfWork _unitOfWork;
     // Assuming we have IApplicationRepository or similar, but typically IRepository<Application>
     // Since Application was added to Context, we can use Generic Repository or create specific one.
@@ -21,7 +24,7 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
     // Let's create IApplicationRepository or just use DbContext directly via UnitOfWork if feasible, 
     // but better to stick to Repo pattern.
     // I need to fetch Application by ClientId.
-    
+
     // TEMPORARY: I will use ITokenRepository but I really need IApplicationRepository.
     // Let's assume I will create IApplicationRepository next.
     // For now I'll stub it or use a "Applications" dbSet directly if I can access context? No, clean architecture.
@@ -52,24 +55,24 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
         {
             return Error("invalid_client", "Client not found");
         }
-        
+
         // 2. Validate Redirect URI
         // RedirectUris is stored as JSON array: ["url1","url2","url3"]
         var isValidRedirectUri = false;
         if (!string.IsNullOrEmpty(client.RedirectUris))
         {
-            try 
+            try
             {
-                var redirectUris = System.Text.Json.JsonSerializer.Deserialize<string[]>(client.RedirectUris);
+                var redirectUris = JsonSerializer.Deserialize<string[]>(client.RedirectUris);
                 isValidRedirectUri = redirectUris?.Contains(request.RedirectUri) ?? false;
             }
-            catch 
+            catch
             {
                 // Fallback: try space-delimited format
                 isValidRedirectUri = client.RedirectUris.Split(' ').Contains(request.RedirectUri);
             }
         }
-        
+
         if (!isValidRedirectUri)
         {
             return Error("invalid_request", "Invalid redirect_uri detected");
@@ -94,21 +97,23 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
         // simplified: assuming implicit consent for internal apps or if ConsentType is implicit
         // For strictly following user request: "hoàn thiện logic"
         // Let's stick to creating a Token entity of type "authorization_code"
-        
+
         // Note: Token entity has AuthorizationId. Ideally we create an Authorization entity first representing the grant.
         // Let's create an Authorization entity first.
-        
+
         // 5. Create or Get Authorization (Consent)
         // Simplified: assuming implicit consent for now if no "prompt=consent"
-        var authorization = await _authorizationRepository.GetValidAsync(client.Id, request.UserId.Value, request.Scope, cancellationToken);
-        
+        var authorization =
+            await _authorizationRepository.GetValidAsync(client.Id, request.UserId.Value, request.Scope,
+                cancellationToken);
+
         if (authorization == null)
         {
-             authorization = Authorization.Create(
-                applicationId: client.Id,
-                userId: request.UserId.Value,
-                scopes: request.Scope,
-                type: "Permanent"
+            authorization = Authorization.Create(
+                client.Id,
+                request.UserId.Value,
+                request.Scope,
+                "Permanent"
             );
             await _authorizationRepository.AddAsync(authorization, cancellationToken);
             await _authorizationRepository.SaveChangesAsync(cancellationToken); // Need SaveChanges in Repo or UoW
@@ -120,11 +125,11 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
         // Token entity has ReferenceId. Let's use ReferenceId for the Code string itself (or hash if we want to be secure).
         // If we hash, we return the plain code to user, and store hash.
         // Let's store hash in ReferenceId, and return plain code.
-        
+
         var authTokenHash = _authCodeService.HashAuthorizationCode(codeValue);
-        
+
         // Payload: could store code_challenge, redirect_uri, nonce, etc.
-        var payload = System.Text.Json.JsonSerializer.Serialize(new 
+        var payload = JsonSerializer.Serialize(new
         {
             redirect_uri = request.RedirectUri,
             code_challenge = request.CodeChallenge,
@@ -135,14 +140,14 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
 
         // Create Token entity for the code
         var codeToken = Token.Create(
-            type: "authorization_code",
-            applicationId: client.Id,
-            subject: request.UserId.Value.ToString(),
-            userId: request.UserId.Value,
-            expirationDate: DateTime.UtcNow.AddMinutes(5), // Short lived
-            referenceId: authTokenHash,
-            authorizationId: authorization.Id,
-            payload: payload
+            "authorization_code",
+            client.Id,
+            request.UserId.Value.ToString(),
+            request.UserId.Value,
+            DateTime.UtcNow.AddMinutes(5), // Short lived
+            authTokenHash,
+            authorization.Id,
+            payload
         );
 
         await _tokenRepository.AddAsync(codeToken, cancellationToken);
@@ -155,8 +160,8 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
         {
             redirectLocation += $"&state={request.State}";
         }
-        
-        return new AuthorizeResult(true, RedirectLocation: redirectLocation);
+
+        return new AuthorizeResult(true, redirectLocation);
     }
 
     private AuthorizeResult Error(string error, string description)

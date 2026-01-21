@@ -15,7 +15,8 @@ public class TokenConfiguration : IEntityTypeConfiguration<Token>
 
         builder.HasIndex(x => x.ReferenceId).IsUnique().HasDatabaseName("IX_OpenIddictTokens_ReferenceId");
         builder.HasIndex(x => x.AuthorizationId).HasDatabaseName("IX_OpenIddictTokens_AuthorizationId");
-        builder.HasIndex(x => new { x.ApplicationId, x.Status, x.Subject, x.Type }).HasDatabaseName("IX_OpenIddictTokens_ApplicationId_Status_Subject_Type");
+        builder.HasIndex(x => new { x.ApplicationId, x.Status, x.Subject, x.Type })
+            .HasDatabaseName("IX_OpenIddictTokens_ApplicationId_Status_Subject_Type");
 
         builder.Property(x => x.ReferenceId).HasMaxLength(100);
         builder.Property(x => x.Properties).HasColumnType("jsonb");
@@ -34,12 +35,12 @@ public class TokenConfiguration : IEntityTypeConfiguration<Token>
             .WithMany()
             .HasForeignKey(x => x.ApplicationId)
             .IsRequired(false);
-            
+
         builder.HasOne(x => x.Authorization)
             .WithMany()
             .HasForeignKey(x => x.AuthorizationId);
-            
-         builder.HasOne(x => x.User)
+
+        builder.HasOne(x => x.User)
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .IsRequired(false) // User is optional for some tokens (e.g. client credentials)

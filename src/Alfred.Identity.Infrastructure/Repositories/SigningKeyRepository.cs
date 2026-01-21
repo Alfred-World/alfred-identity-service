@@ -1,8 +1,10 @@
+using System.Linq.Expressions;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
@@ -63,7 +65,8 @@ public class SigningKeyRepository : ISigningKeyRepository
         return await _context.SigningKeys.ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<SigningKey>> FindAsync(Expression<Func<SigningKey, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<SigningKey>> FindAsync(Expression<Func<SigningKey, bool>> predicate,
+        CancellationToken cancellationToken = default)
     {
         return await _context.SigningKeys.Where(predicate).ToListAsync(cancellationToken);
     }

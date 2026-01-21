@@ -20,7 +20,7 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
         builder.Property(x => x.ClientType).HasMaxLength(50);
         builder.Property(x => x.ConsentType).HasMaxLength(50);
         builder.Property(x => x.ConcurrencyToken).HasMaxLength(50);
-        
+
         // Important: OpenIddict stores permissions/urls typically as JSON or delimited string. 
         // Schema implies they can be long text.
     }

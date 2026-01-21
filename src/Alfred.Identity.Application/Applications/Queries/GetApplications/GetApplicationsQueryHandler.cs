@@ -18,21 +18,22 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
         _applicationRepository = applicationRepository;
     }
 
-    public async Task<PageResult<ApplicationDto>> Handle(GetApplicationsQuery request, CancellationToken cancellationToken)
+    public async Task<PageResult<ApplicationDto>> Handle(GetApplicationsQuery request,
+        CancellationToken cancellationToken)
     {
         var query = request.QueryRequest;
         var page = query.GetEffectivePage();
         var pageSize = query.GetEffectivePageSize();
-        
+
         // Get paginated applications using IRepository's GetPagedAsync
         var (items, total) = await _applicationRepository.GetPagedAsync(
-            filter: null,
-            sort: query.Sort,
-            page: page,
-            pageSize: pageSize,
-            includes: null,
-            fieldSelector: null,
-            cancellationToken: cancellationToken
+            null,
+            query.Sort,
+            page,
+            pageSize,
+            null,
+            null,
+            cancellationToken
         );
 
         var dtos = items.ToDtos().ToList();

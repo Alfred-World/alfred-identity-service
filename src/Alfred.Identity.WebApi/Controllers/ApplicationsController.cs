@@ -2,7 +2,6 @@ using Alfred.Identity.Application.Applications.Commands.Delete;
 using Alfred.Identity.Application.Applications.Queries.GetApplicationById;
 using Alfred.Identity.Application.Applications.Queries.GetApplications;
 using Alfred.Identity.Application.Applications.Shared;
-using Alfred.Identity.Application.Querying;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Contracts.Common;
 

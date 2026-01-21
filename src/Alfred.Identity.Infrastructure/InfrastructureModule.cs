@@ -1,8 +1,10 @@
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Providers.Cache;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+using Alfred.Identity.Infrastructure.Services;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -68,7 +70,7 @@ public static class InfrastructureModule
         services.AddInMemoryCache();
 
         // Register AuthTokenService for Token Exchange Pattern
-        services.AddSingleton<Domain.Abstractions.IAuthTokenService, Services.AuthTokenService>();
+        services.AddSingleton<IAuthTokenService, AuthTokenService>();
 
         return services;
     }

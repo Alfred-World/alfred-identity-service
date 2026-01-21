@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Applications.Queries.Get;
@@ -28,7 +29,10 @@ public class GetApplicationQueryHandler : IRequestHandler<GetApplicationQuery, A
     public async Task<ApplicationDto?> Handle(GetApplicationQuery request, CancellationToken cancellationToken)
     {
         var app = await _applicationRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (app == null) return null;
+        if (app == null)
+        {
+            return null;
+        }
 
         return new ApplicationDto(
             app.Id,

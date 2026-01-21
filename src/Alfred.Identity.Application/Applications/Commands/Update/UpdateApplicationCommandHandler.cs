@@ -23,7 +23,8 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<ApplicationDto>> Handle(UpdateApplicationCommand request, CancellationToken cancellationToken)
+    public async Task<Result<ApplicationDto>> Handle(UpdateApplicationCommand request,
+        CancellationToken cancellationToken)
     {
         var application = await _applicationRepository.GetByIdAsync(request.Id, cancellationToken);
 
@@ -34,7 +35,7 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
 
         // Update properties using domain methods
         application.UpdateRedirectUris(request.RedirectUris);
-        
+
         // Use sync Update method from IRepository
         _applicationRepository.Update(application);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -14,7 +14,7 @@ public class AuthorizationConfiguration : IEntityTypeConfiguration<Authorization
         builder.HasKey(x => x.Id);
 
         builder.HasIndex(x => new { x.ApplicationId, x.Status, x.Subject, x.Type })
-               .HasDatabaseName("IX_OpenIddictAuthorizations_ApplicationId_Status_Subject_Type");
+            .HasDatabaseName("IX_OpenIddictAuthorizations_ApplicationId_Status_Subject_Type");
 
         builder.Property(x => x.Subject).HasMaxLength(200);
         builder.Property(x => x.Status).HasMaxLength(50);

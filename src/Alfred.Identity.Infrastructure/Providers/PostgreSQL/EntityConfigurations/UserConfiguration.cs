@@ -21,7 +21,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.NormalizedUserName).HasMaxLength(256);
         builder.Property(x => x.Email).HasMaxLength(256);
         builder.Property(x => x.NormalizedEmail).HasMaxLength(256);
-        
+
         // Custom fields
         builder.Property(x => x.FullName).IsRequired().HasMaxLength(150);
         builder.Property(x => x.Status).IsRequired().HasMaxLength(20);

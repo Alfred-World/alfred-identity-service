@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a role, aligned with AspNetRoles schema
@@ -13,7 +13,9 @@ public class Role : BaseEntity
 
     // Custom fields if any
 
-    private Role() { }
+    private Role()
+    {
+    }
 
     public static Role Create(string name)
     {

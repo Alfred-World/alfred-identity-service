@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
@@ -70,11 +71,11 @@ public class SigningKeySeeder : BaseDataSeeder
         };
 
         var signingKey = SigningKey.Create(
-            keyId: keyId,
-            publicKey: JsonSerializer.Serialize(publicKeyJwk),
-            privateKey: JsonSerializer.Serialize(privateKeyData),
-            algorithm: "RS256",
-            isActive: true
+            keyId,
+            JsonSerializer.Serialize(publicKeyJwk),
+            JsonSerializer.Serialize(privateKeyData),
+            "RS256",
+            true
         );
 
         await _dbContext.SigningKeys.AddAsync(signingKey, cancellationToken);

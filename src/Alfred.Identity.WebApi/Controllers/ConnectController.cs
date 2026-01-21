@@ -1,12 +1,14 @@
+using System.Security.Claims;
+
 using Alfred.Identity.Application.Auth.Commands.Authorize;
 using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
 using Alfred.Identity.WebApi.Contracts.Connect;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
@@ -30,7 +32,7 @@ public class ConnectController : ControllerBase
     {
         // Check if User is Authenticated
         var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        
+
 
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {
@@ -43,11 +45,11 @@ public class ConnectController : ControllerBase
             // Redirect to SSO Login Page
             // Build returnUrl - use X-Forwarded headers or config when behind Gateway proxy
             var gatewayUrl = _configuration["Urls:Gateway"] ?? "https://gateway.test";
-            
+
             // Check for X-Forwarded headers (when behind proxy)
             var forwardedHost = Request.Headers["X-Forwarded-Host"].FirstOrDefault();
             var forwardedProto = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
-            
+
             string returnUrl;
             if (!string.IsNullOrEmpty(forwardedHost))
             {
@@ -58,17 +60,17 @@ public class ConnectController : ControllerBase
                 // Use Gateway URL from config
                 returnUrl = $"{gatewayUrl}{Request.Path}{Request.QueryString}";
             }
-            
+
             var ssoUrl = _configuration["Urls:SsoWeb"] ?? "https://sso.test";
             var loginUrl = $"{ssoUrl}/login?returnUrl={Uri.EscapeDataString(returnUrl)}";
-            
+
             return Redirect(loginUrl);
         }
 
         // 2. Extract User ID
-        var userIdClaim = authenticateResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+        var userIdClaim = authenticateResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? authenticateResult.Principal.FindFirst("sub")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
             return BadRequest(new { error = "invalid_user" });
@@ -76,15 +78,15 @@ public class ConnectController : ControllerBase
 
         // 3. Execute Authorize Command
         var command = new AuthorizeCommand(
-            ClientId: request.client_id,
-            RedirectUri: request.redirect_uri,
-            ResponseType: request.response_type,
-            Scope: request.scope,
-            State: request.state,
-            CodeChallenge: request.code_challenge,
-            CodeChallengeMethod: request.code_challenge_method,
-            Prompt: request.prompt,
-            UserId: userId
+            request.client_id,
+            request.redirect_uri,
+            request.response_type,
+            request.scope,
+            request.state,
+            request.code_challenge,
+            request.code_challenge_method,
+            request.prompt,
+            userId
         );
 
         var result = await _mediator.Send(command);
@@ -104,13 +106,13 @@ public class ConnectController : ControllerBase
     public async Task<IActionResult> Token([FromForm] ExchangeCodeRequest request)
     {
         var command = new ExchangeCodeCommand(
-            GrantType: request.grant_type,
-            ClientId: request.client_id,
-            ClientSecret: request.client_secret,
-            Code: request.code,
-            RedirectUri: request.redirect_uri,
-            CodeVerifier: request.code_verifier,
-            RefreshToken: request.refresh_token
+            request.grant_type,
+            request.client_id,
+            request.client_secret,
+            request.code,
+            request.redirect_uri,
+            request.code_verifier,
+            request.refresh_token
         );
 
         var result = await _mediator.Send(command);
@@ -142,7 +144,7 @@ public class ConnectController : ControllerBase
     {
         // Sign out from cookie authentication
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        
+
         // If post_logout_redirect_uri is provided, redirect there
         if (!string.IsNullOrEmpty(post_logout_redirect_uri))
         {
@@ -153,12 +155,12 @@ public class ConnectController : ControllerBase
             {
                 redirectUrl += (redirectUrl.Contains('?') ? "&" : "?") + $"state={state}";
             }
+
             return Redirect(redirectUrl);
         }
-        
+
         // If no redirect URI, show a simple logged out message or redirect to SSO home
         var ssoUrl = _configuration["Urls:SsoWeb"] ?? "https://sso.test";
         return Redirect($"{ssoUrl}/login?logout=true");
     }
 }
-

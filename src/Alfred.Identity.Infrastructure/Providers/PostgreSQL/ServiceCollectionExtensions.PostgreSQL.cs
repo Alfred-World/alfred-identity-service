@@ -7,6 +7,7 @@ using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Services;
+using Alfred.Identity.Infrastructure.Services.Security;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,31 +38,31 @@ public static class ServiceCollectionExtensions
 
         // === Auto-register Repositories (IXxxRepository -> XxxRepository) ===
         services.AddByConvention(
-            interfaceAssembly: DomainAssembly,
-            implementationAssembly: InfraAssembly,
-            interfaceNamespace: "Alfred.Identity.Domain.Abstractions.Repositories",
-            implementationNamespace: "Alfred.Identity.Infrastructure.Repositories"
+            DomainAssembly,
+            InfraAssembly,
+            "Alfred.Identity.Domain.Abstractions.Repositories",
+            "Alfred.Identity.Infrastructure.Repositories"
         );
 
         // === Auto-register Services (IXxxService -> XxxService) ===
         services.AddByConvention(
-            interfaceAssembly: DomainAssembly,
-            implementationAssembly: InfraAssembly,
-            interfaceNamespace: "Alfred.Identity.Domain.Abstractions.Security",
-            implementationNamespace: "Alfred.Identity.Infrastructure.Services.Security"
+            DomainAssembly,
+            InfraAssembly,
+            "Alfred.Identity.Domain.Abstractions.Security",
+            "Alfred.Identity.Infrastructure.Services.Security"
         );
-        
+
         // Services in Domain.Abstractions.Services -> Infrastructure.Services
         services.AddByConvention(
-            interfaceAssembly: DomainAssembly,
-            implementationAssembly: InfraAssembly,
-            interfaceNamespace: "Alfred.Identity.Domain.Abstractions.Services",
-            implementationNamespace: "Alfred.Identity.Infrastructure.Services"
+            DomainAssembly,
+            InfraAssembly,
+            "Alfred.Identity.Domain.Abstractions.Services",
+            "Alfred.Identity.Infrastructure.Services"
         );
 
         // === Manual Registrations (namespace mismatch) ===
         // JwksService is in Services.Security but implements IJwksService from Domain.Abstractions.Services
-        services.AddScoped<Domain.Abstractions.Services.IJwksService, Services.Security.JwksService>();
+        services.AddScoped<IJwksService, JwksService>();
 
         // === HttpClient Services (special registration) ===
         services.AddHttpClient<ILocationService, IpApiLocationService>();
@@ -90,7 +91,8 @@ public static class ServiceCollectionExtensions
             // Convention: IUserRepository -> UserRepository
             var implName = iface.Name.StartsWith("I") ? iface.Name[1..] : iface.Name;
             var implType = implementationAssembly.GetTypes()
-                .FirstOrDefault(t => t.Name == implName && t.Namespace == implementationNamespace && iface.IsAssignableFrom(t));
+                .FirstOrDefault(t =>
+                    t.Name == implName && t.Namespace == implementationNamespace && iface.IsAssignableFrom(t));
 
             if (implType != null)
             {
@@ -113,5 +115,3 @@ public static class ServiceCollectionExtensions
         }
     }
 }
-
-

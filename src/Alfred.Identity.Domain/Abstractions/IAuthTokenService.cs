@@ -9,7 +9,7 @@ public interface IAuthTokenService
     /// Generate a one-time auth token and store user data
     /// </summary>
     string GenerateToken(AuthTokenData data);
-    
+
     /// <summary>
     /// Validate and consume a one-time token, returning the associated data
     /// </summary>

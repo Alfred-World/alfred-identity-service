@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+
 using Alfred.Identity.Domain.Abstractions;
 
 namespace Alfred.Identity.Infrastructure.Services;
@@ -12,12 +13,12 @@ public sealed class AuthTokenService : IAuthTokenService
 {
     private readonly ICacheProvider _cacheProvider;
     private const string CacheKeyPrefix = "auth_token:";
-    
+
     public AuthTokenService(ICacheProvider cacheProvider)
     {
         _cacheProvider = cacheProvider;
     }
-    
+
     public string GenerateToken(AuthTokenData data)
     {
         var bytes = new byte[32];
@@ -27,46 +28,54 @@ public sealed class AuthTokenService : IAuthTokenService
             .Replace("+", "-")
             .Replace("/", "_")
             .TrimEnd('=');
-        
+
         // Calculate TTL from ExpiresAt
         var ttl = data.ExpiresAt - DateTime.UtcNow;
         if (ttl <= TimeSpan.Zero)
         {
             ttl = TimeSpan.FromSeconds(60); // Default 60 seconds
         }
-        
+
         // Serialize and store in cache
         var json = JsonSerializer.Serialize(data);
         _cacheProvider.SetAsync(CacheKeyPrefix + token, json, ttl).AsTask().Wait();
-        
+
         return token;
     }
-    
+
     public AuthTokenData? ValidateAndConsumeToken(string token)
     {
         if (string.IsNullOrEmpty(token))
+        {
             return null;
-        
+        }
+
         var cacheKey = CacheKeyPrefix + token;
-        
+
         // Get and delete atomically (consume)
         var json = _cacheProvider.GetAsync(cacheKey).AsTask().Result;
         if (string.IsNullOrEmpty(json))
+        {
             return null;
-        
+        }
+
         // Delete the token (one-time use)
         _cacheProvider.DeleteAsync(cacheKey).AsTask().Wait();
-        
+
         try
         {
             var tokenData = JsonSerializer.Deserialize<AuthTokenData>(json);
             if (tokenData == null)
+            {
                 return null;
-            
+            }
+
             // Check if token is expired
             if (DateTime.UtcNow > tokenData.ExpiresAt)
+            {
                 return null;
-            
+            }
+
             return tokenData;
         }
         catch
@@ -75,4 +84,3 @@ public sealed class AuthTokenService : IAuthTokenService
         }
     }
 }
-

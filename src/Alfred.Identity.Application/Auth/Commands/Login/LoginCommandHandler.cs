@@ -62,29 +62,31 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
         var refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
 
         // Get location from IP
-        var location = request.IpAddress != null 
-            ? await _locationService.GetLocationFromIpAsync(request.IpAddress) 
+        var location = request.IpAddress != null
+            ? await _locationService.GetLocationFromIpAsync(request.IpAddress)
             : null;
 
         // Create and store new refresh token as a Token entity
         var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenValue);
-        
+
         // Properties JSON (simplified for now)
-        var properties = location != null ? $"{{\"location\": \"{location}\", \"device\": \"{request.DeviceName ?? "Unknown"}\", \"ip\": \"{request.IpAddress}\"}}" : null;
+        var properties = location != null
+            ? $"{{\"location\": \"{location}\", \"device\": \"{request.DeviceName ?? "Unknown"}\", \"ip\": \"{request.IpAddress}\"}}"
+            : null;
 
         var refreshToken = Token.Create(
-            type: "refresh_token",
-            applicationId: null,
-            subject: user.Id.ToString(),
-            userId: user.Id,
-            expirationDate: DateTime.UtcNow.AddSeconds(RefreshTokenLifetimeSeconds),
-            referenceId: refreshTokenHash,
-            authorizationId: null,
-            payload: null,
-            properties: properties,
-            ipAddress: request.IpAddress,
-            location: location,
-            device: request.DeviceName
+            "refresh_token",
+            null,
+            user.Id.ToString(),
+            user.Id,
+            DateTime.UtcNow.AddSeconds(RefreshTokenLifetimeSeconds),
+            refreshTokenHash,
+            null,
+            null,
+            properties,
+            request.IpAddress,
+            location,
+            request.DeviceName
         );
 
         await _tokenRepository.AddAsync(refreshToken, cancellationToken);

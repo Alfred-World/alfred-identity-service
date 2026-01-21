@@ -12,7 +12,7 @@ public class ScopeConfiguration : IEntityTypeConfiguration<Scope>
         builder.ToTable("scopes");
 
         builder.HasKey(x => x.Id);
-        
+
         builder.HasIndex(x => x.Name).IsUnique().HasDatabaseName("IX_OpenIddictScopes_Name");
 
         builder.Property(x => x.Name).HasMaxLength(200);

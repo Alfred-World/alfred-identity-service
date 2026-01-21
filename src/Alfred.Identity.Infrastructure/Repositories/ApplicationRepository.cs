@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
@@ -31,7 +33,8 @@ public class ApplicationRepository : IApplicationRepository
         return await _context.Applications.ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Application>> FindAsync(Expression<Func<Application, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Application>> FindAsync(Expression<Func<Application, bool>> predicate,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Applications.Where(predicate).ToListAsync(cancellationToken);
     }

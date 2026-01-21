@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents an OAuth2 application, aligned with OpenIddictApplications schema
@@ -27,11 +27,13 @@ public class Application : BaseEntity
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Application() { }
+    private Application()
+    {
+    }
 
     public static Application Create(
         string clientId,
-        string displayName, 
+        string displayName,
         string? clientSecret = null,
         string? redirectUris = null,
         string? postLogoutRedirectUris = null,
@@ -54,7 +56,7 @@ public class Application : BaseEntity
             IsActive = true
         };
     }
-    
+
     public void UpdateRedirectUris(string redirectUris)
     {
         RedirectUris = redirectUris;

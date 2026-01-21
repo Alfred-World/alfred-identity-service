@@ -31,7 +31,8 @@ public class UserRepository : IUserRepository
         return await _context.Users.ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<User>> FindAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<User>> FindAsync(Expression<Func<User, bool>> predicate,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Users.Where(predicate).ToListAsync(cancellationToken);
     }
@@ -85,13 +86,13 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdentityAsync(string identity, CancellationToken cancellationToken = default)
     {
         var normalizedIdentity = identity.Trim();
-        
+
         // Try to find by email first (if it looks like an email)
         if (identity.Contains('@'))
         {
             return await GetByEmailAsync(normalizedIdentity, cancellationToken);
         }
-        
+
         // Otherwise try to find by username
         return await GetByUsernameAsync(normalizedIdentity, cancellationToken);
     }

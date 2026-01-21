@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -28,7 +29,7 @@ public class SigningKeyConfiguration : IEntityTypeConfiguration<SigningKey>
 
         builder.HasIndex(x => x.KeyId)
             .IsUnique();
-            
+
         builder.HasIndex(x => x.IsActive);
     }
 }

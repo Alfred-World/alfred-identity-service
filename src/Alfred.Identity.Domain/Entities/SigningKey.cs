@@ -1,6 +1,6 @@
-namespace Alfred.Identity.Domain.Entities;
-
 using Alfred.Identity.Domain.Common.Base;
+
+namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a cryptographic signing key used for JWT signing and verification.
@@ -48,13 +48,15 @@ public class SigningKey : BaseEntity
     /// </summary>
     public DateTime? ExpiresAt { get; private set; }
 
-    private SigningKey() { }
+    private SigningKey()
+    {
+    }
 
     public static SigningKey Create(
-        string keyId, 
-        string publicKey, 
-        string privateKey, 
-        string algorithm = "RS256", 
+        string keyId,
+        string publicKey,
+        string privateKey,
+        string algorithm = "RS256",
         bool isActive = true)
     {
         return new SigningKey
@@ -66,7 +68,7 @@ public class SigningKey : BaseEntity
             IsActive = isActive,
             CreatedAt = DateTime.UtcNow,
             // Example: Expire in 90 days
-            ExpiresAt = DateTime.UtcNow.AddDays(90) 
+            ExpiresAt = DateTime.UtcNow.AddDays(90)
         };
     }
 }
