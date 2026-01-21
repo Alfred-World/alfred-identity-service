@@ -32,81 +32,64 @@ public class ApplicationSeeder : BaseDataSeeder
     {
         LogInfo("Starting to seed applications...");
 
-        // Check if applications already exist
-        if (await _dbContext.Applications.AnyAsync(cancellationToken))
-        {
-            LogInfo("Applications already exist, skipping seed");
-            return;
-        }
-
         // Default client secret for development
         const string defaultClientSecret = "alfred-identity-client-secret-2026";
         var hashedSecret = _passwordHasher.HashPassword(defaultClientSecret);
 
         var applications = new[]
         {
-            // Identity Web Client - for SSO authentication UI
+            // Core Web Client - Next.js App (Confidential Client with NextAuth)
             Application.Create(
-                "alfred-identity-web",
-                "Alfred Identity Web",
-                hashedSecret,
-                "[\"http://localhost:7100/callback\",\"http://identity.test:7100/callback\",\"https://identity.alfred.com/callback\"]",
-                "[\"http://localhost:7100\",\"http://identity.test:7100\",\"https://identity.alfred.com\"]",
-                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\"]",
-                "confidential",
-                "web"
-            ),
-
-            // Core API Client - backend service
-            Application.Create(
-                "alfred-core-api",
-                "Alfred Core API",
-                hashedSecret,
-                "[\"http://localhost:5001/callback\",\"http://api.test:5001/callback\",\"https://api.alfred.com/callback\"]",
-                "[\"http://localhost:5001\",\"http://api.test:5001\",\"https://api.alfred.com\"]",
-                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"gt:client_credentials\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:api\"]",
-                "confidential",
-                "web"
-            ),
-
-            // Gateway Client - API Gateway
-            Application.Create(
-                "alfred-gateway",
-                "Alfred Gateway",
-                hashedSecret,
-                "[\"http://localhost:8080/callback\",\"http://gateway.test:8080/callback\",\"https://gateway.alfred.com/callback\"]",
-                "[\"http://localhost:8080\",\"http://gateway.test:8080\",\"https://gateway.alfred.com\"]",
-                "[\"ept:authorization\",\"ept:token\",\"ept:introspection\",\"gt:client_credentials\",\"scp:api\"]",
-                "confidential",
-                "web"
-            ),
-
-            // Core Web Client - SPA with PKCE (Public Client)
-            Application.Create(
-                "core_web",
-                "Alfred Core Web",
-                null, // Public client - NO secret required
-                "[\"https://core.test/callback\",\"http://core.test:7200/callback\",\"http://localhost:7200/callback\"]",
-                "[\"https://core.test\",\"http://core.test:7200\",\"http://localhost:7200\"]",
-                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
-                "public", // PUBLIC client for SPA - PKCE required
-                "web"
+                clientId: "core_web",
+                displayName: "Alfred Core Web",
+                clientSecret: hashedSecret, // Confidential client - Secret required for NextAuth
+                
+                // IMPORTANT: Added NextAuth Callback URL here
+                redirectUris: "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
+                
+                postLogoutRedirectUris: "[\"https://core.test\",\"http://core.test:7200\",\"http://localhost:7200\"]",
+                permissions: "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
+                clientType: "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
+                applicationType: "web"
             ),
 
             // SSO Web Client - SPA with PKCE (Public Client for profile/dashboard)
             Application.Create(
-                "sso_web",
-                "Alfred SSO Web",
-                null, // Public client - NO secret required
-                "[\"https://sso.test/callback\",\"http://sso.test:7100/callback\",\"http://localhost:7100/callback\"]",
-                "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
-                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
-                "public", // PUBLIC client for SPA - PKCE required
-                "web"
+                clientId: "sso_web",
+                displayName: "Alfred SSO Web",
+                clientSecret: null, // Public client - NO secret required
+                redirectUris: "[\"https://sso.test/callback\",\"http://sso.test:7100/callback\",\"http://localhost:7100/callback\"]",
+                postLogoutRedirectUris: "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
+                permissions: "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
+                clientType: "public", // PUBLIC client for SPA - PKCE required
+                applicationType: "web"
             )
         };
 
-        await _dbContext.Applications.AddRangeAsync(applications, cancellationToken);
+        foreach (var app in applications)
+        {
+            var existingApp = await _dbContext.Applications.FirstOrDefaultAsync(a => a.ClientId == app.ClientId, cancellationToken);
+            if (existingApp != null)
+            {
+                // Update existing app
+                existingApp.Update(
+                    app.DisplayName,
+                    app.RedirectUris,
+                    app.PostLogoutRedirectUris,
+                    app.Permissions,
+                    app.ClientType,
+                    app.ClientSecret
+                );
+                LogInfo($"Updated application: {app.ClientId}");
+            }
+            else
+            {
+                // Add new app
+                await _dbContext.Applications.AddAsync(app, cancellationToken);
+                LogInfo($"Added application: {app.ClientId}");
+            }
+        }
+        
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         LogInfo($"Seeded {applications.Length} applications successfully");

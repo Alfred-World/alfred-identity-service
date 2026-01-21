@@ -57,6 +57,26 @@ public class Application : BaseEntity
         };
     }
 
+    public void Update(
+        string? displayName,
+        string? redirectUris,
+        string? postLogoutRedirectUris,
+        string? permissions,
+        string? clientType,
+        string? clientSecret)
+    {
+        DisplayName = displayName;
+        RedirectUris = redirectUris;
+        PostLogoutRedirectUris = postLogoutRedirectUris;
+        Permissions = permissions;
+        ClientType = clientType;
+        if (clientSecret != null)
+        {
+            ClientSecret = clientSecret;
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdateRedirectUris(string redirectUris)
     {
         RedirectUris = redirectUris;

@@ -134,7 +134,8 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
             redirect_uri = request.RedirectUri,
             code_challenge = request.CodeChallenge,
             code_challenge_method = request.CodeChallengeMethod,
-            nonce = request.State, // Or State? Nonce is param. State is state.
+            // nonce should only be set if client sends a nonce parameter - NextAuth doesn't send one
+            nonce = (string?)null,
             scope = request.Scope
         });
 

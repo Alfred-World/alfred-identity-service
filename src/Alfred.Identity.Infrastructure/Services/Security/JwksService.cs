@@ -37,25 +37,28 @@ public class JwksService : IJwksService
             keys = new[] { newKey };
         }
 
-        var jwks = new JsonWebKeySet();
+        // Build clean JWK response without unsupported parameters (like "oth")
+        var jwkList = new List<object>();
         foreach (var key in keys)
         {
-            // Convert stored JSON/Parameters to RsaSecurityKey then to JsonWebKey
-            // Ideally we stored the JSON representation compatible with JWK.
-            // If SigningKey.PublicKey is the JWK JSON, we can just deserialize it.
-            // Let's assume PublicKey IS the JWK JSON.
-
-            // To be robust: Let's reconstruct or parse.
-            // If we assume PublicKey is `RSAParameters` serialized or JWK JSON.
-            // Let's try to parse as JWK.
-
             try
             {
-                var jwk = new JsonWebKey(key.PublicKey);
-                jwk.Kid = key.KeyId;
-                jwk.Use = "sig";
-                jwk.Alg = key.Algorithm;
-                jwks.Keys.Add(jwk);
+                // Parse the stored JWK JSON
+                var storedJwk = JsonSerializer.Deserialize<Dictionary<string, object>>(key.PublicKey);
+                if (storedJwk != null)
+                {
+                    // Create a clean JWK with only standard public key parameters
+                    var cleanJwk = new Dictionary<string, object>
+                    {
+                        ["kty"] = storedJwk.TryGetValue("kty", out var kty) ? kty : "RSA",
+                        ["kid"] = key.KeyId,
+                        ["use"] = "sig",
+                        ["alg"] = key.Algorithm,
+                        ["n"] = storedJwk.TryGetValue("n", out var n) ? n : storedJwk.TryGetValue("N", out var N) ? N : "",
+                        ["e"] = storedJwk.TryGetValue("e", out var e) ? e : storedJwk.TryGetValue("E", out var E) ? E : ""
+                    };
+                    jwkList.Add(cleanJwk);
+                }
             }
             catch
             {
@@ -63,7 +66,7 @@ public class JwksService : IJwksService
             }
         }
 
-        return jwks;
+        return new { keys = jwkList };
     }
 
     private SigningKey GenerateNewRsaKey()
