@@ -53,15 +53,18 @@ public class ApplicationSeeder : BaseDataSeeder
                 applicationType: "web"
             ),
 
-            // SSO Web Client - SPA with PKCE (Public Client for profile/dashboard)
+            // SSO Web Client - Next.js App (Confidential Client with NextAuth for SSO)
             Application.Create(
                 clientId: "sso_web",
                 displayName: "Alfred SSO Web",
-                clientSecret: null, // Public client - NO secret required
-                redirectUris: "[\"https://sso.test/callback\",\"http://sso.test:7100/callback\",\"http://localhost:7100/callback\"]",
+                clientSecret: hashedSecret, // Confidential client - Secret required for NextAuth OAuth
+                
+                // IMPORTANT: Added NextAuth Callback URL for SSO OAuth flow
+                redirectUris: "[\"https://sso.test/callback\",\"https://sso.test/api/auth/callback/sso-oauth\",\"http://sso.test:7100/callback\",\"http://sso.test:7100/api/auth/callback/sso-oauth\",\"http://localhost:7100/callback\",\"http://localhost:7100/api/auth/callback/sso-oauth\"]",
+                
                 postLogoutRedirectUris: "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
                 permissions: "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
-                clientType: "public", // PUBLIC client for SPA - PKCE required
+                clientType: "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 applicationType: "web"
             )
         };
