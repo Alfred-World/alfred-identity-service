@@ -2,6 +2,7 @@ using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Domain.Common;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -75,7 +76,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             : null;
 
         var refreshToken = Token.Create(
-            "refresh_token",
+            OAuthConstants.TokenTypes.RefreshToken,
             null,
             user.Id.ToString(),
             user.Id,

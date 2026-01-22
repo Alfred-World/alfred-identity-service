@@ -1,3 +1,4 @@
+using Alfred.Identity.Domain.Common;
 using Alfred.Identity.Domain.Common.Base;
 
 namespace Alfred.Identity.Domain.Entities;
@@ -16,7 +17,7 @@ public class Token : BaseEntity
 
     public string Type { get; private set; } = null!; // access_token, refresh_token, authorization_code
     public string? ReferenceId { get; private set; } // The actual token string/hash/id used for lookup
-    public string? Status { get; private set; } = "Valid"; // Valid, Revoked, Redeemed, Inactive
+    public string? Status { get; private set; } = OAuthConstants.TokenStatus.Valid;
     public string? Payload { get; private set; } // Protected payload (JSON)
     public string? Properties { get; private set; } // JSON properties (e.g. device info)
 
@@ -58,7 +59,7 @@ public class Token : BaseEntity
             Type = type,
             ApplicationId = applicationId,
             Subject = subject,
-            UserId = userId, // Optional if we link to User table
+            UserId = userId,
             ExpirationDate = expirationDate,
             ReferenceId = referenceId,
             AuthorizationId = authorizationId,
@@ -69,18 +70,19 @@ public class Token : BaseEntity
             Device = device,
             CreationDate = DateTime.UtcNow,
             ConcurrencyToken = Guid.NewGuid().ToString(),
-            Status = "Valid"
+            Status = OAuthConstants.TokenStatus.Valid
         };
     }
 
     public void Revoke()
     {
-        Status = "Revoked";
+        Status = OAuthConstants.TokenStatus.Revoked;
     }
 
     public void Redeem()
     {
         RedemptionDate = DateTime.UtcNow;
-        Status = "Redeemed";
+        Status = OAuthConstants.TokenStatus.Redeemed;
     }
 }
+

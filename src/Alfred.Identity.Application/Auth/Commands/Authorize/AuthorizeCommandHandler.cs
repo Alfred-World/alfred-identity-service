@@ -3,6 +3,7 @@ using System.Text.Json;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Domain.Common;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -141,7 +142,7 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
 
         // Create Token entity for the code
         var codeToken = Token.Create(
-            "authorization_code",
+            OAuthConstants.TokenTypes.AuthorizationCode,
             client.Id,
             request.UserId.Value.ToString(),
             request.UserId.Value,

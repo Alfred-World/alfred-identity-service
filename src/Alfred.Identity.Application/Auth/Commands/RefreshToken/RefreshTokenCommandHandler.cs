@@ -1,6 +1,7 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Domain.Common;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -43,12 +44,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return new RefreshTokenResult(false, Error: "Invalid refresh token");
         }
 
-        // Check if token is already used (potential token reuse attack) - Token entity uses Status="Redeemed" or similar logic?
-        // Wait, Token entity has Status. In previous RefreshToken it was IsUsed.
-        // Let's assume Status == "Redeemed" or "Used" ?
-        // I set Status = "Valid" in Create. MarkAsUsed() logic is needed in Token or check Status.
-        // In Token.cs I added Redeem() which sets Status = "Redeemed".
-        if (storedToken.Status == "Redeemed" || storedToken.RedemptionDate.HasValue)
+        // Check if token is already used (potential token reuse attack)
+        if (storedToken.Status == OAuthConstants.TokenStatus.Redeemed || storedToken.RedemptionDate.HasValue)
         {
             // Revoke all tokens for this user (security measure)
             if (storedToken.UserId.HasValue)
@@ -61,7 +58,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
 
         // Check if token is revoked or expired
-        if (storedToken.Status != "Valid" ||
+        if (storedToken.Status != OAuthConstants.TokenStatus.Valid ||
             (storedToken.ExpirationDate.HasValue && DateTime.UtcNow > storedToken.ExpirationDate.Value))
         {
             return new RefreshTokenResult(false, Error: "Refresh token is invalid or expired");
@@ -103,7 +100,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             : null;
 
         var newRefreshToken = Token.Create(
-            "refresh_token",
+            OAuthConstants.TokenTypes.RefreshToken,
             storedToken.ApplicationId,
             user.Id.ToString(),
             user.Id,

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Domain.Common;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -36,17 +37,17 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
     public async Task<ExchangeCodeResult> Handle(ExchangeCodeCommand request, CancellationToken cancellationToken)
     {
-        if (request.GrantType == "authorization_code")
+        if (request.GrantType == OAuthConstants.GrantTypes.AuthorizationCode)
         {
             return await HandleAuthorizationCodeGrant(request, cancellationToken);
         }
 
-        if (request.GrantType == "refresh_token")
+        if (request.GrantType == OAuthConstants.GrantTypes.RefreshToken)
         {
             return await HandleRefreshTokenGrant(request, cancellationToken);
         }
 
-        return Error("unsupported_grant_type", "Grant type not supported");
+        return Error(OAuthConstants.Errors.UnsupportedGrantType, "Grant type not supported");
     }
 
     private async Task<ExchangeCodeResult> HandleAuthorizationCodeGrant(ExchangeCodeCommand request,
@@ -74,9 +75,9 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         var codeHash = _authCodeService.HashAuthorizationCode(request.Code);
         var authCodeToken = await _tokenRepository.GetByReferenceIdAsync(codeHash, cancellationToken);
 
-        if (authCodeToken == null || authCodeToken.Type != "authorization_code" || authCodeToken.Status != "Valid")
+        if (authCodeToken == null || authCodeToken.Type != OAuthConstants.TokenTypes.AuthorizationCode || authCodeToken.Status != OAuthConstants.TokenStatus.Valid)
         {
-            return Error("invalid_grant", "Authorization code is invalid or expired");
+            return Error(OAuthConstants.Errors.InvalidGrant, "Authorization code is invalid or expired");
         }
 
         // 4. Validate Expiration
@@ -137,7 +138,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
         // 8. Store Refresh Token
         var refreshToken = Token.Create(
-            "refresh_token",
+            OAuthConstants.TokenTypes.RefreshToken,
             client.Id,
             userId.ToString(),
             userId,
@@ -188,17 +189,17 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         var refreshTokenHash = _jwtTokenService.HashRefreshToken(request.RefreshToken);
         var tokenEntity = await _tokenRepository.GetByReferenceIdAsync(refreshTokenHash, cancellationToken);
 
-        if (tokenEntity == null || tokenEntity.Type != "refresh_token")
+        if (tokenEntity == null || tokenEntity.Type != OAuthConstants.TokenTypes.RefreshToken)
         {
-            return Error("invalid_grant", "Invalid refresh token");
+            return Error(OAuthConstants.Errors.InvalidGrant, "Invalid refresh token");
         }
 
         // 4. Validate Token Usage
-        if (tokenEntity.Status != "Valid")
+        if (tokenEntity.Status != OAuthConstants.TokenStatus.Valid)
         {
             // If reusing revoked token -> security risk -> revoke all?
             // For now, simplify to error.
-            return Error("invalid_grant", "Refresh token has been reused or revoked");
+            return Error(OAuthConstants.Errors.InvalidGrant, "Refresh token has been reused or revoked");
         }
 
         if (tokenEntity.ExpirationDate < DateTime.UtcNow)
@@ -228,10 +229,10 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
         // ID Token (optional for refresh flow, but good for updating claims)
         var newIdToken =
-            await _jwtTokenService.GenerateIdTokenAsync(user.Id, user.Email, user.FullName, client.Id);
+            await _jwtTokenService.GenerateIdTokenAsync(user.Id, user.Email, user.FullName, client.ClientId);
 
         var newRefreshTokenEntity = Token.Create(
-            "refresh_token",
+            OAuthConstants.TokenTypes.RefreshToken,
             client.Id,
             userId.ToString(),
             userId,
