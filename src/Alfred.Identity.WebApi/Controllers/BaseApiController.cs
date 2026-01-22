@@ -18,12 +18,15 @@ public abstract class BaseApiController : ControllerBase
     /// <exception cref="UnauthorizedAccessException">If user ID is not found in token</exception>
     protected long GetCurrentUserId()
     {
-        // TODO: Uncomment and implement when authentication is set up
-        // var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        // if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-        //     throw new UnauthorizedAccessException("User ID not found in token");
-        // return userId;
-        return 1;
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID not found in token");
+        }
+        
+        return userId;
     }
 
     /// <summary>
@@ -32,10 +35,10 @@ public abstract class BaseApiController : ControllerBase
     /// <returns>User ID if found and valid, null otherwise</returns>
     protected long? TryGetCurrentUserId()
     {
-        // TODO: Uncomment and implement when authentication is set up
-        // var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        // return long.TryParse(userIdClaim, out var userId) ? userId : null;
-        return null;
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+        
+        return long.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 
     /// <summary>

@@ -19,7 +19,7 @@ public sealed class AuthTokenService : IAuthTokenService
         _cacheProvider = cacheProvider;
     }
 
-    public string GenerateToken(AuthTokenData data)
+    public async Task<string> GenerateTokenAsync(AuthTokenData data)
     {
         var bytes = new byte[32];
         using var rng = RandomNumberGenerator.Create();
@@ -38,12 +38,12 @@ public sealed class AuthTokenService : IAuthTokenService
 
         // Serialize and store in cache
         var json = JsonSerializer.Serialize(data);
-        _cacheProvider.SetAsync(CacheKeyPrefix + token, json, ttl).AsTask().Wait();
+        await _cacheProvider.SetAsync(CacheKeyPrefix + token, json, ttl);
 
         return token;
     }
 
-    public AuthTokenData? ValidateAndConsumeToken(string token)
+    public async Task<AuthTokenData?> ValidateAndConsumeTokenAsync(string token)
     {
         if (string.IsNullOrEmpty(token))
         {
@@ -53,14 +53,14 @@ public sealed class AuthTokenService : IAuthTokenService
         var cacheKey = CacheKeyPrefix + token;
 
         // Get and delete atomically (consume)
-        var json = _cacheProvider.GetAsync(cacheKey).AsTask().Result;
+        var json = await _cacheProvider.GetAsync(cacheKey);
         if (string.IsNullOrEmpty(json))
         {
             return null;
         }
 
         // Delete the token (one-time use)
-        _cacheProvider.DeleteAsync(cacheKey).AsTask().Wait();
+        await _cacheProvider.DeleteAsync(cacheKey);
 
         try
         {

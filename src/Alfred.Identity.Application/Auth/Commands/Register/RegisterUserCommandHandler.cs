@@ -30,10 +30,11 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             return new RegisterUserResult(false, Error: "Email already registered");
         }
 
-        // Validate password (basic validation)
-        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        // Validate password complexity
+        var passwordError = ValidatePasswordComplexity(request.Password);
+        if (passwordError != null)
         {
-            return new RegisterUserResult(false, Error: "Password must be at least 8 characters");
+            return new RegisterUserResult(false, Error: passwordError);
         }
 
         // Hash password
@@ -42,13 +43,48 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         // Create user
         var user = User.Create(request.Email, passwordHash, request.FullName);
 
-        // For now, auto-activate user (skip email verification)
-        user.VerifyEmail();
-
         // Save user
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
         return new RegisterUserResult(true, user.Id);
+    }
+
+    /// <summary>
+    /// Validates password complexity requirements
+    /// </summary>
+    private static string? ValidatePasswordComplexity(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return "Password is required";
+        }
+
+        if (password.Length < 8)
+        {
+            return "Password must be at least 8 characters";
+        }
+
+        if (!password.Any(char.IsUpper))
+        {
+            return "Password must contain at least one uppercase letter";
+        }
+
+        if (!password.Any(char.IsLower))
+        {
+            return "Password must contain at least one lowercase letter";
+        }
+
+        if (!password.Any(char.IsDigit))
+        {
+            return "Password must contain at least one digit";
+        }
+
+        if (!password.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            return "Password must contain at least one special character";
+        }
+
+        return null;
     }
 }

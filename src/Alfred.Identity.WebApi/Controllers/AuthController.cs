@@ -87,7 +87,7 @@ public class AuthController : BaseApiController
 
         // Generate a one-time auth token for cookie exchange
         // This token will be exchanged for a cookie via browser navigation (first-party context)
-        var authToken = _authTokenService.GenerateToken(new AuthTokenData
+        var authToken = await _authTokenService.GenerateTokenAsync(new AuthTokenData
         {
             UserId = loginData.User.Id,
             Email = loginData.User.Email,
@@ -122,7 +122,7 @@ public class AuthController : BaseApiController
     public async Task<IActionResult> ExchangeToken([FromQuery] string token, [FromQuery] string? returnUrl)
     {
         // Validate and consume the token
-        var tokenData = _authTokenService.ValidateAndConsumeToken(token);
+        var tokenData = await _authTokenService.ValidateAndConsumeTokenAsync(token);
         if (tokenData == null)
         {
             return BadRequest(new
