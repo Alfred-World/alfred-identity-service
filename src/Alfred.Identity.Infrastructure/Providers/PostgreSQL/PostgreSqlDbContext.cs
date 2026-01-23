@@ -33,6 +33,8 @@ public class PostgreSqlDbContext : DbContext, IDbContext
     public DbSet<SigningKey> SigningKeys { get; set; } = null!; // JWKS keys
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<UserRole> UserRoles { get; set; } = null!;
+    public DbSet<Permission> Permissions { get; set; } = null!;
+    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

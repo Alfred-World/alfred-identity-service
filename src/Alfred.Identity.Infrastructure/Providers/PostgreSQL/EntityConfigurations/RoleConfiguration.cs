@@ -17,5 +17,19 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         builder.Property(x => x.Name).HasMaxLength(256);
         builder.Property(x => x.NormalizedName).HasMaxLength(256);
+
+        builder.Property(x => x.IsImmutable)
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.IsSystem)
+            .HasDefaultValue(false);
+
+        // Navigation to RolePermissions
+        builder.HasMany(x => x.RolePermissions)
+            .WithOne(rp => rp.Role)
+            .HasForeignKey(rp => rp.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+

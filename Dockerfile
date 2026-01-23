@@ -4,9 +4,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy solution file
-COPY ["Alfred.Identity.sln", "./"]
-
 # Copy csproj files and restore dependencies (tận dụng Docker layer caching)
 COPY ["src/Alfred.Identity.Domain/Alfred.Identity.Domain.csproj", "src/Alfred.Identity.Domain/"]
 COPY ["src/Alfred.Identity.Application/Alfred.Identity.Application.csproj", "src/Alfred.Identity.Application/"]
@@ -14,10 +11,11 @@ COPY ["src/Alfred.Identity.Infrastructure/Alfred.Identity.Infrastructure.csproj"
 COPY ["src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj", "src/Alfred.Identity.WebApi/"]
 COPY ["src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj", "src/Alfred.Identity.Cli/"]
 
-# Restore dependencies
-RUN dotnet restore "Alfred.Identity.sln"
+# Restore dependencies for each project (skip test projects)
+RUN dotnet restore "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj"
+RUN dotnet restore "src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj"
 
-# Copy toàn bộ source code
+# Copy toàn bộ source code (excluding tests via .dockerignore)
 COPY . .
 
 # Build ứng dụng
@@ -64,11 +62,11 @@ RUN chown -R alfred:alfred /app
 USER alfred
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8100
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8100/health || exit 1
 
 # Entry point
 ENTRYPOINT ["dotnet", "Alfred.Identity.WebApi.dll"]

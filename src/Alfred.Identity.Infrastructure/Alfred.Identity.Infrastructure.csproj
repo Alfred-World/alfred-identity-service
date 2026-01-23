@@ -16,6 +16,7 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0"/>
         <PackageReference Include="System.Threading.RateLimiting" Version="10.0.1"/>
+        <PackageReference Include="StackExchange.Redis" Version="2.8.16"/>
     </ItemGroup>
 
     <ItemGroup>

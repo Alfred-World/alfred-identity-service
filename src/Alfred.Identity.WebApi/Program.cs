@@ -189,14 +189,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "HSE Management API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity Service v1");
         c.RoutePrefix = "swagger";
     });
-}
-else
-{
-    // Always enable swagger endpoint for gateway access (even in production for documentation)
-    app.UseSwagger();
 }
 
 // Add global exception handler (must be early in pipeline)
