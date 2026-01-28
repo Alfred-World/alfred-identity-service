@@ -223,7 +223,7 @@ public class ConnectController : ControllerBase
                 return BadRequest(new
                 {
                     error = "invalid_request",
-                    error_description = "Invalid post_logout_redirect_uri"
+                    error_description = $"Invalid post_logout_redirect_uri: {post_logout_redirect_uri} for client_id: {client_id}"
                 });
             }
 
@@ -248,6 +248,17 @@ public class ConnectController : ControllerBase
     /// </summary>
     private async Task<bool> ValidatePostLogoutRedirectUriAsync(string? clientId, string postLogoutRedirectUri)
     {
+        // Strip query params from the URI for matching
+        // This allows /login?logout=true to match the registered /login
+        var uriWithoutQuery = postLogoutRedirectUri;
+        var queryIndex = postLogoutRedirectUri.IndexOf('?');
+        if (queryIndex > 0)
+        {
+            uriWithoutQuery = postLogoutRedirectUri.Substring(0, queryIndex);
+        }
+
+        Console.WriteLine($"[Logout] URI without query: {uriWithoutQuery}");
+
         // If client_id provided, validate against that specific client
         if (!string.IsNullOrEmpty(clientId))
         {
@@ -258,8 +269,11 @@ public class ConnectController : ControllerBase
             }
 
             var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
+            Console.WriteLine($"[Logout] Allowed URIs for {clientId}: {string.Join(", ", allowedUris)}");
+
             return allowedUris.Any(uri =>
-                string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase));
+                string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(uri, uriWithoutQuery, StringComparison.OrdinalIgnoreCase));
         }
 
         // If no client_id, check all active applications
@@ -268,7 +282,8 @@ public class ConnectController : ControllerBase
         {
             var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
             if (allowedUris.Any(uri =>
-                    string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase)))
+                    string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(uri, uriWithoutQuery, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }

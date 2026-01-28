@@ -46,7 +46,7 @@ public class ApplicationSeeder : BaseDataSeeder
 
                 // IMPORTANT: Added NextAuth Callback URL here
                 "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
-                "[\"https://core.test\",\"http://core.test:7200\",\"http://localhost:7200\"]",
+                "[\"https://core.test\",\"https://core.test/login\",\"http://core.test:7200\",\"http://core.test:7200/login\",\"http://localhost:7200\",\"http://localhost:7200/login\"]",
                 "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
                 "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 "web"
@@ -60,7 +60,7 @@ public class ApplicationSeeder : BaseDataSeeder
 
                 // IMPORTANT: Added NextAuth Callback URL for SSO OAuth flow
                 "[\"https://sso.test/callback\",\"https://sso.test/api/auth/callback/sso-oauth\",\"http://sso.test:7100/callback\",\"http://sso.test:7100/api/auth/callback/sso-oauth\",\"http://localhost:7100/callback\",\"http://localhost:7100/api/auth/callback/sso-oauth\"]",
-                "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
+                "[\"https://sso.test\",\"https://sso.test/login\",\"http://sso.test:7100\",\"http://sso.test:7100/login\",\"http://localhost:7100\",\"http://localhost:7100/login\"]",
                 "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
                 "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 "web"

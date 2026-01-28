@@ -89,7 +89,7 @@ public class AuthController : BaseApiController
         var gatewayUrlConfig = _configuration["Urls:Gateway"] ?? "https://gateway.test";
         var forwardedHost = HttpContext.Request.Headers["X-Forwarded-Host"].FirstOrDefault();
         var scheme = HttpContext.Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
-        
+
         // Build base URL - prefer X-Forwarded-Host, fallback to config
         string baseUrl;
         if (!string.IsNullOrEmpty(forwardedHost))
@@ -240,7 +240,7 @@ public class AuthController : BaseApiController
         if (User.Identity?.IsAuthenticated == true)
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
+
             if (!string.IsNullOrEmpty(userIdStr) && long.TryParse(userIdStr, out var userId))
             {
                 // Generate one-time token for the app to exchange
