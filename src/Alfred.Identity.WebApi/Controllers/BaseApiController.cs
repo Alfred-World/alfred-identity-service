@@ -1,5 +1,9 @@
+using System.Security.Claims;
+
 using Alfred.Identity.Application.Querying;
 using Alfred.Identity.WebApi.Contracts.Common;
+
+using Asp.Versioning;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +13,8 @@ namespace Alfred.Identity.WebApi.Controllers;
 /// Base API controller with common functionality for all controllers
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")] // Fallback, but specific controllers should override
 public abstract class BaseApiController : ControllerBase
 {
     /// <summary>
@@ -18,14 +24,14 @@ public abstract class BaseApiController : ControllerBase
     /// <exception cref="UnauthorizedAccessException">If user ID is not found in token</exception>
     protected long GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? User.FindFirst("sub")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
             throw new UnauthorizedAccessException("User ID not found in token");
         }
-        
+
         return userId;
     }
 
@@ -35,9 +41,9 @@ public abstract class BaseApiController : ControllerBase
     /// <returns>User ID if found and valid, null otherwise</returns>
     protected long? TryGetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? User.FindFirst("sub")?.Value;
-        
+
         return long.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 

@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 using TokenValidationResult = Alfred.Identity.Domain.Abstractions.Security.TokenValidationResult;
+
 // For simple deserialization if needed, though we use Jwks logic manually?
 
 namespace Alfred.Identity.Infrastructure.Services.Security;
@@ -25,7 +26,9 @@ public class JwtTokenService : IJwtTokenService
     private readonly ISigningKeyRepository _keyRepository;
     private readonly string _issuer;
     private readonly string _audience;
-    private readonly int _accessTokenLifetimeMinutes;
+
+    public int AccessTokenLifetimeSeconds { get; }
+    public int RefreshTokenLifetimeSeconds { get; }
 
     public JwtTokenService(IConfiguration configuration, ISigningKeyRepository keyRepository)
     {
@@ -33,7 +36,10 @@ public class JwtTokenService : IJwtTokenService
         _keyRepository = keyRepository;
         _issuer = configuration["Jwt:Issuer"] ?? "alfred-identity";
         _audience = configuration["Jwt:Audience"] ?? "alfred-ecosystem";
-        _accessTokenLifetimeMinutes = int.Parse(configuration["Jwt:AccessTokenLifetimeMinutes"] ?? "15");
+
+        // Read lifetimes from config with defaults (15 min for AT, 7 days for RT)
+        AccessTokenLifetimeSeconds = int.Parse(configuration["Jwt:AccessTokenLifetimeSeconds"] ?? "900");
+        RefreshTokenLifetimeSeconds = int.Parse(configuration["Jwt:RefreshTokenLifetimeSeconds"] ?? "604800");
     }
 
     /// <inheritdoc />
@@ -76,7 +82,7 @@ public class JwtTokenService : IJwtTokenService
             _audience,
             claims,
             DateTime.UtcNow,
-            DateTime.UtcNow.AddMinutes(_accessTokenLifetimeMinutes),
+            DateTime.UtcNow.AddSeconds(AccessTokenLifetimeSeconds),
             signingCredentials
         );
 

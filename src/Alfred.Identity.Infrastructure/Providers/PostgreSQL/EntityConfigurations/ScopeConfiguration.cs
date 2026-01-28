@@ -17,5 +17,10 @@ public class ScopeConfiguration : IEntityTypeConfiguration<Scope>
 
         builder.Property(x => x.Name).HasMaxLength(200);
         builder.Property(x => x.ConcurrencyToken).HasMaxLength(50);
+
+        builder.Property(x => x.DisplayNames).HasColumnType("jsonb");
+        builder.Property(x => x.Descriptions).HasColumnType("jsonb");
+        builder.Property(x => x.Resources).HasColumnType("jsonb");
+        builder.Property(x => x.Properties).HasColumnType("jsonb");
     }
 }

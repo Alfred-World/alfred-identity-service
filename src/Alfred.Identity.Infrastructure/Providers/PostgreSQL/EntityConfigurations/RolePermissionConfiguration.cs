@@ -26,4 +26,3 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
-

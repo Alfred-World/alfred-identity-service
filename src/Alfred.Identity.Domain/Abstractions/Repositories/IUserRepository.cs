@@ -23,6 +23,11 @@ public interface IUserRepository : IRepository<User>
     Task<User?> GetByIdentityAsync(string identity, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get user by ID including roles
+    /// </summary>
+    Task<User?> GetByIdWithRolesAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Check if email exists
     /// </summary>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);

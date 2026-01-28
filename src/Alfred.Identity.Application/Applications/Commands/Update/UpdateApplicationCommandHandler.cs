@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Applications.Shared;
+using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
@@ -40,6 +40,6 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
         _applicationRepository.Update(application);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<ApplicationDto>.Success(application.ToDto());
+        return Result<ApplicationDto>.Success(ApplicationDto.FromEntity(application));
     }
 }

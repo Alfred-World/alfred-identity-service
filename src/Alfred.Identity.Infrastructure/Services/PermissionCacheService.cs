@@ -27,7 +27,8 @@ public class PermissionCacheService : IPermissionCacheService
         ILogger<PermissionCacheService> logger)
     {
         _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
-        _rolePermissionRepository = rolePermissionRepository ?? throw new ArgumentNullException(nameof(rolePermissionRepository));
+        _rolePermissionRepository = rolePermissionRepository ??
+                                    throw new ArgumentNullException(nameof(rolePermissionRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -36,7 +37,8 @@ public class PermissionCacheService : IPermissionCacheService
         try
         {
             var normalizedRoleName = roleName.ToUpperInvariant();
-            var permissions = await _rolePermissionRepository.GetPermissionsByRoleNameAsync(roleName, cancellationToken);
+            var permissions =
+                await _rolePermissionRepository.GetPermissionsByRoleNameAsync(roleName, cancellationToken);
             var permissionCodes = permissions.Select(p => p.Code).ToList();
 
             var cacheKey = $"{CacheKeyPrefix}{normalizedRoleName}";
@@ -60,9 +62,12 @@ public class PermissionCacheService : IPermissionCacheService
         try
         {
             // Get all unique roles from role_permissions
-            var ownerPermissions = await _rolePermissionRepository.GetPermissionsByRoleNameAsync("Owner", cancellationToken);
-            var adminPermissions = await _rolePermissionRepository.GetPermissionsByRoleNameAsync("Admin", cancellationToken);
-            var userPermissions = await _rolePermissionRepository.GetPermissionsByRoleNameAsync("User", cancellationToken);
+            var ownerPermissions =
+                await _rolePermissionRepository.GetPermissionsByRoleNameAsync("Owner", cancellationToken);
+            var adminPermissions =
+                await _rolePermissionRepository.GetPermissionsByRoleNameAsync("Admin", cancellationToken);
+            var userPermissions =
+                await _rolePermissionRepository.GetPermissionsByRoleNameAsync("User", cancellationToken);
 
             // Sync each role
             await SyncPermissionsToCache("OWNER", ownerPermissions.Select(p => p.Code).ToList(), cancellationToken);
@@ -87,7 +92,8 @@ public class PermissionCacheService : IPermissionCacheService
         _logger.LogInformation("Invalidated cache for role {RoleName}", roleName);
     }
 
-    public async Task<IReadOnlyList<string>> GetRolePermissionsAsync(string roleName, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> GetRolePermissionsAsync(string roleName,
+        CancellationToken cancellationToken = default)
     {
         var normalizedRoleName = roleName.ToUpperInvariant();
         var cacheKey = $"{CacheKeyPrefix}{normalizedRoleName}";
@@ -98,7 +104,7 @@ public class PermissionCacheService : IPermissionCacheService
             // Cache miss - try to sync and return
             _logger.LogDebug("Cache miss for role {RoleName}, syncing from DB", roleName);
             await SyncRolePermissionsAsync(roleName, cancellationToken);
-            
+
             json = await _cacheProvider.GetAsync(cacheKey, cancellationToken);
             if (string.IsNullOrEmpty(json))
             {
@@ -117,16 +123,18 @@ public class PermissionCacheService : IPermissionCacheService
         }
     }
 
-    public async Task<bool> HasPermissionAsync(string roleName, string permissionCode, CancellationToken cancellationToken = default)
+    public async Task<bool> HasPermissionAsync(string roleName, string permissionCode,
+        CancellationToken cancellationToken = default)
     {
         var permissions = await GetRolePermissionsAsync(roleName, cancellationToken);
         var normalizedCode = permissionCode.ToLowerInvariant();
-        
+
         // Check for exact match or wildcard (Owner has "*" = all permissions)
         return permissions.Contains(normalizedCode) || permissions.Contains("*");
     }
 
-    private async Task SyncPermissionsToCache(string normalizedRoleName, List<string> permissionCodes, CancellationToken cancellationToken)
+    private async Task SyncPermissionsToCache(string normalizedRoleName, List<string> permissionCodes,
+        CancellationToken cancellationToken)
     {
         var cacheKey = $"{CacheKeyPrefix}{normalizedRoleName}";
         var json = JsonSerializer.Serialize(permissionCodes);

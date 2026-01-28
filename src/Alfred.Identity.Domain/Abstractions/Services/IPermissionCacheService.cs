@@ -32,5 +32,6 @@ public interface IPermissionCacheService
     /// <summary>
     /// Check if a role has a specific permission (from cache).
     /// </summary>
-    Task<bool> HasPermissionAsync(string roleName, string permissionCode, CancellationToken cancellationToken = default);
+    Task<bool> HasPermissionAsync(string roleName, string permissionCode,
+        CancellationToken cancellationToken = default);
 }

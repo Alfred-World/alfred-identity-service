@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Applications.Shared;
+using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common;
 
 using MediatR;

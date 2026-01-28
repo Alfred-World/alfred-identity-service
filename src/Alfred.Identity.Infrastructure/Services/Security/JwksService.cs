@@ -7,6 +7,7 @@ using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 
 using Microsoft.IdentityModel.Tokens;
+
 // Need System.IdentityModel.Tokens.Jwt or Microsoft.IdentityModel.Tokens
 
 namespace Alfred.Identity.Infrastructure.Services.Security;
@@ -54,8 +55,10 @@ public class JwksService : IJwksService
                         ["kid"] = key.KeyId,
                         ["use"] = "sig",
                         ["alg"] = key.Algorithm,
-                        ["n"] = storedJwk.TryGetValue("n", out var n) ? n : storedJwk.TryGetValue("N", out var N) ? N : "",
-                        ["e"] = storedJwk.TryGetValue("e", out var e) ? e : storedJwk.TryGetValue("E", out var E) ? E : ""
+                        ["n"] = storedJwk.TryGetValue("n", out var n) ? n :
+                            storedJwk.TryGetValue("N", out var N) ? N : "",
+                        ["e"] = storedJwk.TryGetValue("e", out var e) ? e :
+                            storedJwk.TryGetValue("E", out var E) ? E : ""
                     };
                     jwkList.Add(cleanJwk);
                 }
@@ -67,6 +70,12 @@ public class JwksService : IJwksService
         }
 
         return new { keys = jwkList };
+    }
+
+
+    public SigningKey GenerateSigningKey()
+    {
+        return GenerateNewRsaKey();
     }
 
     private SigningKey GenerateNewRsaKey()

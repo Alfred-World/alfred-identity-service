@@ -31,5 +31,3 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
-
-

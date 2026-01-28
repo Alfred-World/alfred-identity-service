@@ -1,8 +1,7 @@
-using System.Linq.Expressions;
-
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
+using Alfred.Identity.Infrastructure.Repositories.Base;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -11,75 +10,30 @@ namespace Alfred.Identity.Infrastructure.Repositories;
 /// <summary>
 /// User repository implementation - inherits base repository functionality
 /// </summary>
-public class UserRepository : IUserRepository
+public class UserRepository : Repository<User>, IUserRepository
 {
-    private readonly PostgreSqlDbContext _context;
-
-    public UserRepository(PostgreSqlDbContext context)
+    public UserRepository(IDbContext context) : base(context)
     {
-        _context = context;
-    }
-
-    // Base IRepository<User> implementation
-    public async Task<User?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
-    {
-        return await _context.Users.FindAsync([id], cancellationToken);
-    }
-
-    public async Task<IEnumerable<User>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        return await _context.Users.ToListAsync(cancellationToken);
-    }
-
-    public async Task<IEnumerable<User>> FindAsync(Expression<Func<User, bool>> predicate,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.Users.Where(predicate).ToListAsync(cancellationToken);
-    }
-
-    public async Task AddAsync(User entity, CancellationToken cancellationToken = default)
-    {
-        await _context.Users.AddAsync(entity, cancellationToken);
-    }
-
-    public void Update(User entity)
-    {
-        _context.Users.Update(entity);
-    }
-
-    public void Delete(User entity)
-    {
-        _context.Users.Remove(entity);
-    }
-
-    public async Task<bool> ExistsAsync(long id, CancellationToken cancellationToken = default)
-    {
-        return await _context.Users.AnyAsync(u => u.Id == id, cancellationToken);
-    }
-
-    public IQueryable<User> GetQueryable()
-    {
-        return _context.Users.AsQueryable();
     }
 
     // Custom methods for IUserRepository
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.ToLowerInvariant().Trim();
-        return await _context.Users
+        return await DbSet
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
     }
 
     public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.ToLowerInvariant().Trim();
-        return await _context.Users.AnyAsync(u => u.Email == normalizedEmail, cancellationToken);
+        return await DbSet.AnyAsync(u => u.Email == normalizedEmail, cancellationToken);
     }
 
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         var normalizedUsername = username.ToUpperInvariant().Trim();
-        return await _context.Users
+        return await DbSet
             .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUsername, cancellationToken);
     }
 
@@ -97,8 +51,11 @@ public class UserRepository : IUserRepository
         return await GetByUsernameAsync(normalizedIdentity, cancellationToken);
     }
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<User?> GetByIdWithRolesAsync(long id, CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        return await DbSet
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 }

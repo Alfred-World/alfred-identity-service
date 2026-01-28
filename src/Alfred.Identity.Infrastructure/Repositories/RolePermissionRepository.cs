@@ -1,6 +1,6 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -11,16 +11,17 @@ namespace Alfred.Identity.Infrastructure.Repositories;
 /// </summary>
 public class RolePermissionRepository : IRolePermissionRepository
 {
-    private readonly PostgreSqlDbContext _context;
+    private readonly IDbContext _context;
 
-    public RolePermissionRepository(PostgreSqlDbContext context)
+    public RolePermissionRepository(IDbContext context)
     {
         _context = context;
     }
 
-    public async Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(long roleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(long roleId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.RolePermissions
+        return await _context.Set<RolePermission>()
             .Where(rp => rp.RoleId == roleId)
             .Include(rp => rp.Permission)
             .Select(rp => rp.Permission)
@@ -28,10 +29,11 @@ public class RolePermissionRepository : IRolePermissionRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Permission>> GetPermissionsByRoleNameAsync(string roleName, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Permission>> GetPermissionsByRoleNameAsync(string roleName,
+        CancellationToken cancellationToken = default)
     {
         var normalizedRoleName = roleName.ToUpperInvariant();
-        return await _context.RolePermissions
+        return await _context.Set<RolePermission>()
             .Include(rp => rp.Role)
             .Include(rp => rp.Permission)
             .Where(rp => rp.Role.NormalizedName == normalizedRoleName)
@@ -40,9 +42,10 @@ public class RolePermissionRepository : IRolePermissionRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(long permissionId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(long permissionId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.RolePermissions
+        return await _context.Set<RolePermission>()
             .Where(rp => rp.PermissionId == permissionId)
             .Include(rp => rp.Role)
             .Select(rp => rp.Role)
@@ -51,23 +54,24 @@ public class RolePermissionRepository : IRolePermissionRepository
 
     public async Task AddAsync(RolePermission rolePermission, CancellationToken cancellationToken = default)
     {
-        await _context.RolePermissions.AddAsync(rolePermission, cancellationToken);
+        await _context.Set<RolePermission>().AddAsync(rolePermission, cancellationToken);
     }
 
     public void Remove(RolePermission rolePermission)
     {
-        _context.RolePermissions.Remove(rolePermission);
+        _context.Set<RolePermission>().Remove(rolePermission);
     }
 
     public async Task<bool> ExistsAsync(long roleId, long permissionId, CancellationToken cancellationToken = default)
     {
-        return await _context.RolePermissions
+        return await _context.Set<RolePermission>()
             .AnyAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, cancellationToken);
     }
 
-    public async Task<RolePermission?> GetAsync(long roleId, long permissionId, CancellationToken cancellationToken = default)
+    public async Task<RolePermission?> GetAsync(long roleId, long permissionId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.RolePermissions
+        return await _context.Set<RolePermission>()
             .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, cancellationToken);
     }
 

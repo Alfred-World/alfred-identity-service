@@ -5,6 +5,8 @@ using Alfred.Identity.Application.Common.Exceptions;
 using Alfred.Identity.Domain.Common.Exceptions;
 using Alfred.Identity.WebApi.Contracts.Common;
 
+using FluentValidation;
+
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace Alfred.Identity.WebApi.Middleware;
@@ -29,7 +31,9 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var (statusCode, errorResponse) = exception switch
         {
-            FilterValidationException filterEx => HandleFilterValidationException(filterEx),
+            ValidationException validationEx => HandleValidationException(validationEx),
+            FilterValidationException filterEx => HandleFilterValidationException(
+                filterEx), // Legacy/Search filter format
             DomainException domainEx => HandleDomainException(domainEx),
             UnauthorizedAccessException => HandleUnauthorizedAccessException(),
             KeyNotFoundException keyNotFoundEx => HandleKeyNotFoundException(keyNotFoundEx),
@@ -59,6 +63,12 @@ public class GlobalExceptionHandler : IExceptionHandler
             cancellationToken);
 
         return true;
+    }
+
+    private static (int statusCode, ApiErrorResponse response) HandleValidationException(ValidationException ex)
+    {
+        var errors = ex.Errors.Select(e => new ApiError(e.ErrorMessage, e.ErrorCode)).ToList();
+        return (StatusCodes.Status400BadRequest, new ApiErrorResponse(false, errors));
     }
 
 

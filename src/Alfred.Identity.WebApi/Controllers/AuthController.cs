@@ -32,8 +32,8 @@ public class AuthController : BaseApiController
     /// </summary>
     /// <remarks>
     /// This endpoint is used by the Identity UI for SSO flow.
-    /// It validates credentials and sets an HttpOnly cookie that can be shared
-    /// across subdomains (e.g., api.test and identity.test).
+    /// It validates credentials (username/email and password) and sets a short-lived auth token.
+    /// The client should then redirect to the exchange-token endpoint to set the HttpOnly cookie.
     /// </remarks>
     [HttpPost("sso-login")]
     [ProducesResponseType(typeof(ApiSuccessResponse<SsoLoginResponse>), StatusCodes.Status200OK)]
@@ -56,7 +56,7 @@ public class AuthController : BaseApiController
             return UnauthorizedResponse(result.Error ?? "Login failed");
         }
 
-        var loginData = result.Value;
+        var loginData = result.Value!;
 
         // Create claims for cookie authentication
         var claims = new List<Claim>
@@ -107,7 +107,10 @@ public class AuthController : BaseApiController
         {
             ReturnUrl = exchangeUrl,
             User = loginData.User,
-            ExchangeToken = authToken
+            ExchangeToken = authToken,
+            AccessToken = loginData.AccessToken,
+            RefreshToken = loginData.RefreshToken,
+            ExpiresIn = loginData.ExpiresIn
         });
     }
 

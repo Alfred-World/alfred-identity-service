@@ -13,6 +13,21 @@ public sealed record SsoLoginResponse
     public string? ReturnUrl { get; init; }
 
     /// <summary>
+    /// JWT Access Token for SPA usage (Bearer Authorization)
+    /// </summary>
+    public string? AccessToken { get; init; }
+
+    /// <summary>
+    /// Refresh Token for renewing Access Token
+    /// </summary>
+    public string? RefreshToken { get; init; }
+
+    /// <summary>
+    /// Access Token expiration in seconds
+    /// </summary>
+    public int ExpiresIn { get; init; }
+
+    /// <summary>
     /// User information
     /// </summary>
     public UserInfo User { get; init; } = null!;

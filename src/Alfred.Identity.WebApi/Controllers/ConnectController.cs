@@ -25,6 +25,14 @@ public class ConnectController : ControllerBase
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// OAuth2/OIDC Authorize Endpoint
+    /// </summary>
+    /// <remarks>
+    /// Handles the interactive login flow. Validates the client, redirects to login if needed, 
+    /// and issues an authorization code upon successful authentication and consent.
+    /// </remarks>
+    /// <param name="request">Authorization request parameters</param>
     [HttpGet("authorize")]
     [HttpPost("authorize")]
     [IgnoreAntiforgeryToken] // For Postman testing ease, but strictly should be secured
@@ -101,6 +109,14 @@ public class ConnectController : ControllerBase
         return Redirect(result.RedirectLocation!);
     }
 
+    /// <summary>
+    /// OAuth2/OIDC Token Endpoint
+    /// </summary>
+    /// <remarks>
+    /// Exchanges authorization code for access/ID tokens, or refreshes existing tokens.
+    /// Supports 'authorization_code' and 'refresh_token' grant types.
+    /// </remarks>
+    /// <param name="request">Token exchange request parameters</param>
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
     public async Task<IActionResult> Token([FromForm] ExchangeCodeRequest request)
@@ -133,8 +149,16 @@ public class ConnectController : ControllerBase
     }
 
     /// <summary>
-    /// OIDC Logout / End Session endpoint
+    /// OIDC Logout / End Session Endpoint
     /// </summary>
+    /// <remarks>
+    /// Clears the user's single sign-on (SSO) session cookie.
+    /// Can optionally redirect the user back to the client application after logout.
+    /// </remarks>
+    /// <param name="client_id">Client Identifier (optional)</param>
+    /// <param name="post_logout_redirect_uri">URL to redirect to after logout (optional)</param>
+    /// <param name="id_token_hint">ID Token hint (optional)</param>
+    /// <param name="state">State parameter to pass back (optional)</param>
     [HttpGet("logout")]
     public async Task<IActionResult> Logout(
         [FromQuery] string? client_id,

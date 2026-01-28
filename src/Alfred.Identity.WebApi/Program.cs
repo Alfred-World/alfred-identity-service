@@ -1,10 +1,14 @@
+using System.Reflection;
+
 using Alfred.Identity.Application;
 using Alfred.Identity.Infrastructure;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Seeding;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Middleware;
+
+using Asp.Versioning;
 
 using FluentValidation;
 
@@ -29,17 +33,23 @@ builder.WebHost.ConfigureKestrel((context, options) => { options.ListenAnyIP(app
 builder.Services.AddSingleton(appConfig);
 
 // Add services to the container
-builder.Services.AddControllers(options =>
-    {
-        // Add validation filter to handle FluentValidation errors in our standard format
-        options.Filters.Add<ValidationFilter>();
-    })
-    .ConfigureApiBehaviorOptions(options =>
-    {
-        // Disable automatic 400 responses for model validation errors
-        // Our ValidationFilter will handle it instead
-        options.SuppressModelStateInvalidFilter = true;
-    });
+// Add services to the container
+builder.Services.AddControllers();
+
+// Add API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1);
+    options.ReportApiVersions = true;
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version"));
+}).AddMvc().AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 // Add FluentValidation - manual validation (no auto-validation to control error format)
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -96,6 +106,11 @@ builder.Services.AddSwaggerGen(c =>
             new List<string>()
         }
     });
+
+    // Include XML comments
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 // Add CORS
@@ -211,15 +226,15 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>
-/// Run database migrations automatically
-/// </summary>
+// <summary>
+// Run database migrations automatically
+// </summary>
 static async Task RunDatabaseMigrationsAsync(IServiceProvider services, ILogger<Program> logger)
 {
     try
     {
         using var scope = services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<PostgreSqlDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<IDbContext>();
         var migrations = await context.Database.GetPendingMigrationsAsync();
 
         if (migrations.Any())
@@ -240,9 +255,9 @@ static async Task RunDatabaseMigrationsAsync(IServiceProvider services, ILogger<
     }
 }
 
-/// <summary>
-/// Run data seeders (environment-aware - runs different seeders based on environment)
-/// </summary>
+// <summary>
+// Run data seeders (environment-aware - runs different seeders based on environment)
+// </summary>
 static async Task RunDataSeedersAsync(IServiceProvider services, ILogger<Program> logger)
 {
     try
@@ -259,9 +274,9 @@ static async Task RunDataSeedersAsync(IServiceProvider services, ILogger<Program
     }
 }
 
-/// <summary>
-/// Validate all infrastructure services are available before starting the application
-/// </summary>
+// <summary>
+// Validate all infrastructure services are available before starting the application
+// </summary>
 static async Task ValidateServicesAsync(IServiceProvider services)
 {
     using var scope = services.CreateScope();

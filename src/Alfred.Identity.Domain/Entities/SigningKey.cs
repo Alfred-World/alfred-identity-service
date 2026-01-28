@@ -39,17 +39,27 @@ public class SigningKey : BaseEntity
     public bool IsActive { get; private set; }
 
     /// <summary>
-    /// When the key was created.
-    /// </summary>
-    public DateTime CreatedAt { get; private set; }
-
-    /// <summary>
     /// When the key should be rotated/expired (optional).
     /// </summary>
     public DateTime? ExpiresAt { get; private set; }
 
+    // Audit fields
+    public DateTime CreatedAt { get; set; }
+    public long? CreatedById { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public long? UpdatedById { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public long? DeletedById { get; set; }
+
     private SigningKey()
     {
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public static SigningKey Create(
@@ -57,7 +67,8 @@ public class SigningKey : BaseEntity
         string publicKey,
         string privateKey,
         string algorithm = "RS256",
-        bool isActive = true)
+        bool isActive = true,
+        long? createdById = null)
     {
         return new SigningKey
         {
@@ -67,8 +78,7 @@ public class SigningKey : BaseEntity
             Algorithm = algorithm,
             IsActive = isActive,
             CreatedAt = DateTime.UtcNow,
-            // Example: Expire in 90 days
-            ExpiresAt = DateTime.UtcNow.AddDays(90)
+            CreatedById = createdById
         };
     }
 }

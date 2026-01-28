@@ -1,7 +1,7 @@
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -13,11 +13,11 @@ namespace Alfred.Identity.Infrastructure.Seeders;
 /// </summary>
 public class ApplicationSeeder : BaseDataSeeder
 {
-    private readonly PostgreSqlDbContext _dbContext;
+    private readonly IDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
 
     public ApplicationSeeder(
-        PostgreSqlDbContext dbContext,
+        IDbContext dbContext,
         IPasswordHasher passwordHasher,
         ILogger<ApplicationSeeder> logger)
         : base(logger)
@@ -40,38 +40,37 @@ public class ApplicationSeeder : BaseDataSeeder
         {
             // Core Web Client - Next.js App (Confidential Client with NextAuth)
             Application.Create(
-                clientId: "core_web",
-                displayName: "Alfred Core Web",
-                clientSecret: hashedSecret, // Confidential client - Secret required for NextAuth
-                
+                "core_web",
+                "Alfred Core Web",
+                hashedSecret, // Confidential client - Secret required for NextAuth
+
                 // IMPORTANT: Added NextAuth Callback URL here
-                redirectUris: "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
-                
-                postLogoutRedirectUris: "[\"https://core.test\",\"http://core.test:7200\",\"http://localhost:7200\"]",
-                permissions: "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
-                clientType: "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
-                applicationType: "web"
+                "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
+                "[\"https://core.test\",\"http://core.test:7200\",\"http://localhost:7200\"]",
+                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
+                "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
+                "web"
             ),
 
             // SSO Web Client - Next.js App (Confidential Client with NextAuth for SSO)
             Application.Create(
-                clientId: "sso_web",
-                displayName: "Alfred SSO Web",
-                clientSecret: hashedSecret, // Confidential client - Secret required for NextAuth OAuth
-                
+                "sso_web",
+                "Alfred SSO Web",
+                hashedSecret, // Confidential client - Secret required for NextAuth OAuth
+
                 // IMPORTANT: Added NextAuth Callback URL for SSO OAuth flow
-                redirectUris: "[\"https://sso.test/callback\",\"https://sso.test/api/auth/callback/sso-oauth\",\"http://sso.test:7100/callback\",\"http://sso.test:7100/api/auth/callback/sso-oauth\",\"http://localhost:7100/callback\",\"http://localhost:7100/api/auth/callback/sso-oauth\"]",
-                
-                postLogoutRedirectUris: "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
-                permissions: "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
-                clientType: "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
-                applicationType: "web"
+                "[\"https://sso.test/callback\",\"https://sso.test/api/auth/callback/sso-oauth\",\"http://sso.test:7100/callback\",\"http://sso.test:7100/api/auth/callback/sso-oauth\",\"http://localhost:7100/callback\",\"http://localhost:7100/api/auth/callback/sso-oauth\"]",
+                "[\"https://sso.test\",\"http://sso.test:7100\",\"http://localhost:7100\"]",
+                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
+                "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
+                "web"
             )
         };
 
         foreach (var app in applications)
         {
-            var existingApp = await _dbContext.Applications.FirstOrDefaultAsync(a => a.ClientId == app.ClientId, cancellationToken);
+            var existingApp = await _dbContext.Set<Application>()
+                .FirstOrDefaultAsync(a => a.ClientId == app.ClientId, cancellationToken);
             if (existingApp != null)
             {
                 // Update existing app
@@ -88,11 +87,11 @@ public class ApplicationSeeder : BaseDataSeeder
             else
             {
                 // Add new app
-                await _dbContext.Applications.AddAsync(app, cancellationToken);
+                await _dbContext.Set<Application>().AddAsync(app, cancellationToken);
                 LogInfo($"Added application: {app.ClientId}");
             }
         }
-        
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         LogInfo($"Seeded {applications.Length} applications successfully");

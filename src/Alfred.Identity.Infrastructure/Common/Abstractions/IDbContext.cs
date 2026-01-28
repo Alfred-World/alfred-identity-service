@@ -1,17 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Alfred.Identity.Infrastructure.Common.Abstractions;
 
 /// <summary>
-/// Abstraction for DbContext to support multiple database providers
-/// Allows easy switching between SQL Server, PostgreSQL, MySQL, etc.
+/// Abstraction for DbContext to allow swapping database providers
 /// </summary>
-public interface IDbContext : IDisposable
+public interface IDbContext
 {
     DbSet<TEntity> Set<TEntity>() where TEntity : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-    ChangeTracker ChangeTracker { get; }
     DatabaseFacade Database { get; }
 }

@@ -32,8 +32,8 @@ public static class ServiceCollectionExtensions
     {
         // === DbContext & Unit of Work ===
         services.AddScoped<IDbContextFactory, PostgreSqlDbContextFactory>(_ => new PostgreSqlDbContextFactory(options));
-        services.AddScoped<IDbContext>(sp => sp.GetRequiredService<IDbContextFactory>().CreateContext());
-        services.AddScoped(_ => new PostgreSqlDbContext(options));
+        services.AddScoped<PostgreSqlDbContext>(_ => new PostgreSqlDbContext(options));
+        services.AddScoped<IDbContext>(sp => sp.GetRequiredService<PostgreSqlDbContext>());
         services.AddScoped<IUnitOfWork, DefaultUnitOfWork>();
 
         // === Auto-register Repositories (IXxxRepository -> XxxRepository) ===

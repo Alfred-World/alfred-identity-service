@@ -2,8 +2,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -16,10 +16,10 @@ namespace Alfred.Identity.Infrastructure.Seeders;
 /// </summary>
 public class SigningKeySeeder : BaseDataSeeder
 {
-    private readonly PostgreSqlDbContext _dbContext;
+    private readonly IDbContext _dbContext;
 
     public SigningKeySeeder(
-        PostgreSqlDbContext dbContext,
+        IDbContext dbContext,
         ILogger<SigningKeySeeder> logger)
         : base(logger)
     {
@@ -34,7 +34,7 @@ public class SigningKeySeeder : BaseDataSeeder
         LogInfo("Starting to seed signing key...");
 
         // Check if active key already exists
-        if (await _dbContext.SigningKeys.AnyAsync(k => k.IsActive, cancellationToken))
+        if (await _dbContext.Set<SigningKey>().AnyAsync(k => k.IsActive, cancellationToken))
         {
             LogInfo("Active signing key already exists, skipping seed");
             return;
@@ -78,7 +78,7 @@ public class SigningKeySeeder : BaseDataSeeder
             true
         );
 
-        await _dbContext.SigningKeys.AddAsync(signingKey, cancellationToken);
+        await _dbContext.Set<SigningKey>().AddAsync(signingKey, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         LogInfo($"Seeded signing key: {signingKey.KeyId}");

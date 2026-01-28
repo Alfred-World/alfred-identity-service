@@ -1,11 +1,13 @@
 using Alfred.Identity.Domain.Common.Base;
+using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents a user identity, aligned with AspNetUsers schema
 /// </summary>
-public class User : BaseEntity
+public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
+    IHasDeleter
 {
     public string UserName { get; private set; } = null!;
     public string NormalizedUserName { get; private set; } = null!;
@@ -26,11 +28,42 @@ public class User : BaseEntity
     public string FullName { get; private set; } = null!;
     public string Status { get; private set; } = "Active";
 
+    // Audit fields
+    public DateTime CreatedAt { get; set; }
+    public long? CreatedById { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public long? UpdatedById { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public long? DeletedById { get; set; }
+
+    public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
+
+    public void AddRole(long roleId, long? creatorId = null)
+    {
+        if (UserRoles.Any(ur => ur.RoleId == roleId))
+        {
+            return;
+        }
+
+        UserRoles.Add(UserRole.Create(Id, roleId, creatorId));
+    }
+
+    public void RemoveRole(long roleId)
+    {
+        var role = UserRoles.FirstOrDefault(ur => ur.RoleId == roleId);
+        if (role != null)
+        {
+            UserRoles.Remove(role);
+        }
+    }
+
     private User()
     {
     }
 
-    public static User Create(string email, string? passwordHash, string fullName, bool emailConfirmed = false)
+    public static User Create(string email, string? passwordHash, string fullName, bool emailConfirmed = false,
+        long? createdById = null)
     {
         return new User
         {
@@ -45,9 +78,12 @@ public class User : BaseEntity
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             LockoutEnabled = true,
             Status = "Active",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatedById = createdById
         };
     }
+
+    // ... (rest of methods)
 
     public void RecordLoginSuccess()
     {
@@ -83,7 +119,4 @@ public class User : BaseEntity
     {
         return !string.IsNullOrEmpty(PasswordHash);
     }
-
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
 }

@@ -1,7 +1,8 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Domain.Common;
+using Alfred.Identity.Domain.Common.Constants;
+using Alfred.Identity.Domain.Common.Enums;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -45,7 +46,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
 
         // Check if token is already used (potential token reuse attack)
-        if (storedToken.Status == OAuthConstants.TokenStatus.Redeemed || storedToken.RedemptionDate.HasValue)
+        if (storedToken.Status == TokenStatus.Redeemed || storedToken.RedemptionDate.HasValue)
         {
             // Revoke all tokens for this user (security measure)
             if (storedToken.UserId.HasValue)
@@ -58,7 +59,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
 
         // Check if token is revoked or expired
-        if (storedToken.Status != OAuthConstants.TokenStatus.Valid ||
+        if (storedToken.Status != TokenStatus.Valid ||
             (storedToken.ExpirationDate.HasValue && DateTime.UtcNow > storedToken.ExpirationDate.Value))
         {
             return new RefreshTokenResult(false, Error: "Refresh token is invalid or expired");

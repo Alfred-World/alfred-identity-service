@@ -17,6 +17,12 @@ public class WellKnownController : ControllerBase
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Get JSON Web Key Set (JWKS)
+    /// </summary>
+    /// <remarks>
+    /// Returns the public keys used to verify JWT tokens signed by this identity provider.
+    /// </remarks>
     [HttpGet("jwks.json")]
     public async Task<IActionResult> Jwks()
     {
@@ -24,6 +30,12 @@ public class WellKnownController : ControllerBase
         return Ok(jwks);
     }
 
+    /// <summary>
+    /// Get OpenID Connect Configuration
+    /// </summary>
+    /// <remarks>
+    /// Returns the OIDC discovery document containing standard endpoints and supported capabilities.
+    /// </remarks>
     [HttpGet("openid-configuration")]
     public IActionResult OpenIdConfiguration()
     {

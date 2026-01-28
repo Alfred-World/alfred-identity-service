@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Applications.Shared;
+using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
@@ -28,6 +28,6 @@ public class GetApplicationByIdQueryHandler : IRequestHandler<GetApplicationById
             return Result<ApplicationDto>.Failure($"Application with ID {request.Id} not found");
         }
 
-        return Result<ApplicationDto>.Success(application.ToDto());
+        return Result<ApplicationDto>.Success(ApplicationDto.FromEntity(application));
     }
 }

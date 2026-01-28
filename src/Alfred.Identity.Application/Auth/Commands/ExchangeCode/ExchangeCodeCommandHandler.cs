@@ -3,7 +3,8 @@ using System.Text.Json;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Domain.Common;
+using Alfred.Identity.Domain.Common.Constants;
+using Alfred.Identity.Domain.Common.Enums;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -75,7 +76,8 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         var codeHash = _authCodeService.HashAuthorizationCode(request.Code);
         var authCodeToken = await _tokenRepository.GetByReferenceIdAsync(codeHash, cancellationToken);
 
-        if (authCodeToken == null || authCodeToken.Type != OAuthConstants.TokenTypes.AuthorizationCode || authCodeToken.Status != OAuthConstants.TokenStatus.Valid)
+        if (authCodeToken == null || authCodeToken.Type != OAuthConstants.TokenTypes.AuthorizationCode ||
+            authCodeToken.Status != TokenStatus.Valid)
         {
             return Error(OAuthConstants.Errors.InvalidGrant, "Authorization code is invalid or expired");
         }
@@ -149,7 +151,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         );
 
         await _tokenRepository.AddAsync(refreshToken, cancellationToken);
-        
+
         // Single SaveChanges for atomic operation
         await _tokenRepository.SaveChangesAsync(cancellationToken);
 
@@ -195,7 +197,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         // 4. Validate Token Usage
-        if (tokenEntity.Status != OAuthConstants.TokenStatus.Valid)
+        if (tokenEntity.Status != TokenStatus.Valid)
         {
             // If reusing revoked token -> security risk -> revoke all?
             // For now, simplify to error.
@@ -209,7 +211,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
         // 5. Rotate Refresh Token
         // Revoke current token
-        tokenEntity.Redeem(); 
+        tokenEntity.Redeem();
         _tokenRepository.Update(tokenEntity);
 
         // 6. Generate New Tokens
@@ -222,7 +224,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
         var newAccessToken =
             await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id);
-        
+
         // Generate new Refresh Token (Rotation)
         var newRefreshTokenStr = _jwtTokenService.GenerateRefreshToken();
         var newRefreshTokenHash = _jwtTokenService.HashRefreshToken(newRefreshTokenStr);
@@ -243,7 +245,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         );
 
         await _tokenRepository.AddAsync(newRefreshTokenEntity, cancellationToken);
-        
+
         // Atomic transaction
         await _tokenRepository.SaveChangesAsync(cancellationToken);
 

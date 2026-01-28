@@ -1,3 +1,5 @@
+using Alfred.Identity.Domain.Entities;
+
 namespace Alfred.Identity.Domain.Abstractions.Services;
 
 /// <summary>
@@ -11,4 +13,9 @@ public interface IJwksService
     /// Actual implementation returns JsonWebKeySet.
     /// </summary>
     Task<object> GetJsonWebKeySetAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generate a new RSA signing key
+    /// </summary>
+    SigningKey GenerateSigningKey();
 }

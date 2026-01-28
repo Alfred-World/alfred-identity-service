@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Common.Base;
+using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
@@ -6,7 +7,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Represents a permission that can be assigned to roles.
 /// Permissions follow the pattern: "resource:action" (e.g., "finance:read", "server:reboot")
 /// </summary>
-public class Permission : BaseEntity
+public class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier
 {
     /// <summary>
     /// Unique code for the permission (e.g., "finance:write")
@@ -40,6 +41,12 @@ public class Permission : BaseEntity
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
+    // Audit fields
+    public DateTime CreatedAt { get; set; }
+    public long? CreatedById { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public long? UpdatedById { get; set; }
+
     /// <summary>
     /// Navigation property for Role-Permission many-to-many relationship
     /// </summary>
@@ -56,7 +63,8 @@ public class Permission : BaseEntity
     /// <param name="code">Permission code in format "resource:action"</param>
     /// <param name="name">Human-readable name</param>
     /// <param name="description">Optional description</param>
-    public static Permission Create(string code, string name, string? description = null)
+    /// <param name="createdById">Creator ID</param>
+    public static Permission Create(string code, string name, string? description = null, long? createdById = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code, nameof(code));
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
@@ -72,7 +80,9 @@ public class Permission : BaseEntity
             Description = description,
             Resource = resource.ToLowerInvariant(),
             Action = action.ToLowerInvariant(),
-            IsActive = true
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            CreatedById = createdById
         };
     }
 
@@ -84,6 +94,7 @@ public class Permission : BaseEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
         Name = name;
         Description = description;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -92,6 +103,7 @@ public class Permission : BaseEntity
     public void Deactivate()
     {
         IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -100,5 +112,6 @@ public class Permission : BaseEntity
     public void Activate()
     {
         IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

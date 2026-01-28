@@ -2,7 +2,7 @@ using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Domain.Common;
+using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -20,8 +20,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ILocationService _locationService;
 
-    private const int AccessTokenLifetimeSeconds = 900; // 15 minutes
-    private const int RefreshTokenLifetimeSeconds = 604800; // 7 days
+
 
     public LoginCommandHandler(
         IUserRepository userRepository,
@@ -80,7 +79,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             null,
             user.Id.ToString(),
             user.Id,
-            DateTime.UtcNow.AddSeconds(RefreshTokenLifetimeSeconds),
+            DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
             refreshTokenHash,
             null,
             null,
@@ -98,7 +97,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
         {
             AccessToken = accessToken,
             RefreshToken = refreshTokenValue,
-            ExpiresIn = AccessTokenLifetimeSeconds,
+            ExpiresIn = _jwtTokenService.AccessTokenLifetimeSeconds,
             TokenType = "Bearer",
             User = new UserInfo
             {

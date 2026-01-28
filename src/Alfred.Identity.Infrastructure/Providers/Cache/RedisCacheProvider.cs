@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Alfred.Identity.Domain.Abstractions;
 
 using Microsoft.Extensions.Logging;
@@ -82,7 +80,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<bool> ExpireAsync(string key, TimeSpan expiration, CancellationToken cancellationToken = default)
+    public async ValueTask<bool> ExpireAsync(string key, TimeSpan expiration,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -96,7 +95,8 @@ public sealed class RedisCacheProvider : ICacheProvider
     }
 
     // List operations
-    public async ValueTask<long> ListRightPushAsync(string key, string value, CancellationToken cancellationToken = default)
+    public async ValueTask<long> ListRightPushAsync(string key, string value,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -172,7 +172,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<string?> HashGetAsync(string key, string field, CancellationToken cancellationToken = default)
+    public async ValueTask<string?> HashGetAsync(string key, string field,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -186,7 +187,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<bool> HashDeleteAsync(string key, string field, CancellationToken cancellationToken = default)
+    public async ValueTask<bool> HashDeleteAsync(string key, string field,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -199,7 +201,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<Dictionary<string, string>> HashGetAllAsync(string key, CancellationToken cancellationToken = default)
+    public async ValueTask<Dictionary<string, string>> HashGetAllAsync(string key,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -240,7 +243,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<bool> SetContainsAsync(string key, string value, CancellationToken cancellationToken = default)
+    public async ValueTask<bool> SetContainsAsync(string key, string value,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -253,7 +257,8 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask<IReadOnlyList<string>> SetMembersAsync(string key, CancellationToken cancellationToken = default)
+    public async ValueTask<IReadOnlyList<string>> SetMembersAsync(string key,
+        CancellationToken cancellationToken = default)
     {
         try
         {

@@ -23,5 +23,12 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
 
         // Important: OpenIddict stores permissions/urls typically as JSON or delimited string. 
         // Schema implies they can be long text.
+        builder.Property(x => x.DisplayNames).HasColumnType("jsonb");
+        builder.Property(x => x.Permissions).HasColumnType("jsonb");
+        builder.Property(x => x.RedirectUris).HasColumnType("jsonb");
+        builder.Property(x => x.PostLogoutRedirectUris).HasColumnType("jsonb");
+        builder.Property(x => x.Requirements).HasColumnType("jsonb");
+        builder.Property(x => x.Settings).HasColumnType("jsonb");
+        builder.Property(x => x.JsonWebKeySet).HasColumnType("jsonb");
     }
 }

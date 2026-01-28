@@ -40,15 +40,21 @@ public static class CacheProviderExtensions
             // Redis settings from environment
             var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST");
             if (!string.IsNullOrEmpty(redisHost))
+            {
                 options.Redis.Host = redisHost;
+            }
 
             var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT");
             if (!string.IsNullOrEmpty(redisPort) && int.TryParse(redisPort, out var port))
+            {
                 options.Redis.Port = port;
+            }
 
             var redisPassword = Environment.GetEnvironmentVariable("REDIS_PASSWORD");
             if (!string.IsNullOrEmpty(redisPassword))
+            {
                 options.Redis.Password = redisPassword;
+            }
         });
 
         // Register cache provider
@@ -92,12 +98,14 @@ public static class CacheProviderExtensions
             };
 
             if (!string.IsNullOrEmpty(redisPassword))
+            {
                 configOptions.Password = redisPassword;
+            }
 
             logger.LogInformation("Connecting to Redis at {Host}:{Port}", redisHost, redisPort);
             var connection = ConnectionMultiplexer.Connect(configOptions);
             logger.LogInformation("Successfully connected to Redis");
-            
+
             return new RedisCacheProvider(connection, logger);
         }
         catch (Exception ex)
@@ -123,4 +131,3 @@ public static class CacheProviderExtensions
         return services;
     }
 }
-

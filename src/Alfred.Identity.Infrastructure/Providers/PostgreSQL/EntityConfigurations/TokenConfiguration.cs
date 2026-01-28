@@ -26,7 +26,9 @@ public class TokenConfiguration : IEntityTypeConfiguration<Token>
         builder.Property(x => x.Location).HasMaxLength(256);
         builder.Property(x => x.Device).HasMaxLength(256);
 
-        builder.Property(x => x.Status).HasMaxLength(50);
+        builder.Property(x => x.Status)
+            .HasMaxLength(50)
+            .HasConversion<string>();
         builder.Property(x => x.Type).HasMaxLength(50);
         builder.Property(x => x.Subject).HasMaxLength(200);
         builder.Property(x => x.ConcurrencyToken).HasMaxLength(50);

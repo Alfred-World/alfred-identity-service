@@ -1,7 +1,7 @@
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -13,11 +13,11 @@ namespace Alfred.Identity.Infrastructure.Seeders;
 /// </summary>
 public class AdminUserSeeder : BaseDataSeeder
 {
-    private readonly PostgreSqlDbContext _dbContext;
+    private readonly IDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
 
     public AdminUserSeeder(
-        PostgreSqlDbContext dbContext,
+        IDbContext dbContext,
         IPasswordHasher passwordHasher,
         ILogger<AdminUserSeeder> logger)
         : base(logger)
@@ -33,7 +33,7 @@ public class AdminUserSeeder : BaseDataSeeder
         LogInfo("Starting to seed admin user...");
 
         // Check if users already exist
-        if (await _dbContext.Users.AnyAsync(cancellationToken))
+        if (await _dbContext.Set<User>().AnyAsync(cancellationToken))
         {
             LogInfo("Users already exist, skipping seed");
             return;
@@ -53,17 +53,17 @@ public class AdminUserSeeder : BaseDataSeeder
         // Set username to 'admin' instead of email
         admin.SetUserName("admin");
 
-        await _dbContext.Users.AddAsync(admin, cancellationToken);
+        await _dbContext.Set<User>().AddAsync(admin, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         // Assign Admin role to the user
-        var adminRole = await _dbContext.Roles
+        var adminRole = await _dbContext.Set<Role>()
             .FirstOrDefaultAsync(r => r.NormalizedName == "ADMIN", cancellationToken);
 
         if (adminRole != null)
         {
             var userRole = UserRole.Create(admin.Id, adminRole.Id);
-            await _dbContext.UserRoles.AddAsync(userRole, cancellationToken);
+            await _dbContext.Set<UserRole>().AddAsync(userRole, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             LogInfo("Assigned Admin role to admin user");
         }

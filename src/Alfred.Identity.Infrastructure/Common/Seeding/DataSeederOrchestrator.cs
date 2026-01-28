@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -146,10 +146,10 @@ public class DataSeederOrchestrator
     {
         _logger.LogInformation("=== Starting Database Resync (Delete All Data) ===");
 
-        var dbContext = _serviceProvider.GetService<PostgreSqlDbContext>();
+        var dbContext = _serviceProvider.GetService<IDbContext>();
         if (dbContext == null)
         {
-            _logger.LogError("PostgreSqlDbContext not found in service provider");
+            _logger.LogError("IDbContext not found in service provider");
             throw new InvalidOperationException("Database context is not configured");
         }
 

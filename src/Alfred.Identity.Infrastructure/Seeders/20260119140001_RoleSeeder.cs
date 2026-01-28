@@ -1,6 +1,6 @@
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
-using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,9 +12,9 @@ namespace Alfred.Identity.Infrastructure.Seeders;
 /// </summary>
 public class RoleSeeder : BaseDataSeeder
 {
-    private readonly PostgreSqlDbContext _dbContext;
+    private readonly IDbContext _dbContext;
 
-    public RoleSeeder(PostgreSqlDbContext dbContext, ILogger<RoleSeeder> logger)
+    public RoleSeeder(IDbContext dbContext, ILogger<RoleSeeder> logger)
         : base(logger)
     {
         _dbContext = dbContext;
@@ -27,7 +27,7 @@ public class RoleSeeder : BaseDataSeeder
         LogInfo("Starting to seed roles...");
 
         // Check if roles already exist
-        if (await _dbContext.Roles.AnyAsync(cancellationToken))
+        if (await _dbContext.Set<Role>().AnyAsync(cancellationToken))
         {
             LogInfo("Roles already exist, skipping seed");
             return;
@@ -35,11 +35,12 @@ public class RoleSeeder : BaseDataSeeder
 
         var roles = new[]
         {
-            Role.Create("Admin"),
-            Role.Create("User")
+            Role.CreateOwner(), // IsImmutable=true, IsSystem=true
+            Role.CreateAdmin(), // IsImmutable=false, IsSystem=true
+            Role.CreateUser() // IsImmutable=false, IsSystem=true
         };
 
-        await _dbContext.Roles.AddRangeAsync(roles, cancellationToken);
+        await _dbContext.Set<Role>().AddRangeAsync(roles, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         LogInfo($"Seeded {roles.Length} roles successfully");

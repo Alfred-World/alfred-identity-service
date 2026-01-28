@@ -74,6 +74,7 @@ public class Application : BaseEntity
         {
             ClientSecret = clientSecret;
         }
+
         UpdatedAt = DateTime.UtcNow;
     }
 

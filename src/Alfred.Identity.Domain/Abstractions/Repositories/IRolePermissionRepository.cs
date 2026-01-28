@@ -10,17 +10,20 @@ public interface IRolePermissionRepository
     /// <summary>
     /// Get all permissions for a specific role
     /// </summary>
-    Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(long roleId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(long roleId,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all permissions for a role by role name
     /// </summary>
-    Task<IEnumerable<Permission>> GetPermissionsByRoleNameAsync(string roleName, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Permission>> GetPermissionsByRoleNameAsync(string roleName,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all roles that have a specific permission
     /// </summary>
-    Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(long permissionId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(long permissionId,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Assign a permission to a role

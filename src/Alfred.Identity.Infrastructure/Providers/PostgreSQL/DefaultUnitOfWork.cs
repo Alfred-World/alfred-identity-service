@@ -23,10 +23,10 @@ public class DefaultUnitOfWork : IUnitOfWork
     }
 
     public IUserRepository Users =>
-        _users ??= new UserRepository((PostgreSqlDbContext)_context);
+        _users ??= new UserRepository(_context);
 
     public ITokenRepository Tokens =>
-        _tokens ??= new TokenRepository((PostgreSqlDbContext)_context);
+        _tokens ??= new TokenRepository(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

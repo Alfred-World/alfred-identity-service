@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Common.Base;
+using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
@@ -7,7 +8,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// Protection is based on Owner ID hardcode + IsImmutable flag.
 /// Owner role is marked as IsImmutable=true and cannot be modified/assigned.
 /// </summary>
-public class Role : BaseEntity
+public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
+    IHasDeleter
 {
     public string Name { get; private set; } = null!;
     public string NormalizedName { get; private set; } = null!;
@@ -25,16 +27,44 @@ public class Role : BaseEntity
     /// </summary>
     public bool IsSystem { get; private set; }
 
+    // Audit fields
+    public DateTime CreatedAt { get; set; }
+    public long? CreatedById { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public long? UpdatedById { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public long? DeletedById { get; set; }
+
     /// <summary>
     /// Navigation property for Role-Permission relationship
     /// </summary>
     public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
 
+    public void AddPermission(long permissionId, long? creatorId = null)
+    {
+        if (RolePermissions.Any(rp => rp.PermissionId == permissionId))
+        {
+            return;
+        }
+
+        RolePermissions.Add(RolePermission.Create(Id, permissionId, creatorId));
+    }
+
+    public void RemovePermission(long permissionId)
+    {
+        var permission = RolePermissions.FirstOrDefault(rp => rp.PermissionId == permissionId);
+        if (permission != null)
+        {
+            RolePermissions.Remove(permission);
+        }
+    }
+
     private Role()
     {
     }
 
-    public static Role Create(string name, bool isImmutable = false, bool isSystem = false)
+    public static Role Create(string name, bool isImmutable = false, bool isSystem = false, long? createdById = null)
     {
         return new Role
         {
@@ -42,7 +72,9 @@ public class Role : BaseEntity
             NormalizedName = name.ToUpperInvariant(),
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             IsImmutable = isImmutable,
-            IsSystem = isSystem
+            IsSystem = isSystem,
+            CreatedAt = DateTime.UtcNow,
+            CreatedById = createdById
         };
     }
 
@@ -51,7 +83,7 @@ public class Role : BaseEntity
     /// </summary>
     public static Role CreateOwner()
     {
-        return Create("Owner", isImmutable: true, isSystem: true);
+        return Create("Owner", true, true);
     }
 
     /// <summary>
@@ -59,7 +91,7 @@ public class Role : BaseEntity
     /// </summary>
     public static Role CreateAdmin()
     {
-        return Create("Admin", isImmutable: false, isSystem: true);
+        return Create("Admin", false, true);
     }
 
     /// <summary>
@@ -67,18 +99,22 @@ public class Role : BaseEntity
     /// </summary>
     public static Role CreateUser()
     {
-        return Create("User", isImmutable: false, isSystem: true);
+        return Create("User", false, true);
     }
 
     /// <summary>
     /// Returns true if this is the Owner role (untouchable)
     /// </summary>
-    public bool IsOwnerRole() => NormalizedName == "OWNER";
+    public bool IsOwnerRole()
+    {
+        return NormalizedName == "OWNER";
+    }
 
     /// <summary>
     /// Returns true if this is the Admin role
     /// </summary>
-    public bool IsAdminRole() => NormalizedName == "ADMIN";
+    public bool IsAdminRole()
+    {
+        return NormalizedName == "ADMIN";
+    }
 }
-
-

@@ -4,8 +4,6 @@ using Alfred.Identity.Application.Querying;
 
 using Microsoft.AspNetCore.Mvc;
 
-using Swashbuckle.AspNetCore.Annotations;
-
 namespace Alfred.Identity.WebApi.Contracts.Common;
 
 /// <summary>
@@ -31,11 +29,9 @@ public sealed record PaginationQueryParameters
 
     /// <summary>
     /// Filter expression using DSL syntax
-    /// Example: "isActive == true and name @contains('test')"
+    /// Examples: "name @contains('abc')", "phone == '123' or phone == '321'"
     /// </summary>
     [FromQuery(Name = "filter")]
-    [SwaggerParameter(
-        "Filter expression using DSL syntax. Examples: \"name @contains('abc')\", \"phone == '123' or phone == '321'\")")]
     public string? Filter { get; init; }
 
     /// <summary>
@@ -43,8 +39,6 @@ public sealed record PaginationQueryParameters
     /// Example: "name,-createdAt" (ascending by name, descending by createdAt)
     /// </summary>
     [FromQuery(Name = "sort")]
-    [SwaggerParameter(
-        "Sort expression. Use '-' prefix for descending. Examples: \"resource\", \"-createdAt\", \"resource,-action\"")]
     public string? Sort { get; init; }
 
     /// <summary>
@@ -52,7 +46,6 @@ public sealed record PaginationQueryParameters
     /// Example: "createdBy,updatedBy"
     /// </summary>
     [FromQuery(Name = "include")]
-    [SwaggerParameter("Comma-separated related entities. Example: \"createdBy,updatedBy\"")]
     public string? Include { get; init; }
 }
 

@@ -6,6 +6,16 @@ namespace Alfred.Identity.Domain.Abstractions.Security;
 public interface IJwtTokenService
 {
     /// <summary>
+    /// Gets the lifetime of an access token in seconds
+    /// </summary>
+    int AccessTokenLifetimeSeconds { get; }
+
+    /// <summary>
+    /// Gets the lifetime of a refresh token in seconds
+    /// </summary>
+    int RefreshTokenLifetimeSeconds { get; }
+
+    /// <summary>
     /// Generate an access token for a user (async for RSA key retrieval)
     /// </summary>
     Task<string> GenerateAccessTokenAsync(long userId, string email, string? fullName, long? applicationId = null);

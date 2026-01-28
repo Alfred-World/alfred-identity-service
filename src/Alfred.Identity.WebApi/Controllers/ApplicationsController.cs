@@ -1,7 +1,7 @@
 using Alfred.Identity.Application.Applications.Commands.Delete;
+using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Applications.Queries.GetApplicationById;
 using Alfred.Identity.Application.Applications.Queries.GetApplications;
-using Alfred.Identity.Application.Applications.Shared;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Contracts.Common;
 
@@ -11,9 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[ApiController]
 [Route("applications")]
-[Produces("application/json")]
 // [Authorize(Roles = "Admin")] // Uncomment when roles are set up
 public class ApplicationsController : BaseApiController
 {
