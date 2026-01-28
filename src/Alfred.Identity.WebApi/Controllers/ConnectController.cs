@@ -1,60 +1,63 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 using Alfred.Identity.Application.Auth.Commands.Authorize;
 using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
+using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Connect;
 
 using MediatR;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
+/// <summary>
+/// OIDC/OAuth2 Connect endpoints
+/// </summary>
 [ApiController]
 [Route("connect")]
 public class ConnectController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IConfiguration _configuration;
+    private readonly IApplicationRepository _applicationRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ConnectController(IMediator mediator, IConfiguration configuration)
+    public ConnectController(
+        IMediator mediator,
+        IConfiguration configuration,
+        IApplicationRepository applicationRepository,
+        IUserRepository userRepository)
     {
         _mediator = mediator;
         _configuration = configuration;
+        _applicationRepository = applicationRepository;
+        _userRepository = userRepository;
     }
 
     /// <summary>
     /// OAuth2/OIDC Authorize Endpoint
     /// </summary>
-    /// <remarks>
-    /// Handles the interactive login flow. Validates the client, redirects to login if needed, 
-    /// and issues an authorization code upon successful authentication and consent.
-    /// </remarks>
-    /// <param name="request">Authorization request parameters</param>
     [HttpGet("authorize")]
     [HttpPost("authorize")]
-    [IgnoreAntiforgeryToken] // For Postman testing ease, but strictly should be secured
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequest request)
     {
-        // Check if User is Authenticated
         var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
 
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {
-            // If prompt=none, return error
             if (request.prompt == "none")
             {
                 return BadRequest(new { error = "login_required" });
             }
 
-            // Redirect to SSO Login Page
-            // Build returnUrl - use X-Forwarded headers or config when behind Gateway proxy
             var gatewayUrl = _configuration["Urls:Gateway"] ?? "https://gateway.test";
-
-            // Check for X-Forwarded headers (when behind proxy)
             var forwardedHost = Request.Headers["X-Forwarded-Host"].FirstOrDefault();
             var forwardedProto = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
 
@@ -65,7 +68,6 @@ public class ConnectController : ControllerBase
             }
             else
             {
-                // Use Gateway URL from config
                 returnUrl = $"{gatewayUrl}{Request.Path}{Request.QueryString}";
             }
 
@@ -75,7 +77,6 @@ public class ConnectController : ControllerBase
             return Redirect(loginUrl);
         }
 
-        // 2. Extract User ID
         var userIdClaim = authenticateResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? authenticateResult.Principal.FindFirst("sub")?.Value;
 
@@ -84,7 +85,6 @@ public class ConnectController : ControllerBase
             return BadRequest(new { error = "invalid_user" });
         }
 
-        // 3. Execute Authorize Command
         var command = new AuthorizeCommand(
             request.client_id,
             request.redirect_uri,
@@ -101,22 +101,15 @@ public class ConnectController : ControllerBase
 
         if (!result.Success)
         {
-            // If error, return generic error or redirect with error param
             return BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
         }
 
-        // 4. Redirect Back to Client with Code
         return Redirect(result.RedirectLocation!);
     }
 
     /// <summary>
     /// OAuth2/OIDC Token Endpoint
     /// </summary>
-    /// <remarks>
-    /// Exchanges authorization code for access/ID tokens, or refreshes existing tokens.
-    /// Supports 'authorization_code' and 'refresh_token' grant types.
-    /// </remarks>
-    /// <param name="request">Token exchange request parameters</param>
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
     public async Task<IActionResult> Token([FromForm] ExchangeCodeRequest request)
@@ -149,16 +142,68 @@ public class ConnectController : ControllerBase
     }
 
     /// <summary>
-    /// OIDC Logout / End Session Endpoint
+    /// OIDC UserInfo Endpoint - returns user claims based on access token scopes
     /// </summary>
     /// <remarks>
-    /// Clears the user's single sign-on (SSO) session cookie.
-    /// Can optionally redirect the user back to the client application after logout.
+    /// Returns user information based on scopes granted:
+    /// - openid: sub (user ID)
+    /// - profile: name, username
+    /// - email: email, email_verified
     /// </remarks>
-    /// <param name="client_id">Client Identifier (optional)</param>
-    /// <param name="post_logout_redirect_uri">URL to redirect to after logout (optional)</param>
-    /// <param name="id_token_hint">ID Token hint (optional)</param>
-    /// <param name="state">State parameter to pass back (optional)</param>
+    [HttpGet("userinfo")]
+    [Authorize]
+    public async Task<IActionResult> UserInfo()
+    {
+        // Extract user ID from token
+        var subClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(subClaim) || !long.TryParse(subClaim, out var userId))
+        {
+            return Unauthorized(new { error = "invalid_token" });
+        }
+
+        // Get user from database
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound(new { error = "user_not_found" });
+        }
+
+        // Build response based on scopes in the token
+        var scopes = User.FindFirst("scope")?.Value?.Split(' ') ?? Array.Empty<string>();
+
+        var userInfo = new Dictionary<string, object>
+        {
+            ["sub"] = userId.ToString()
+        };
+
+        // Profile scope: name, preferred_username
+        if (scopes.Contains("profile") || scopes.Contains("openid"))
+        {
+            if (!string.IsNullOrEmpty(user.FullName))
+            {
+                userInfo["name"] = user.FullName;
+            }
+
+            if (!string.IsNullOrEmpty(user.UserName))
+            {
+                userInfo["preferred_username"] = user.UserName;
+            }
+        }
+
+        // Email scope: email, email_verified
+        if (scopes.Contains("email"))
+        {
+            userInfo["email"] = user.Email;
+            userInfo["email_verified"] = user.EmailConfirmed;
+        }
+
+        return Ok(userInfo);
+    }
+
+    /// <summary>
+    /// OIDC Logout / End Session Endpoint with validation
+    /// </summary>
     [HttpGet("logout")]
     public async Task<IActionResult> Logout(
         [FromQuery] string? client_id,
@@ -169,11 +214,19 @@ public class ConnectController : ControllerBase
         // Sign out from cookie authentication
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        // If post_logout_redirect_uri is provided, redirect there
+        // Validate post_logout_redirect_uri against registered URIs
         if (!string.IsNullOrEmpty(post_logout_redirect_uri))
         {
-            // TODO: Validate post_logout_redirect_uri against registered URIs for client_id
-            // For now, just redirect
+            var isValid = await ValidatePostLogoutRedirectUriAsync(client_id, post_logout_redirect_uri);
+            if (!isValid)
+            {
+                return BadRequest(new
+                {
+                    error = "invalid_request",
+                    error_description = "Invalid post_logout_redirect_uri"
+                });
+            }
+
             var redirectUrl = post_logout_redirect_uri;
             if (!string.IsNullOrEmpty(state))
             {
@@ -183,8 +236,71 @@ public class ConnectController : ControllerBase
             return Redirect(redirectUrl);
         }
 
-        // If no redirect URI, show a simple logged out message or redirect to SSO home
+        // Default redirect to SSO login
         var ssoUrl = _configuration["Urls:SsoWeb"] ?? "https://sso.test";
         return Redirect($"{ssoUrl}/login?logout=true");
     }
+
+    #region Private Methods
+
+    /// <summary>
+    /// Validate post_logout_redirect_uri against registered PostLogoutRedirectUris for the client
+    /// </summary>
+    private async Task<bool> ValidatePostLogoutRedirectUriAsync(string? clientId, string postLogoutRedirectUri)
+    {
+        // If client_id provided, validate against that specific client
+        if (!string.IsNullOrEmpty(clientId))
+        {
+            var app = await _applicationRepository.GetByClientIdAsync(clientId);
+            if (app == null || !app.IsActive)
+            {
+                return false;
+            }
+
+            var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
+            return allowedUris.Any(uri =>
+                string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // If no client_id, check all active applications
+        var applications = await _applicationRepository.GetAllAsync();
+        foreach (var app in applications.Where(a => a.IsActive))
+        {
+            var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
+            if (allowedUris.Any(uri =>
+                    string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Parse URI list from JSON array or space-delimited string
+    /// </summary>
+    private static List<string> ParseUriList(string? uriString)
+    {
+        if (string.IsNullOrEmpty(uriString))
+        {
+            return new List<string>();
+        }
+
+        if (uriString.TrimStart().StartsWith("["))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(uriString) ?? new List<string>();
+            }
+            catch
+            {
+                // Fall through to space-delimited
+            }
+        }
+
+        return uriString.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+    }
+
+    #endregion
 }

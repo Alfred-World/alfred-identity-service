@@ -46,14 +46,15 @@ public class WellKnownController : ControllerBase
             issuer = issuer,
             authorization_endpoint = $"{issuer}/connect/authorize",
             token_endpoint = $"{issuer}/connect/token",
+            end_session_endpoint = $"{issuer}/connect/logout",
             jwks_uri = $"{issuer}/.well-known/jwks.json",
-            userinfo_endpoint = $"{issuer}/connect/userinfo", // Not implemented yet
+            userinfo_endpoint = $"{issuer}/connect/userinfo",
             response_types_supported = new[] { "code", "token", "id_token" },
             subject_types_supported = new[] { "public" },
             id_token_signing_alg_values_supported = new[] { "RS256" },
             scopes_supported = new[] { "openid", "profile", "email", "offline_access" },
             token_endpoint_auth_methods_supported = new[] { "client_secret_post", "client_secret_basic" },
-            claims_supported = new[] { "sub", "iss", "aud", "exp", "iat", "email", "name" }
+            claims_supported = new[] { "sub", "iss", "aud", "exp", "iat", "email", "name", "preferred_username" }
         });
     }
 }

@@ -5,37 +5,24 @@ namespace Alfred.Identity.WebApi.Contracts.Auth;
 /// <summary>
 /// Response for SSO Login
 /// </summary>
+/// <remarks>
+/// Note: AccessToken/RefreshToken are intentionally NOT included here.
+/// SSO flow uses cookie-based authentication. Client only needs the exchange URL.
+/// </remarks>
 public sealed record SsoLoginResponse
 {
     /// <summary>
     /// Exchange URL for browser navigation to set cookie (Token Exchange Pattern)
     /// </summary>
-    public string? ReturnUrl { get; init; }
+    /// <remarks>
+    /// Client should navigate to this URL: window.location.href = response.returnUrl
+    /// </remarks>
+    public required string ReturnUrl { get; init; }
 
     /// <summary>
-    /// JWT Access Token for SPA usage (Bearer Authorization)
-    /// </summary>
-    public string? AccessToken { get; init; }
-
-    /// <summary>
-    /// Refresh Token for renewing Access Token
-    /// </summary>
-    public string? RefreshToken { get; init; }
-
-    /// <summary>
-    /// Access Token expiration in seconds
-    /// </summary>
-    public int ExpiresIn { get; init; }
-
-    /// <summary>
-    /// User information
+    /// User information for UI display
     /// </summary>
     public UserInfo User { get; init; } = null!;
-
-    /// <summary>
-    /// One-time exchange token for cookie authentication (Token Exchange Pattern)
-    /// </summary>
-    public string? ExchangeToken { get; init; }
 }
 
 /// <summary>
@@ -59,7 +46,11 @@ public sealed record SsoSessionResponse
 /// </summary>
 public sealed record SessionUserInfoDto
 {
-    public Guid Id { get; init; }
+    /// <summary>
+    /// User ID (long/int64 - matches DB schema)
+    /// </summary>
+    public long Id { get; init; }
+
     public string Email { get; init; } = "";
     public string? FullName { get; init; }
     public string? UserName { get; init; }
