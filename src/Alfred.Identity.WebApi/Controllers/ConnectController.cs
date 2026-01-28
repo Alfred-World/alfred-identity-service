@@ -223,7 +223,7 @@ public class ConnectController : ControllerBase
                 return BadRequest(new
                 {
                     error = "invalid_request",
-                    error_description = $"Invalid post_logout_redirect_uri: {post_logout_redirect_uri} for client_id: {client_id}"
+                    error_description = "Invalid post_logout_redirect_uri"
                 });
             }
 
@@ -257,8 +257,6 @@ public class ConnectController : ControllerBase
             uriWithoutQuery = postLogoutRedirectUri.Substring(0, queryIndex);
         }
 
-        Console.WriteLine($"[Logout] URI without query: {uriWithoutQuery}");
-
         // If client_id provided, validate against that specific client
         if (!string.IsNullOrEmpty(clientId))
         {
@@ -269,8 +267,6 @@ public class ConnectController : ControllerBase
             }
 
             var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
-            Console.WriteLine($"[Logout] Allowed URIs for {clientId}: {string.Join(", ", allowedUris)}");
-
             return allowedUris.Any(uri =>
                 string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(uri, uriWithoutQuery, StringComparison.OrdinalIgnoreCase));
