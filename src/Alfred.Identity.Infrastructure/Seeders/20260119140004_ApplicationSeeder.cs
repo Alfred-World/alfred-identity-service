@@ -46,7 +46,7 @@ public class ApplicationSeeder : BaseDataSeeder
 
                 // IMPORTANT: Added NextAuth Callback URL here
                 "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
-                "[\"https://core.test\",\"https://core.test/login\",\"http://core.test:7200\",\"http://core.test:7200/login\",\"http://localhost:7200\",\"http://localhost:7200/login\"]",
+                "[\"https://core.test\",\"https://core.test/login\",\"https://sso.test/api/auth/signout\",\"https://sso.test/api/auth/logout\",\"https://sso.test/signout\",\"https://sso.test/login\",\"http://core.test:7200\",\"http://core.test:7200/login\",\"http://localhost:7200\",\"http://localhost:7200/login\"]",
                 "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
                 "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 "web"
