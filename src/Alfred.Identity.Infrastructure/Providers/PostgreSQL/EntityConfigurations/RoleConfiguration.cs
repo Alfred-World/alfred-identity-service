@@ -17,6 +17,7 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         builder.Property(x => x.Name).HasMaxLength(256);
         builder.Property(x => x.NormalizedName).HasMaxLength(256);
+        builder.Property(x => x.Icon).HasMaxLength(256);
 
         builder.Property(x => x.IsImmutable)
             .HasDefaultValue(false);

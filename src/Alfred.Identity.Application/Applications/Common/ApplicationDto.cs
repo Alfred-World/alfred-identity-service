@@ -41,7 +41,11 @@ public sealed record ApplicationDto
 
     private static List<string>? ParseJsonList(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return null;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
         try
         {
             return JsonSerializer.Deserialize<List<string>>(json);

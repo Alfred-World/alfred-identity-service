@@ -13,6 +13,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
 {
     public string Name { get; private set; } = null!;
     public string NormalizedName { get; private set; } = null!;
+    public string? Icon { get; private set; }
     public string? ConcurrencyStamp { get; private set; } = Guid.NewGuid().ToString();
 
     /// <summary>
@@ -41,6 +42,14 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// </summary>
     public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
 
+    public void Update(string name, string? icon)
+    {
+        Name = name;
+        NormalizedName = name.ToUpperInvariant();
+        Icon = icon;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void AddPermission(long permissionId, long? creatorId = null)
     {
         if (RolePermissions.Any(rp => rp.PermissionId == permissionId))
@@ -60,16 +69,37 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         }
     }
 
+    public void SyncPermissions(IEnumerable<long> permissionIds, long? creatorId = null)
+    {
+        var desiredIds = new HashSet<long>(permissionIds);
+        var currentIds = new HashSet<long>(RolePermissions.Select(rp => rp.PermissionId));
+
+        // Identify permissions to add
+        var toAdd = desiredIds.Except(currentIds);
+        foreach (var id in toAdd)
+        {
+            AddPermission(id, creatorId);
+        }
+
+        // Identify permissions to remove
+        var toRemove = currentIds.Except(desiredIds);
+        foreach (var id in toRemove)
+        {
+            RemovePermission(id);
+        }
+    }
+
     private Role()
     {
     }
 
-    public static Role Create(string name, bool isImmutable = false, bool isSystem = false, long? createdById = null)
+    public static Role Create(string name, string? icon = null, bool isImmutable = false, bool isSystem = false, long? createdById = null)
     {
         return new Role
         {
             Name = name,
             NormalizedName = name.ToUpperInvariant(),
+            Icon = icon,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             IsImmutable = isImmutable,
             IsSystem = isSystem,
@@ -83,7 +113,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// </summary>
     public static Role CreateOwner()
     {
-        return Create("Owner", true, true);
+        return Create("Owner", "tabler-shield-lock-filled", true, true);
     }
 
     /// <summary>
@@ -91,7 +121,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// </summary>
     public static Role CreateAdmin()
     {
-        return Create("Admin", false, true);
+        return Create("Admin", "tabler-shield-lock", false, true);
     }
 
     /// <summary>
@@ -99,7 +129,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// </summary>
     public static Role CreateUser()
     {
-        return Create("User", false, true);
+        return Create("User", "tabler-user", false, true);
     }
 
     /// <summary>

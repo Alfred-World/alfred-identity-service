@@ -1,4 +1,6 @@
 using Alfred.Identity.Application.Applications.Commands.Delete;
+using Alfred.Identity.Application.Applications.Commands.RegenerateSecret;
+using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Applications.Queries.GetApplicationById;
 using Alfred.Identity.Application.Applications.Queries.GetApplications;
@@ -9,13 +11,10 @@ using MediatR;
 
 using Microsoft.AspNetCore.Mvc;
 
-using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
-using Alfred.Identity.Application.Applications.Commands.RegenerateSecret;
-
 namespace Alfred.Identity.WebApi.Controllers;
 
-using Alfred.Identity.Application.Applications.Queries.GetMetadata;
 using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
+using Alfred.Identity.Application.Applications.Queries.GetMetadata;
 
 [Route("applications")]
 // [Authorize(Roles = "Admin")] // Uncomment when roles are set up
@@ -93,7 +92,7 @@ public class ApplicationsController : BaseApiController
         var queryResult = await _mediator.Send(getQuery, cancellationToken);
 
         var appDto = queryResult.Value!;
-        
+
         // Enrich DTO with the secret if available
         if (!string.IsNullOrEmpty(createResult.Secret))
         {

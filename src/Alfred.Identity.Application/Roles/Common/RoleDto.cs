@@ -7,7 +7,8 @@ public record RoleDto(
     string Name,
     bool IsImmutable,
     bool IsSystem,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? Icon = null
 )
 {
     public static RoleDto FromEntity(Role role)
@@ -17,7 +18,8 @@ public record RoleDto(
             role.Name,
             role.IsImmutable,
             role.IsSystem,
-            role.CreatedAt
+            role.CreatedAt,
+            role.Icon
         );
     }
 }

@@ -1,5 +1,6 @@
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Applications.Commands.UpdateStatus;

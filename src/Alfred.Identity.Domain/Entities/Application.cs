@@ -69,7 +69,7 @@ public class Application : BaseEntity
         PostLogoutRedirectUris = postLogoutRedirectUris;
         Permissions = permissions;
         ClientType = clientType;
-        
+
         UpdatedAt = DateTime.UtcNow;
     }
 

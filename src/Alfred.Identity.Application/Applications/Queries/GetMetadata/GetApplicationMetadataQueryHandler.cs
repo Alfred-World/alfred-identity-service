@@ -21,13 +21,13 @@ public class GetApplicationMetadataQueryHandler : IRequestHandler<GetApplication
         // 1. Static Metadata (Based on protocol and system support)
         var applicationTypes = new List<string> { "web", "native", "machine", "spa" };
         var clientTypes = new List<string> { "confidential", "public" };
-        
-        var grantTypes = new List<string> 
-        { 
-            "gt:authorization_code", 
-            "gt:refresh_token", 
-            "gt:client_credentials", 
-            "gt:password" 
+
+        var grantTypes = new List<string>
+        {
+            "gt:authorization_code",
+            "gt:refresh_token",
+            "gt:client_credentials",
+            "gt:password"
         };
 
         var endpoints = new List<string>

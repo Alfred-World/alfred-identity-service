@@ -31,16 +31,25 @@ public class
             return new AddPermissionsToRoleResult(false, "Cannot modify immutable role");
         }
 
-        foreach (var permissionId in request.PermissionIds)
+        // Efficient N+1 fix: Fetch all requested permissions in one query
+        var uniquePermissionIds = request.PermissionIds.Distinct().ToList();
+        if (uniquePermissionIds.Any())
         {
-            var permission = await _permissionRepository.GetByIdAsync(permissionId, cancellationToken);
-            if (permission == null)
-            {
-                return new AddPermissionsToRoleResult(false, $"Permission with ID {permissionId} not found");
-            }
+            // Use base repository method to find by IDs
+            var validPermissions = await _permissionRepository.FindAsync(p => uniquePermissionIds.Contains(p.Id), cancellationToken);
+            var validPermissionIds = validPermissions.Select(p => p.Id).ToHashSet();
 
-            role.AddPermission(permissionId);
+            // Check if all requested IDs are valid
+            var invalidIds = uniquePermissionIds.Where(id => !validPermissionIds.Contains(id)).ToList();
+            if (invalidIds.Any())
+            {
+                // Return explicitly which IDs were not found
+                return new AddPermissionsToRoleResult(false, $"Permissions not found: {string.Join(", ", invalidIds)}");
+            }
         }
+
+        // Sync permissions (add new, remove missing)
+        role.SyncPermissions(uniquePermissionIds);
 
         await _roleRepository.UpdateAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);

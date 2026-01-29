@@ -21,7 +21,7 @@ public class CreateRoleCommandHandler : IRequestHandler<CreateRoleCommand, Creat
             return new CreateRoleResult(false, Error: $"Role '{request.Name}' already exists.");
         }
 
-        var role = Role.Create(request.Name);
+        var role = Role.Create(request.Name, request.Icon);
         await _roleRepository.AddAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
