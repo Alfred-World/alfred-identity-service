@@ -15,13 +15,6 @@ public sealed record CreateApplicationRequest
     public required string ClientId { get; init; }
 
     /// <summary>
-    /// Client secret for confidential clients
-    /// </summary>
-    [Required]
-    [StringLength(256)]
-    public required string ClientSecret { get; init; }
-
-    /// <summary>
     /// Display name for the application
     /// </summary>
     [Required]
@@ -33,7 +26,6 @@ public sealed record CreateApplicationRequest
     /// </summary>
     [Required]
     public required string RedirectUris { get; init; }
-
     /// <summary>
     /// Comma-separated list of allowed post-logout redirect URIs
     /// </summary>
@@ -79,3 +71,7 @@ public sealed record UpdateApplicationRequest
     /// </summary>
     public string? Permissions { get; init; }
 }
+
+public record UpdateApplicationStatusRequest(
+    bool IsActive
+);

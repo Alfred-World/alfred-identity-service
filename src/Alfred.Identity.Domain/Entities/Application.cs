@@ -62,19 +62,14 @@ public class Application : BaseEntity
         string? redirectUris,
         string? postLogoutRedirectUris,
         string? permissions,
-        string? clientType,
-        string? clientSecret)
+        string? clientType)
     {
         DisplayName = displayName;
         RedirectUris = redirectUris;
         PostLogoutRedirectUris = postLogoutRedirectUris;
         Permissions = permissions;
         ClientType = clientType;
-        if (clientSecret != null)
-        {
-            ClientSecret = clientSecret;
-        }
-
+        
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -88,6 +83,12 @@ public class Application : BaseEntity
     {
         ClientSecret = newSecretHash;
         ConcurrencyToken = Guid.NewGuid().ToString();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetStatus(bool isActive)
+    {
+        IsActive = isActive;
         UpdatedAt = DateTime.UtcNow;
     }
 }

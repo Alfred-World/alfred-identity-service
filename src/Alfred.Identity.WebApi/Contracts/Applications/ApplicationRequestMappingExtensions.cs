@@ -15,7 +15,6 @@ public static class ApplicationRequestMappingExtensions
     {
         return new CreateApplicationCommand(
             request.ClientId,
-            request.ClientSecret,
             request.DisplayName,
             request.RedirectUris,
             request.PostLogoutRedirectUris ?? string.Empty,

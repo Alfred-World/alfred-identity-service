@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITokenRepository, TokenRepository>();
         services.AddScoped<ISigningKeyRepository, SigningKeyRepository>();
         services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
+        services.AddScoped<IScopeRepository, ScopeRepository>();
 
         return services;
     }

@@ -34,7 +34,13 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
         }
 
         // Update properties using domain methods
-        application.UpdateRedirectUris(request.RedirectUris);
+        application.Update(
+            request.DisplayName,
+            request.RedirectUris,
+            request.PostLogoutRedirectUris,
+            request.Permissions,
+            application.ClientType
+        );
 
         // Use sync Update method from IRepository
         _applicationRepository.Update(application);

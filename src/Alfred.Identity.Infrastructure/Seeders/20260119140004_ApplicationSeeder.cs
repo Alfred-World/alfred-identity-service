@@ -80,9 +80,13 @@ public class ApplicationSeeder : BaseDataSeeder
                     app.RedirectUris,
                     app.PostLogoutRedirectUris,
                     app.Permissions,
-                    app.ClientType,
-                    app.ClientSecret
+                    app.ClientType
                 );
+
+                if (!string.IsNullOrEmpty(app.ClientSecret) && app.ClientSecret != existingApp.ClientSecret)
+                {
+                    existingApp.RotateSecret(app.ClientSecret);
+                }
                 LogDebug($"Updated: {app.ClientId}");
                 updated++;
             }

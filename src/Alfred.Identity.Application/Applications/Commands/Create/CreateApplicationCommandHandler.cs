@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Applications.Commands.Create;
 
-public class CreateApplicationCommandHandler : IRequestHandler<CreateApplicationCommand, long>
+public class CreateApplicationCommandHandler : IRequestHandler<CreateApplicationCommand, CreateApplicationResult>
 {
     private readonly IApplicationRepository _applicationRepository;
     private readonly IPasswordHasher _passwordHasher; // Use if we hash secrets
@@ -22,26 +22,22 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<long> Handle(CreateApplicationCommand request, CancellationToken cancellationToken)
+    public async Task<CreateApplicationResult> Handle(CreateApplicationCommand request, CancellationToken cancellationToken)
     {
         var existing = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
         if (existing != null)
         {
             throw new InvalidOperationException("Client ID already exists");
         }
-
-        // Only hash secret if confidential
-        // For public clients, secret might be empty or mocked.
-        // Assuming we store plain or hashed? OpenIddict recommends hashing.
-        // Let's use our PasswordHasher for consistency, though ideally different generic hasher.
-        // Or store plain if we don't have hashing mechanism for non-user secrets yet.
-        // Let's assume plain for simplicity now, or Hash if non-empty.
         string? secretHash = null;
-        if (!string.IsNullOrEmpty(request.ClientSecret))
+        string? rawSecret = null;
+        if (request.Type == "confidential")
         {
-            secretHash = _passwordHasher.HashPassword(request.ClientSecret);
-            // Note: PasswordHasher is for Users, verifies against hash. 
-            // Works for secrets too.
+            // Generate a secure random secret (32 bytes -> base64)
+            // Note: The UI won't see this. User must regenerate to see it.
+            var secretBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            rawSecret = Convert.ToBase64String(secretBytes);
+            secretHash = _passwordHasher.HashPassword(rawSecret);
         }
 
         var app = Domain.Entities.Application.Create(
@@ -64,6 +60,7 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
         // Let's use IUnitOfWork.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return app.Id;
+        // Return result with raw secret if available
+        return new CreateApplicationResult(app.Id, request.Type == "confidential" ? rawSecret : null);
     }
 }

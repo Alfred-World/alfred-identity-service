@@ -199,9 +199,26 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         // 4. Validate Token Usage
         if (tokenEntity.Status != TokenStatus.Valid)
         {
-            // If reusing revoked token -> security risk -> revoke all?
-            // For now, simplify to error.
-            return Error(OAuthConstants.Errors.InvalidGrant, "Refresh token has been reused or revoked");
+            // Allow temporary reuse (Grace Period) for concurrent requests (e.g. NextAuth race condition)
+            // If token was redeemed recently (e.g., < 60 seconds ago), allow it to be used again
+            // NOTE: Ideally we should return the SAME new token that was issued when it was first redeemed,
+            // but for simplicity here we might just issue another new one or error out if we can't find the new one.
+            // Actually, issuing another new one is safer than causing a loop.
+            // If we strictly follow rotation, we should return the ALREADY GENERATED new token, but we don't track the "next" token link easily here.
+            
+            // Simplified Grace Period: If Redeemed recently, proceed as if valid (it will be redeemed again, updating timestamp)
+            var gracePeriodSeconds = 60;
+            if (tokenEntity.Status == TokenStatus.Redeemed && 
+                tokenEntity.RedemptionDate.HasValue && 
+                tokenEntity.RedemptionDate.Value > DateTime.UtcNow.AddSeconds(-gracePeriodSeconds))
+            {
+                // Continue execution - this will trigger another rotation, which is fine (just another new token)
+                // The client will just use the latest one it receives.
+            }
+            else
+            {
+                 return Error(OAuthConstants.Errors.InvalidGrant, "Refresh token has been reused or revoked");
+            }
         }
 
         if (tokenEntity.ExpirationDate < DateTime.UtcNow)
