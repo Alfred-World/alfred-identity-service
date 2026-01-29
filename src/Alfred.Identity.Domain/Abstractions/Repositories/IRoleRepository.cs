@@ -1,4 +1,3 @@
-using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Domain.Abstractions.Repositories;

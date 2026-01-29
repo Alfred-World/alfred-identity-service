@@ -27,12 +27,10 @@ public class RolePermissionSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed role-permission mappings...");
-
         // Check if role permissions already exist
         if (await _dbContext.Set<RolePermission>().AnyAsync(cancellationToken))
         {
-            LogInfo("Role permissions already exist, skipping seed");
+            LogSuccess("Skipped (mappings exist)");
             return;
         }
 
@@ -43,7 +41,7 @@ public class RolePermissionSeeder : BaseDataSeeder
 
         if (ownerRole == null || adminRole == null || userRole == null)
         {
-            LogWarning("Required roles not found. Please run RoleSeeder first.");
+            LogWarning("Required roles not found. Skipping.");
             return;
         }
 
@@ -51,7 +49,7 @@ public class RolePermissionSeeder : BaseDataSeeder
         var allPermissions = await _dbContext.Set<Permission>().ToListAsync(cancellationToken);
         if (!allPermissions.Any())
         {
-            LogWarning("No permissions found. Please run PermissionSeeder first.");
+            LogWarning("No permissions found. Skipping.");
             return;
         }
 
@@ -81,10 +79,7 @@ public class RolePermissionSeeder : BaseDataSeeder
         await _dbContext.Set<RolePermission>().AddRangeAsync(rolePermissions, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogInfo($"Seeded {rolePermissions.Count} role-permission mappings:");
-        LogInfo($"  - Owner: 1 permission (system:*)");
-        LogInfo($"  - Admin: {adminPermissions.Count()} permissions");
-        LogInfo($"  - User: {userPermissions.Count()} permissions");
-        LogSuccess();
+        LogSuccess(
+            $"Created {rolePermissions.Count} mappings (Owner:1, Admin:{adminPermissions.Count()}, User:{userPermissions.Count()})");
     }
 }

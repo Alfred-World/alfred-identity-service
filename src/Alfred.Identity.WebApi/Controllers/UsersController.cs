@@ -1,4 +1,3 @@
-using Alfred.Identity.Application.Querying;
 using Alfred.Identity.Application.Users.Commands.AssignRoles;
 using Alfred.Identity.Application.Users.Commands.RevokeRoles;
 using Alfred.Identity.Application.Users.Common;
@@ -7,7 +6,6 @@ using Alfred.Identity.WebApi.Contracts.Common;
 
 using MediatR;
 
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;

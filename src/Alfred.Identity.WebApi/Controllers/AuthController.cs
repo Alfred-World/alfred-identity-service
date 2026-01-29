@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Web;
 
 using Alfred.Identity.Application.Auth.Commands.Login;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
 
@@ -27,18 +29,27 @@ public class AuthController : BaseApiController
     private readonly IMediator _mediator;
     private readonly IAuthTokenService _authTokenService;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly IJwtTokenService _jwtTokenService;
+    private readonly ITokenRepository _tokenRepository;
 
     public AuthController(
         IMediator mediator,
         IAuthTokenService authTokenService,
         IApplicationRepository applicationRepository,
-        IConfiguration configuration)
+        IUserRepository userRepository,
+        IConfiguration configuration,
+        IJwtTokenService jwtTokenService,
+        ITokenRepository tokenRepository)
     {
         _mediator = mediator;
         _authTokenService = authTokenService;
         _applicationRepository = applicationRepository;
+        _userRepository = userRepository;
         _configuration = configuration;
+        _jwtTokenService = jwtTokenService;
+        _tokenRepository = tokenRepository;
     }
 
     /// <summary>
@@ -447,7 +458,7 @@ public class AuthController : BaseApiController
         {
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
             {
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                var query = HttpUtility.ParseQueryString(uri.Query);
                 return query["client_id"];
             }
         }

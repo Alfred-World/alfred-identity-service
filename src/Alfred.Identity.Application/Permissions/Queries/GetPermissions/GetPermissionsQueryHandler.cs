@@ -28,7 +28,8 @@ public class GetPermissionsQueryHandler : IRequestHandler<GetPermissionsQuery, P
         _filterParser = filterParser;
     }
 
-    public async Task<PageResult<PermissionDto>> Handle(GetPermissionsQuery request, CancellationToken cancellationToken)
+    public async Task<PageResult<PermissionDto>> Handle(GetPermissionsQuery request,
+        CancellationToken cancellationToken)
     {
         var fieldMap = PermissionFieldMap.Instance;
         var queryRequest = request.QueryRequest;
@@ -55,17 +56,18 @@ public class GetPermissionsQueryHandler : IRequestHandler<GetPermissionsQuery, P
         }
 
         // Create field selector from FieldMap
-        var fieldSelector = new Func<string, (Expression<Func<Permission, object>>? Expression, bool CanSort)>(fieldName =>
-        {
-            if (fieldMap.Fields.TryGet(fieldName, out var expression, out _))
+        var fieldSelector =
+            new Func<string, (Expression<Func<Permission, object>>? Expression, bool CanSort)>(fieldName =>
             {
-                var canSort = fieldMap.Fields.CanSort(fieldName);
-                var objectExpression = ExpressionConverterHelper.ConvertToObjectExpression<Permission>(expression);
-                return (objectExpression, canSort);
-            }
+                if (fieldMap.Fields.TryGet(fieldName, out var expression, out _))
+                {
+                    var canSort = fieldMap.Fields.CanSort(fieldName);
+                    var objectExpression = ExpressionConverterHelper.ConvertToObjectExpression<Permission>(expression);
+                    return (objectExpression, canSort);
+                }
 
-            return (null, false);
-        });
+                return (null, false);
+            });
 
         var (items, total) = await _permissionRepository.GetPagedAsync(
             filterExpression,

@@ -33,4 +33,3 @@ public class RoleFieldMap : BaseFieldMap<Role>
         // Role entity has no navigations that need to be included 
     };
 }
-

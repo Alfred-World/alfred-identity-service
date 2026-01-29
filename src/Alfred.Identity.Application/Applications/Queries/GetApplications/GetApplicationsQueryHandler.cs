@@ -6,7 +6,6 @@ using Alfred.Identity.Application.Querying;
 using Alfred.Identity.Application.Querying.Binding;
 using Alfred.Identity.Application.Querying.Parsing;
 using Alfred.Identity.Domain.Abstractions.Repositories;
-using Alfred.Identity.Domain.Entities;
 
 using MediatR;
 
@@ -64,17 +63,20 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
 
 
         // Create field selector from FieldMap to avoid duplication
-        var fieldSelector = new Func<string, (Expression<Func<Domain.Entities.Application, object>>? Expression, bool CanSort)>(fieldName =>
-        {
-            if (fieldMap.Fields.TryGet(fieldName, out var expression, out _))
+        var fieldSelector =
+            new Func<string, (Expression<Func<Domain.Entities.Application, object>>? Expression, bool CanSort
+                )>(fieldName =>
             {
-                var canSort = fieldMap.Fields.CanSort(fieldName);
-                var objectExpression = ExpressionConverterHelper.ConvertToObjectExpression<Domain.Entities.Application>(expression);
-                return (objectExpression, canSort);
-            }
+                if (fieldMap.Fields.TryGet(fieldName, out var expression, out _))
+                {
+                    var canSort = fieldMap.Fields.CanSort(fieldName);
+                    var objectExpression =
+                        ExpressionConverterHelper.ConvertToObjectExpression<Domain.Entities.Application>(expression);
+                    return (objectExpression, canSort);
+                }
 
-            return (null, false);
-        });
+                return (null, false);
+            });
 
         // Get paginated applications using IRepository's GetPagedAsync
         var (items, total) = await _applicationRepository.GetPagedAsync(

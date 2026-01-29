@@ -30,8 +30,6 @@ public class ApplicationSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed applications...");
-
         // Default client secret for development
         const string defaultClientSecret = "alfred-identity-client-secret-2026";
         var hashedSecret = _passwordHasher.HashPassword(defaultClientSecret);
@@ -46,7 +44,7 @@ public class ApplicationSeeder : BaseDataSeeder
 
                 // IMPORTANT: Added NextAuth Callback URL here
                 "[\"https://core.test/api/auth/callback/alfred-identity\",\"http://core.test:7200/api/auth/callback/alfred-identity\",\"http://localhost:7200/api/auth/callback/alfred-identity\"]",
-                "[\"https://core.test\",\"https://core.test/login\",\"https://sso.test/api/auth/signout\",\"https://sso.test/api/auth/logout\",\"https://sso.test/signout\",\"https://sso.test/login\",\"http://core.test:7200\",\"http://core.test:7200/login\",\"http://localhost:7200\",\"http://localhost:7200/login\"]",
+                "[\"https://core.test\",\"https://core.test/login\",\"https://sso.test/api/auth/signout\",\"https://sso.test/api/auth/logout\",\"https://sso.test/api/auth/force-logout\",\"https://sso.test/signout\",\"https://sso.test/login\",\"http://core.test:7200\",\"http://core.test:7200/login\",\"http://localhost:7200\",\"http://localhost:7200/login\"]",
                 "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
                 "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 "web"
@@ -67,6 +65,9 @@ public class ApplicationSeeder : BaseDataSeeder
             )
         };
 
+        var added = 0;
+        var updated = 0;
+
         foreach (var app in applications)
         {
             var existingApp = await _dbContext.Set<Application>()
@@ -82,20 +83,25 @@ public class ApplicationSeeder : BaseDataSeeder
                     app.ClientType,
                     app.ClientSecret
                 );
-                LogInfo($"Updated application: {app.ClientId}");
+                LogDebug($"Updated: {app.ClientId}");
+                updated++;
             }
             else
             {
                 // Add new app
                 await _dbContext.Set<Application>().AddAsync(app, cancellationToken);
-                LogInfo($"Added application: {app.ClientId}");
+                LogDebug($"Added: {app.ClientId}");
+                added++;
             }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogInfo($"Seeded {applications.Length} applications successfully");
-        LogInfo($"Default client secret for development: {defaultClientSecret}");
-        LogSuccess();
+        var summary = added > 0 && updated > 0
+            ? $"Added {added}, updated {updated} apps"
+            : added > 0
+                ? $"Added {added} apps"
+                : $"Updated {updated} apps";
+        LogSuccess(summary);
     }
 }

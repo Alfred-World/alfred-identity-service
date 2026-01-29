@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Querying;
 using Alfred.Identity.Application.Querying.Validation;
-using Alfred.Identity.Domain.Entities;
 
 using ApplicationEntity = Alfred.Identity.Domain.Entities.Application;
 

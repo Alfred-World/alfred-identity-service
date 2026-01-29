@@ -160,7 +160,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             accessToken,
             refreshTokenStr,
             idToken,
-            ExpiresIn: 3600, // 1 hour
+            ExpiresIn: _jwtTokenService.AccessTokenLifetimeSeconds,
             TokenType: "Bearer"
         );
     }
@@ -254,7 +254,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             newAccessToken,
             newRefreshTokenStr,
             newIdToken,
-            ExpiresIn: 3600,
+            ExpiresIn: _jwtTokenService.AccessTokenLifetimeSeconds,
             TokenType: "Bearer"
         );
     }

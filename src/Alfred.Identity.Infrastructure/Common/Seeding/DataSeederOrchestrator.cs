@@ -179,9 +179,10 @@ public class DataSeederOrchestrator
                     }
                 }
 
-                _logger.LogInformation("Deleted: {TableCount} tables", tables.Count);
-
                 // Delete all data from tables and reset sequences
+                var clearedCount = 0;
+                var failedTables = new List<string>();
+
                 foreach (var table in tables)
                 {
                     using var deleteCommand = npgsqlConnection.CreateCommand();
@@ -190,12 +191,18 @@ public class DataSeederOrchestrator
                     try
                     {
                         await deleteCommand.ExecuteNonQueryAsync(cancellationToken);
-                        _logger.LogInformation("  ✓ Cleared [{Table}]", table);
+                        clearedCount++;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning("  ⚠ Failed to clear [{Table}]: {Message}", table, ex.Message);
+                        failedTables.Add($"{table}: {ex.Message}");
                     }
+                }
+
+                _logger.LogInformation("Cleared {ClearedCount}/{TotalCount} tables", clearedCount, tables.Count);
+                foreach (var failed in failedTables)
+                {
+                    _logger.LogWarning("  ⚠ Failed: {Table}", failed);
                 }
 
                 // Clear seed history to force re-run all seeders and reset ID back to 1
@@ -209,7 +216,6 @@ public class DataSeederOrchestrator
                             END IF;
                         END $$;";
                     await clearHistoryCommand.ExecuteNonQueryAsync(cancellationToken);
-                    _logger.LogInformation("  ✓ Cleared seed history and reset ID to 1");
                 }
 
                 await npgsqlConnection.CloseAsync();

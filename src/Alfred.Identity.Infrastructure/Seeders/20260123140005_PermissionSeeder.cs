@@ -25,12 +25,10 @@ public class PermissionSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed permissions...");
-
         // Check if permissions already exist
         if (await _dbContext.Set<Permission>().AnyAsync(cancellationToken))
         {
-            LogInfo("Permissions already exist, skipping seed");
+            LogSuccess("Skipped (permissions exist)");
             return;
         }
 
@@ -75,7 +73,6 @@ public class PermissionSeeder : BaseDataSeeder
         await _dbContext.Set<Permission>().AddRangeAsync(permissions, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogInfo($"Seeded {permissions.Count} permissions successfully");
-        LogSuccess();
+        LogSuccess($"Created {permissions.Count} permissions");
     }
 }

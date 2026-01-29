@@ -31,14 +31,16 @@ public class SigningKeySeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed signing key...");
+        LogDebug("Checking for existing signing key...");
 
         // Check if active key already exists
         if (await _dbContext.Set<SigningKey>().AnyAsync(k => k.IsActive, cancellationToken))
         {
-            LogInfo("Active signing key already exists, skipping seed");
+            LogSuccess("Skipped (key exists)");
             return;
         }
+
+        LogDebug("Generating RSA key pair...");
 
         // Generate RSA key pair
         using var rsa = RSA.Create(2048);
@@ -81,8 +83,7 @@ public class SigningKeySeeder : BaseDataSeeder
         await _dbContext.Set<SigningKey>().AddAsync(signingKey, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogInfo($"Seeded signing key: {signingKey.KeyId}");
-        LogSuccess();
+        LogSuccess($"Created key: {signingKey.KeyId}");
     }
 
     private static string Base64UrlEncode(byte[] bytes)

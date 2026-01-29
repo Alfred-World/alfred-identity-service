@@ -24,12 +24,10 @@ public class RoleSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed roles...");
-
         // Check if roles already exist
         if (await _dbContext.Set<Role>().AnyAsync(cancellationToken))
         {
-            LogInfo("Roles already exist, skipping seed");
+            LogSuccess("Skipped (roles exist)");
             return;
         }
 
@@ -40,10 +38,11 @@ public class RoleSeeder : BaseDataSeeder
             Role.CreateUser() // IsImmutable=false, IsSystem=true
         };
 
+        LogDebug($"Creating {roles.Length} roles: Owner, Admin, User");
+
         await _dbContext.Set<Role>().AddRangeAsync(roles, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogInfo($"Seeded {roles.Length} roles successfully");
-        LogSuccess();
+        LogSuccess($"Created {roles.Length} roles");
     }
 }

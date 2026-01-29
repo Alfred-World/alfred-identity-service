@@ -30,12 +30,10 @@ public class AdminUserSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed admin user...");
-
         // Check if users already exist
         if (await _dbContext.Set<User>().AnyAsync(cancellationToken))
         {
-            LogInfo("Users already exist, skipping seed");
+            LogSuccess("Skipped (users exist)");
             return;
         }
 
@@ -65,10 +63,9 @@ public class AdminUserSeeder : BaseDataSeeder
             var userRole = UserRole.Create(admin.Id, adminRole.Id);
             await _dbContext.Set<UserRole>().AddAsync(userRole, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
-            LogInfo("Assigned Admin role to admin user");
+            LogDebug("Assigned Admin role");
         }
 
-        LogInfo("Seeded admin user: admin / Admin@123 (or admin@gmail.com)");
-        LogSuccess();
+        LogSuccess("Created admin user (admin / Admin@123)");
     }
 }

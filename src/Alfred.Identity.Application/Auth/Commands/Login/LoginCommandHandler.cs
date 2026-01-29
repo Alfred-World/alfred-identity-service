@@ -21,7 +21,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
     private readonly ILocationService _locationService;
 
 
-
     public LoginCommandHandler(
         IUserRepository userRepository,
         ITokenRepository tokenRepository,

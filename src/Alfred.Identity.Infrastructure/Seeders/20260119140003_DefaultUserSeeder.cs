@@ -30,13 +30,11 @@ public class DefaultUserSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        LogInfo("Starting to seed default user...");
-
         // Check if default user already exists
         var defaultEmail = "user@gmail.com";
         if (await _dbContext.Set<User>().AnyAsync(u => u.Email == defaultEmail, cancellationToken))
         {
-            LogInfo("Default user already exists, skipping seed");
+            LogSuccess("Skipped (user exists)");
             return;
         }
 
@@ -64,10 +62,9 @@ public class DefaultUserSeeder : BaseDataSeeder
             var roleAssignment = UserRole.Create(user.Id, userRole.Id);
             await _dbContext.Set<UserRole>().AddAsync(roleAssignment, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
-            LogInfo("Assigned User role to default user");
+            LogDebug("Assigned User role");
         }
 
-        LogInfo($"Seeded default user: {defaultEmail} (Password: {defaultPassword})");
-        LogSuccess();
+        LogSuccess($"Created user ({defaultEmail} / {defaultPassword})");
     }
 }

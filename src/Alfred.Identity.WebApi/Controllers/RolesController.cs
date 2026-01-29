@@ -1,5 +1,4 @@
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying;
 using Alfred.Identity.Application.Roles.Commands.AddPermissions;
 using Alfred.Identity.Application.Roles.Commands.CreateRole;
 using Alfred.Identity.Application.Roles.Commands.DeleteRole;
@@ -13,7 +12,6 @@ using Alfred.Identity.WebApi.Contracts.Common;
 
 using MediatR;
 
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;

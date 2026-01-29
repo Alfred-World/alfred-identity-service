@@ -1,11 +1,9 @@
 using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Permissions.Queries.GetPermissions;
-using Alfred.Identity.Application.Querying;
 using Alfred.Identity.WebApi.Contracts.Common;
 
 using MediatR;
 
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
