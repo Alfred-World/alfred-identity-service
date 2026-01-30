@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Reflection;
 
+using Alfred.Identity.Application.Querying.Core;
+
 namespace Alfred.Identity.Application.Querying.Extensions;
 
 /// <summary>

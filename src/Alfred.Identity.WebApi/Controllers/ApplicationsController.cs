@@ -4,6 +4,7 @@ using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Applications.Queries.GetApplicationById;
 using Alfred.Identity.Application.Applications.Queries.GetApplications;
+using Alfred.Identity.Application.Applications.Queries.GetMetadata;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Contracts.Common;
 
@@ -12,9 +13,6 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
-
-using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
-using Alfred.Identity.Application.Applications.Queries.GetMetadata;
 
 [Route("applications")]
 // [Authorize(Roles = "Admin")] // Uncomment when roles are set up

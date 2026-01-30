@@ -36,7 +36,8 @@ public class
         if (uniquePermissionIds.Any())
         {
             // Use base repository method to find by IDs
-            var validPermissions = await _permissionRepository.FindAsync(p => uniquePermissionIds.Contains(p.Id), cancellationToken);
+            var validPermissions =
+                await _permissionRepository.FindAsync(p => uniquePermissionIds.Contains(p.Id), cancellationToken);
             var validPermissionIds = validPermissions.Select(p => p.Id).ToHashSet();
 
             // Check if all requested IDs are valid

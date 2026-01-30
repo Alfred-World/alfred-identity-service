@@ -1,5 +1,5 @@
 using Alfred.Identity.Application.Common.Behaviors;
-using Alfred.Identity.Application.Querying.Parsing;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
 
 using FluentValidation;
 

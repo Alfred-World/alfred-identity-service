@@ -1,13 +1,13 @@
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common;
-using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
 
 namespace Alfred.Identity.Application.Applications.Queries.GetMetadata;
 
-public class GetApplicationMetadataQueryHandler : IRequestHandler<GetApplicationMetadataQuery, Result<ApplicationMetadataDto>>
+public class
+    GetApplicationMetadataQueryHandler : IRequestHandler<GetApplicationMetadataQuery, Result<ApplicationMetadataDto>>
 {
     private readonly IScopeRepository _scopeRepository;
 
@@ -16,7 +16,8 @@ public class GetApplicationMetadataQueryHandler : IRequestHandler<GetApplication
         _scopeRepository = scopeRepository;
     }
 
-    public async Task<Result<ApplicationMetadataDto>> Handle(GetApplicationMetadataQuery request, CancellationToken cancellationToken)
+    public async Task<Result<ApplicationMetadataDto>> Handle(GetApplicationMetadataQuery request,
+        CancellationToken cancellationToken)
     {
         // 1. Static Metadata (Based on protocol and system support)
         var applicationTypes = new List<string> { "web", "native", "machine", "spa" };

@@ -1,4 +1,4 @@
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Includes;
 
 /// <summary>
 /// Options to configure include behavior

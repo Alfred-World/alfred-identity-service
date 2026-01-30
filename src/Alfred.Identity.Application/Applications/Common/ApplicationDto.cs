@@ -8,7 +8,9 @@ namespace Alfred.Identity.Application.Applications.Common;
 public sealed record ApplicationDto
 {
     public long Id { get; init; }
+
     public string ClientId { get; init; } = null!;
+
     // Only populated when creating or generating a new secret
     public string? ClientSecret { get; init; }
     public string? DisplayName { get; init; }

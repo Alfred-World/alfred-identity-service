@@ -1,4 +1,4 @@
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Includes;
 
 /// <summary>
 /// Helper to parse and validate include parameters

@@ -1,8 +1,6 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying.Validation;
-
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Fields;
 
 /// <summary>
 /// Base class for field maps with common include parsing logic

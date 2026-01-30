@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-using Alfred.Identity.Application.Querying;
+using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.WebApi.Contracts.Common;
 
 using Asp.Versioning;

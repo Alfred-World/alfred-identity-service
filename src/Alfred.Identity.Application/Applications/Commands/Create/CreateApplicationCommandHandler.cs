@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
@@ -22,20 +24,22 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<CreateApplicationResult> Handle(CreateApplicationCommand request, CancellationToken cancellationToken)
+    public async Task<CreateApplicationResult> Handle(CreateApplicationCommand request,
+        CancellationToken cancellationToken)
     {
         var existing = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
         if (existing != null)
         {
             throw new InvalidOperationException("Client ID already exists");
         }
+
         string? secretHash = null;
         string? rawSecret = null;
         if (request.Type == "confidential")
         {
             // Generate a secure random secret (32 bytes -> base64)
             // Note: The UI won't see this. User must regenerate to see it.
-            var secretBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            var secretBytes = RandomNumberGenerator.GetBytes(32);
             rawSecret = Convert.ToBase64String(secretBytes);
             secretHash = _passwordHasher.HashPassword(rawSecret);
         }

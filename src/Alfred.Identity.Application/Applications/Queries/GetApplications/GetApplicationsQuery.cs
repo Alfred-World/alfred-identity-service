@@ -1,5 +1,5 @@
 using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Querying;
+using Alfred.Identity.Application.Querying.Core;
 
 using MediatR;
 

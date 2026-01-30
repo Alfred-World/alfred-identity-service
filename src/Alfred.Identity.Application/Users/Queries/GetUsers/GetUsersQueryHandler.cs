@@ -1,14 +1,17 @@
 using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Common.Exceptions;
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Binding;
-using Alfred.Identity.Application.Querying.Parsing;
+using Alfred.Identity.Application.Querying.Core;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Binding;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Application.Users.Queries.GetUsers;
 
@@ -67,7 +70,8 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PageResult<Us
             return (null, false);
         });
 
-        var (items, total) = await _userRepository.GetPagedAsync(
+        // Build paged query and materialize
+        var (query, total) = await _userRepository.BuildPagedQueryAsync(
             filterExpression,
             queryRequest.Sort,
             page,
@@ -77,6 +81,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PageResult<Us
             cancellationToken
         );
 
+        var items = await query.ToListAsync(cancellationToken);
         var dtos = items.Select(UserDto.FromEntity).ToList();
 
         return new PageResult<UserDto>(dtos, page, pageSize, total);

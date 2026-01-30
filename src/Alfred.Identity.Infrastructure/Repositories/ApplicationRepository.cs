@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class ApplicationRepository : Repository<Application>, IApplicationRepository
+public class ApplicationRepository : BaseRepository<Application>, IApplicationRepository
 {
     public ApplicationRepository(IDbContext context) : base(context)
     {

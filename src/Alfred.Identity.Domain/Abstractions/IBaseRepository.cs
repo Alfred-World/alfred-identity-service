@@ -34,20 +34,23 @@ public interface IRepository<T, TId> : IReadRepository<T> where T : class
     Task<bool> ExistsAsync(TId id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get entities with filtering, sorting and pagination using custom field selector
+    /// Build a query with filtering, sorting, pagination at database level.
+    /// Returns query + total count - handlers can materialize or apply projection.
     /// </summary>
-    Task<(IEnumerable<T> Items, long Total)> GetPagedAsync(
+    Task<(IQueryable<T> Query, long Total)> BuildPagedQueryAsync(
         Expression<Func<T, bool>>? filter,
         string? sort,
         int page,
         int pageSize,
-        IEnumerable<Expression<Func<T, object>>>? includes,
+        Expression<Func<T, object>>[]? includes,
         Func<string, (Expression<Func<T, object>>? Expression, bool CanSort)>? fieldSelector,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(
-            "GetPagedAsync with fieldSelector not implemented for this repository. Override in derived class if needed.");
+            "BuildPagedQueryAsync not implemented for this repository. Override in derived class if needed.");
     }
+
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

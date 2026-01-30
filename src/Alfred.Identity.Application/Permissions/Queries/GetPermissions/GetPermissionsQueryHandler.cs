@@ -2,13 +2,16 @@ using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Common.Exceptions;
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Binding;
-using Alfred.Identity.Application.Querying.Parsing;
+using Alfred.Identity.Application.Querying.Core;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Binding;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Application.Permissions.Queries.GetPermissions;
 
@@ -69,7 +72,8 @@ public class GetPermissionsQueryHandler : IRequestHandler<GetPermissionsQuery, P
                 return (null, false);
             });
 
-        var (items, total) = await _permissionRepository.GetPagedAsync(
+        // Build paged query and materialize
+        var (query, total) = await _permissionRepository.BuildPagedQueryAsync(
             filterExpression,
             queryRequest.Sort,
             page,
@@ -79,6 +83,7 @@ public class GetPermissionsQueryHandler : IRequestHandler<GetPermissionsQuery, P
             cancellationToken
         );
 
+        var items = await query.ToListAsync(cancellationToken);
         var dtos = items.Select(PermissionDto.FromEntity).ToList();
 
         return new PageResult<PermissionDto>(dtos, page, pageSize, total);

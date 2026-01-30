@@ -2,12 +2,15 @@ using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common.Exceptions;
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Binding;
-using Alfred.Identity.Application.Querying.Parsing;
+using Alfred.Identity.Application.Querying.Core;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Binding;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Application.Applications.Queries.GetApplications;
 
@@ -46,8 +49,6 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
             }
             catch (InvalidOperationException ex)
             {
-                // If DSL parsing fails, fallback to simple search or throw depending on strictness.
-                // The reference throws, so we will throw nicely wrapped exceptions.
                 throw FilterExceptionHelper.CreateFilterException(ex, queryRequest.Filter, fieldMap.Fields);
             }
             catch (Exception ex)
@@ -56,13 +57,7 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
             }
         }
 
-        // If no complex filter, check if we want to keep the old simple search behavior as fallback?
-        // The reference implementation seems to RELY on DSL. 
-        // However, existing simple string search might be broken by this if the frontend doesn't send DSL.
-        // BUT user asked to match "Sites" exactly.
-
-
-        // Create field selector from FieldMap to avoid duplication
+        // Create field selector from FieldMap
         var fieldSelector =
             new Func<string, (Expression<Func<Domain.Entities.Application, object>>? Expression, bool CanSort
                 )>(fieldName =>
@@ -78,8 +73,8 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
                 return (null, false);
             });
 
-        // Get paginated applications using IRepository's GetPagedAsync
-        var (items, total) = await _applicationRepository.GetPagedAsync(
+        // Build paged query and materialize
+        var (query, total) = await _applicationRepository.BuildPagedQueryAsync(
             filterExpression,
             queryRequest.Sort,
             page,
@@ -89,6 +84,7 @@ public class GetApplicationsQueryHandler : IRequestHandler<GetApplicationsQuery,
             cancellationToken
         );
 
+        var items = await query.ToListAsync(cancellationToken);
         var dtos = items.Select(ApplicationDto.FromEntity).ToList();
 
         return new PageResult<ApplicationDto>(dtos, page, pageSize, total);

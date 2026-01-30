@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Fields;
 
 /// <summary>
 /// Helper to convert LambdaExpressions to Expression<Func<T, object>> with proper boxing

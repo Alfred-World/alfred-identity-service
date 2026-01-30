@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Users.Common;
@@ -20,13 +19,13 @@ public class UserFieldMap : BaseFieldMap<User>
     public static UserFieldMap Instance => _instance.Value;
 
     public override FieldMap<User> Fields { get; } = new FieldMap<User>()
-        .Add("id", u => u.Id)
-        .Add("userName", u => u.UserName)
-        .Add("email", u => u.Email)
-        .Add("fullName", u => u.FullName)
-        .Add("status", u => u.Status)
-        .Add("emailConfirmed", u => u.EmailConfirmed)
-        .Add("createdAt", u => u.CreatedAt);
+        .Add("id", u => u.Id).AllowAll()
+        .Add("userName", u => u.UserName).AllowAll()
+        .Add("email", u => u.Email).AllowAll()
+        .Add("fullName", u => u.FullName).AllowAll()
+        .Add("status", u => u.Status).AllowAll()
+        .Add("emailConfirmed", u => u.EmailConfirmed).AllowAll()
+        .Add("createdAt", u => u.CreatedAt).AllowAll();
 
     protected override Dictionary<string, Expression<Func<User, object>>> AllowedIncludes { get; } = new()
     {

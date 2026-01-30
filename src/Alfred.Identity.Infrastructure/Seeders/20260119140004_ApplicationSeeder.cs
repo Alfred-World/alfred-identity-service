@@ -87,6 +87,7 @@ public class ApplicationSeeder : BaseDataSeeder
                 {
                     existingApp.RotateSecret(app.ClientSecret);
                 }
+
                 LogDebug($"Updated: {app.ClientId}");
                 updated++;
             }

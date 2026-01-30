@@ -1,6 +1,6 @@
 using Alfred.Identity.Application.Common.Settings;
 
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Core;
 
 /// <summary>
 /// Common request for queries with filter, sort, paging, and includes
@@ -29,10 +29,10 @@ public sealed record QueryRequest
     public string? Sort { get; init; }
 
     /// <summary>
-    /// Include relationships (e.g.: "rolepermissions").
-    /// Comma-separated list. Supports nested includes with dot notation.
+    /// View name to determine which fields to return (e.g.: "list", "detail", "minimal").
+    /// Each entity defines available views via ViewRegistry.
     /// </summary>
-    public string? Include { get; init; }
+    public string? View { get; init; }
 
     /// <summary>
     /// Get effective page size using global settings

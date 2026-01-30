@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Permissions.Common;
@@ -20,14 +19,14 @@ public class PermissionFieldMap : BaseFieldMap<Permission>
     public static PermissionFieldMap Instance => _instance.Value;
 
     public override FieldMap<Permission> Fields { get; } = new FieldMap<Permission>()
-        .Add("id", p => p.Id)
-        .Add("code", p => p.Code)
-        .Add("name", p => p.Name)
-        .Add("description", p => p.Description!)
-        .Add("resource", p => p.Resource)
-        .Add("action", p => p.Action)
-        .Add("isActive", p => p.IsActive)
-        .Add("createdAt", p => p.CreatedAt);
+        .Add("id", p => p.Id).AllowAll()
+        .Add("code", p => p.Code).AllowAll()
+        .Add("name", p => p.Name).AllowAll()
+        .Add("description", p => p.Description!).AllowAll()
+        .Add("resource", p => p.Resource).AllowAll()
+        .Add("action", p => p.Action).AllowAll()
+        .Add("isActive", p => p.IsActive).AllowAll()
+        .Add("createdAt", p => p.CreatedAt).AllowAll();
 
     protected override Dictionary<string, Expression<Func<Permission, object>>> AllowedIncludes { get; } = new()
     {

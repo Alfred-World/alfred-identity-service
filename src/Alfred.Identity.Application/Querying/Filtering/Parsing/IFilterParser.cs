@@ -1,6 +1,6 @@
-using Alfred.Identity.Application.Querying.Ast;
+using Alfred.Identity.Application.Querying.Filtering.Ast;
 
-namespace Alfred.Identity.Application.Querying.Parsing;
+namespace Alfred.Identity.Application.Querying.Filtering.Parsing;
 
 /// <summary>
 /// Interface cho filter parser

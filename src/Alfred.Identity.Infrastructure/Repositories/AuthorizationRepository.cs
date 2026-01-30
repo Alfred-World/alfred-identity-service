@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class AuthorizationRepository : Repository<Authorization>, IAuthorizationRepository
+public class AuthorizationRepository : BaseRepository<Authorization>, IAuthorizationRepository
 {
     public AuthorizationRepository(IDbContext context) : base(context)
     {

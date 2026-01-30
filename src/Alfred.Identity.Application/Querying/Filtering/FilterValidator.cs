@@ -1,6 +1,7 @@
-using Alfred.Identity.Application.Querying.Ast;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Ast;
 
-namespace Alfred.Identity.Application.Querying.Validation;
+namespace Alfred.Identity.Application.Querying.Filtering;
 
 /// <summary>
 /// Validator cho filter AST

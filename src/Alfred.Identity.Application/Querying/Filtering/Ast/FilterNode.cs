@@ -1,4 +1,4 @@
-namespace Alfred.Identity.Application.Querying.Ast;
+namespace Alfred.Identity.Application.Querying.Filtering.Ast;
 
 /// <summary>
 /// Base class cho các node trong AST của filter

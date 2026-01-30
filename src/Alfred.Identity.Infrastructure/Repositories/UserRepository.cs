@@ -10,7 +10,7 @@ namespace Alfred.Identity.Infrastructure.Repositories;
 /// <summary>
 /// User repository implementation - inherits base repository functionality
 /// </summary>
-public class UserRepository : Repository<User>, IUserRepository
+public class UserRepository : BaseRepository<User>, IUserRepository
 {
     public UserRepository(IDbContext context) : base(context)
     {

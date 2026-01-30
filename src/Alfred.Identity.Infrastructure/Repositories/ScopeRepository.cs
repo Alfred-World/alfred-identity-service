@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public sealed class ScopeRepository : Repository<Scope>, IScopeRepository
+public sealed class ScopeRepository : BaseRepository<Scope>, IScopeRepository
 {
     public ScopeRepository(IDbContext context) : base(context)
     {

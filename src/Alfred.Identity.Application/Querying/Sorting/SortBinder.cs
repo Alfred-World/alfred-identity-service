@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
 
-namespace Alfred.Identity.Application.Querying.Binding;
+namespace Alfred.Identity.Application.Querying.Sorting;
 
 /// <summary>
 /// Helper để apply sorting cho EF Core

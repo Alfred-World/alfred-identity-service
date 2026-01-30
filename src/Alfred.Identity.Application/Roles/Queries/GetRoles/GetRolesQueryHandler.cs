@@ -2,18 +2,25 @@ using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Common.Exceptions;
 using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Binding;
-using Alfred.Identity.Application.Querying.Parsing;
+using Alfred.Identity.Application.Querying.Core;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Binding;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
+using Alfred.Identity.Application.Querying.Projection;
+using Alfred.Identity.Application.Querying.Sorting;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 namespace Alfred.Identity.Application.Roles.Queries.GetRoles;
 
 /// <summary>
 /// Handler for GetRolesQuery
+/// Uses view-based projection for database-level optimization
 /// </summary>
 public class GetRolesQueryHandler : IRequestHandler<GetRolesQuery, PageResult<RoleDto>>
 {
@@ -36,6 +43,10 @@ public class GetRolesQueryHandler : IRequestHandler<GetRolesQuery, PageResult<Ro
         var page = queryRequest.GetEffectivePage();
         var pageSize = queryRequest.GetEffectivePageSize();
 
+        // Get view from request (or use default)
+        var view = RoleFieldMap.Views.GetView(queryRequest.View);
+
+        // Parse filter (at DB level)
         Expression<Func<Role, bool>>? filterExpression = null;
         if (!string.IsNullOrWhiteSpace(queryRequest.Filter))
         {
@@ -54,7 +65,7 @@ public class GetRolesQueryHandler : IRequestHandler<GetRolesQuery, PageResult<Ro
             }
         }
 
-        // Create field selector from FieldMap
+        // Create field selector from FieldMap (for sorting at DB level)
         var fieldSelector = new Func<string, (Expression<Func<Role, object>>? Expression, bool CanSort)>(fieldName =>
         {
             if (fieldMap.Fields.TryGet(fieldName, out var expression, out _))
@@ -67,18 +78,25 @@ public class GetRolesQueryHandler : IRequestHandler<GetRolesQuery, PageResult<Ro
             return (null, false);
         });
 
-        var (items, total) = await _roleRepository.GetPagedAsync(
+        // Build paged query (filter, sort, paginate at DB level)
+        var (query, total) = await _roleRepository.BuildPagedQueryAsync(
             filterExpression,
             queryRequest.Sort,
             page,
             pageSize,
-            null,
+            view.Includes,
             fieldSelector,
             cancellationToken
         );
 
-        var dtos = items.Select(RoleDto.FromEntity).ToList();
+        // Apply projection at DB level (generates SELECT with only required fields)
+        var projectedQuery = ProjectionBinder.ApplyProjection<Role, RoleDto>(
+            query,
+            view.Fields,
+            fieldMap.Fields);
 
-        return new PageResult<RoleDto>(dtos, page, pageSize, total);
+        var items = await projectedQuery.ToListAsync(cancellationToken);
+
+        return new PageResult<RoleDto>(items, page, pageSize, total);
     }
 }

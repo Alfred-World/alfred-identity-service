@@ -1,8 +1,8 @@
 using System.Globalization;
 
-using Alfred.Identity.Application.Querying.Ast;
+using Alfred.Identity.Application.Querying.Filtering.Ast;
 
-namespace Alfred.Identity.Application.Querying.Parsing;
+namespace Alfred.Identity.Application.Querying.Filtering.Parsing;
 
 /// <summary>
 /// Pratt parser cho filter DSL

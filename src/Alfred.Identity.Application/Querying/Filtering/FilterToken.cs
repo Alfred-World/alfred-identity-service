@@ -1,4 +1,4 @@
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Filtering;
 
 /// <summary>
 /// Token type cho filter parser

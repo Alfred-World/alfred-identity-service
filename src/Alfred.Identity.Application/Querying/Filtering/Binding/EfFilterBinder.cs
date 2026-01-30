@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying.Ast;
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering.Ast;
 
-namespace Alfred.Identity.Application.Querying.Binding;
+namespace Alfred.Identity.Application.Querying.Filtering.Binding;
 
 /// <summary>
 /// Bind filter AST thành Expression<Func<T, bool>> cho EF Core

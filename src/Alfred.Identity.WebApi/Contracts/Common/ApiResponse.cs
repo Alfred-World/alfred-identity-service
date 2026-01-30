@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Querying;
+using Alfred.Identity.Application.Querying.Core;
 
 using Swashbuckle.AspNetCore.Annotations;
 

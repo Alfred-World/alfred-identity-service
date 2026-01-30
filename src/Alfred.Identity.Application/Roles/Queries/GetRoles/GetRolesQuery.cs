@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Querying;
+using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Roles.Common;
 
 using MediatR;

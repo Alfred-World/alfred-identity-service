@@ -1,6 +1,6 @@
 using System.Text.Encodings.Web;
 
-namespace Alfred.Identity.Application.Querying.ErrorHandling;
+namespace Alfred.Identity.Application.Querying.Filtering;
 
 /// <summary>
 /// Error response cho filter operations với sanitized messages

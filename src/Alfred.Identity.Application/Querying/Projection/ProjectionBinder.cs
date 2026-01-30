@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
 
-namespace Alfred.Identity.Application.Querying.Binding;
+namespace Alfred.Identity.Application.Querying.Projection;
 
 /// <summary>
 /// Helper to apply field projection/selection to queries

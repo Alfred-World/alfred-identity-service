@@ -26,6 +26,7 @@ public sealed record CreateApplicationRequest
     /// </summary>
     [Required]
     public required string RedirectUris { get; init; }
+
     /// <summary>
     /// Comma-separated list of allowed post-logout redirect URIs
     /// </summary>

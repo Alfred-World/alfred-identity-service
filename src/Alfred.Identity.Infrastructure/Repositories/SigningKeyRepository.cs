@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class SigningKeyRepository : Repository<SigningKey>, ISigningKeyRepository
+public class SigningKeyRepository : BaseRepository<SigningKey>, ISigningKeyRepository
 {
     public SigningKeyRepository(IDbContext context) : base(context)
     {

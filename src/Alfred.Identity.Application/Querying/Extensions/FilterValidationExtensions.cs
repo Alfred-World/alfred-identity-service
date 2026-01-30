@@ -1,5 +1,6 @@
-using Alfred.Identity.Application.Querying.Parsing;
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Filtering;
+using Alfred.Identity.Application.Querying.Filtering.Parsing;
 
 namespace Alfred.Identity.Application.Querying.Extensions;
 

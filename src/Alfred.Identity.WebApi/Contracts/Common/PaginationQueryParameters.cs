@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-using Alfred.Identity.Application.Querying;
+using Alfred.Identity.Application.Querying.Core;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,11 +42,11 @@ public sealed record PaginationQueryParameters
     public string? Sort { get; init; }
 
     /// <summary>
-    /// Related entities to include (comma-separated)
-    /// Example: "createdBy,updatedBy"
+    /// View name to determine which fields to return.
+    /// Available views depend on the endpoint (e.g., "list", "detail", "minimal").
     /// </summary>
-    [FromQuery(Name = "include")]
-    public string? Include { get; init; }
+    [FromQuery(Name = "view")]
+    public string? View { get; init; }
 }
 
 /// <summary>
@@ -65,7 +65,7 @@ public static class QueryRequestExtensions
             Sort = parameters.Sort ?? string.Empty,
             Page = parameters.Page,
             PageSize = parameters.PageSize,
-            Include = parameters.Include ?? string.Empty
+            View = parameters.View ?? string.Empty
         };
     }
 }

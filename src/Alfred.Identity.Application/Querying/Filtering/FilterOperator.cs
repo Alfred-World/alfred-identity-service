@@ -1,4 +1,4 @@
-namespace Alfred.Identity.Application.Querying;
+namespace Alfred.Identity.Application.Querying.Filtering;
 
 /// <summary>
 /// Các toán tử hỗ trợ trong filter DSL

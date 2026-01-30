@@ -103,7 +103,7 @@ public class InfrastructureLayerTests
             .And()
             .AreClasses() // Exclude interfaces
             .Should()
-            .ResideInNamespaceStartingWith("HSE.Infrastructure.Providers")
+            .ResideInNamespaceStartingWith("Alfred.Identity.Infrastructure.Providers")
             .GetResult();
 
         // Assert

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 
 using Alfred.Identity.Application;
 using Alfred.Identity.Infrastructure;
@@ -32,9 +33,12 @@ builder.WebHost.ConfigureKestrel((context, options) => { options.ListenAnyIP(app
 // Register AppConfiguration as singleton
 builder.Services.AddSingleton(appConfig);
 
-// Add services to the container
-// Add services to the container
-builder.Services.AddControllers();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // Add API Versioning
 builder.Services.AddApiVersioning(options =>

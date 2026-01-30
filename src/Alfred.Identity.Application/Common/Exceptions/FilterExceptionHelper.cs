@@ -1,4 +1,4 @@
-using Alfred.Identity.Application.Querying.Validation;
+using Alfred.Identity.Application.Querying.Fields;
 
 namespace Alfred.Identity.Application.Common.Exceptions;
 

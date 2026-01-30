@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
@@ -7,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class RoleRepository : Repository<Role>, IRoleRepository
+public class RoleRepository : BaseRepository<Role>, IRoleRepository
 {
     public RoleRepository(IDbContext context) : base(context)
     {
@@ -51,5 +53,28 @@ public class RoleRepository : Repository<Role>, IRoleRepository
     public async Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)
     {
         return await DbSet.AnyAsync(r => r.NormalizedName == name.ToUpperInvariant(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Build a paged query for roles - filtering, sorting, pagination at DB level.
+    /// Handler applies projection to the returned IQueryable.
+    /// </summary>
+    public new async Task<(IQueryable<Role> Query, long Total)> BuildPagedQueryAsync(
+        Expression<Func<Role, bool>>? filter,
+        string? sort,
+        int page,
+        int pageSize,
+        Expression<Func<Role, object>>[]? includes,
+        Func<string, (Expression<Func<Role, object>>? Expression, bool CanSort)>? fieldSelector,
+        CancellationToken cancellationToken = default)
+    {
+        return await base.BuildPagedQueryAsync(
+            filter,
+            sort,
+            page,
+            pageSize,
+            includes,
+            fieldSelector,
+            cancellationToken);
     }
 }

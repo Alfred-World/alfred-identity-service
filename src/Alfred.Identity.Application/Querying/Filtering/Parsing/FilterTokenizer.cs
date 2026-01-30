@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Alfred.Identity.Application.Querying.Parsing;
+namespace Alfred.Identity.Application.Querying.Filtering.Parsing;
 
 /// <summary>
 /// Tokenizer cho filter DSL

@@ -14,14 +14,14 @@ namespace Alfred.Identity.Infrastructure.Repositories.Base;
 /// Generic repository implementation for EF Core
 /// Consolidates BasePagedRepository, BaseRepository, and generic CRUD operations
 /// </summary>
-public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
+public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
     where TEntity : BaseEntity<TId>
     where TId : IEquatable<TId>
 {
     protected readonly IDbContext Context;
     protected readonly DbSet<TEntity> _dbSet;
 
-    protected Repository(IDbContext context)
+    protected BaseRepository(IDbContext context)
     {
         Context = context;
         _dbSet = context.Set<TEntity>();
@@ -118,12 +118,21 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
         return await query.AnyAsync(e => e.Id.Equals(id), cancellationToken);
     }
 
-    public virtual async Task<(IEnumerable<TEntity> Items, long Total)> GetPagedAsync(
+    public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await Context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Build a query with filtering, sorting, pagination at database level.
+    /// Returns the query + total count for Handler to apply projection.
+    /// </summary>
+    public virtual async Task<(IQueryable<TEntity> Query, long Total)> BuildPagedQueryAsync(
         Expression<Func<TEntity, bool>>? filter,
         string? sort,
         int page,
         int pageSize,
-        IEnumerable<Expression<Func<TEntity, object>>>? includes,
+        Expression<Func<TEntity, object>>[]? includes,
         Func<string, (Expression<Func<TEntity, object>>? Expression, bool CanSort)>? fieldSelector,
         CancellationToken cancellationToken = default)
     {
@@ -135,13 +144,13 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
             query = query.Where(e => !((IHasDeletionTime)e).IsDeleted);
         }
 
-        // Apply filter
+        // Apply filter (at DB level)
         if (filter != null)
         {
             query = query.Where(filter);
         }
 
-        // Apply includes
+        // Apply includes (for nested projections)
         if (includes != null)
         {
             foreach (var include in includes)
@@ -150,25 +159,22 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
             }
         }
 
-        // Get total count
+        // Get total count (before pagination, after filtering)
         var total = await query.CountAsync(cancellationToken);
 
-        // Apply sorting (Hybrid approach: FieldSelector first, then System.Linq.Dynamic.Core, else Id)
+        // Apply sorting (at DB level)
         if (string.IsNullOrWhiteSpace(sort))
         {
-            // Default sort by ID if no sort provided
             query = query.OrderBy("Id");
         }
         else
         {
             if (fieldSelector != null)
             {
-                // Try to use the safe field selector provided by the user
                 query = ApplySortingWithFieldSelector(query, sort, fieldSelector);
             }
             else
             {
-                // Fallback to Dynamic Linq which works great for simple string sorts like "Name desc"
                 try
                 {
                     query = query.OrderBy(sort);
@@ -180,18 +186,10 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
             }
         }
 
-        // Apply pagination
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        // Apply pagination (at DB level)
+        query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
-        return (items, total);
-    }
-
-    public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        await Context.SaveChangesAsync(cancellationToken);
+        return (query, total);
     }
 
     #endregion
@@ -267,10 +265,10 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId>
 /// <summary>
 /// Generic repository implementation for entities with long Id
 /// </summary>
-public abstract class Repository<TEntity> : Repository<TEntity, long>, IRepository<TEntity>
+public abstract class BaseRepository<TEntity> : BaseRepository<TEntity, long>, IRepository<TEntity>
     where TEntity : BaseEntity
 {
-    protected Repository(IDbContext context) : base(context)
+    protected BaseRepository(IDbContext context) : base(context)
     {
     }
 }

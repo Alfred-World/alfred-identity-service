@@ -93,7 +93,8 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     {
     }
 
-    public static Role Create(string name, string? icon = null, bool isImmutable = false, bool isSystem = false, long? createdById = null)
+    public static Role Create(string name, string? icon = null, bool isImmutable = false, bool isSystem = false,
+        long? createdById = null)
     {
         return new Role
         {

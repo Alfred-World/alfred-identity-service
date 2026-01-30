@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public sealed class TokenRepository : Repository<Token>, ITokenRepository
+public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
 {
     public TokenRepository(IDbContext context) : base(context)
     {
