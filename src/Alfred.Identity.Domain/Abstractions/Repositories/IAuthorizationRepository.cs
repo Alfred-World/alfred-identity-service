@@ -8,5 +8,5 @@ public interface IAuthorizationRepository : IRepository<Authorization>
     Task<Authorization?> GetValidAsync(long applicationId, long userId, string scopes,
         CancellationToken cancellationToken = default);
 
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
 }

@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying;
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Domain.Entities;
@@ -41,7 +39,8 @@ public class RoleFieldMap : BaseFieldMap<Role>
         })
         .Register("detail", new Expression<Func<RoleDto, object?>>[]
         {
-            r => r.Id, r => r.Name, r => r.NormalizedName, r => r.IsImmutable, r => r.IsSystem, r => r.Icon, r => r.CreatedAt, r => r.UpdatedAt
+            r => r.Id, r => r.Name, r => r.NormalizedName, r => r.IsImmutable, r => r.IsSystem, r => r.Icon,
+            r => r.CreatedAt, r => r.UpdatedAt
         })
         .Register("minimal", new Expression<Func<RoleDto, object?>>[]
         {
@@ -51,6 +50,6 @@ public class RoleFieldMap : BaseFieldMap<Role>
 
     protected override Dictionary<string, Expression<Func<Role, object>>> AllowedIncludes { get; } = new()
     {
-        // Role entity has no navigations that need to be included 
+        // Role entity has no navigations that need to be included
     };
 }

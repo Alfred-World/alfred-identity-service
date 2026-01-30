@@ -27,8 +27,5 @@ public interface IPermissionRepository : IRepository<Permission>
     /// </summary>
     Task<bool> CodeExistsAsync(string code, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Save changes to database
-    /// </summary>
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
 }

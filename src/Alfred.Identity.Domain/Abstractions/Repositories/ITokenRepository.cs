@@ -14,5 +14,5 @@ public interface ITokenRepository : IRepository<Token>
 
     Task RevokeAllByUserIdAsync(long userId, CancellationToken cancellationToken = default);
     Task RevokeAllByAuthorizationIdAsync(long authorizationId, CancellationToken cancellationToken = default);
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
 }

@@ -32,8 +32,5 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Save changes to database
-    /// </summary>
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
 }

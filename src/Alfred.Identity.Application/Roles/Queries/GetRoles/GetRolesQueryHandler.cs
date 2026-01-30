@@ -1,13 +1,11 @@
 using System.Linq.Expressions;
 
 using Alfred.Identity.Application.Common.Exceptions;
-using Alfred.Identity.Application.Querying;
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Filtering.Binding;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Querying.Projection;
-using Alfred.Identity.Application.Querying.Sorting;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
