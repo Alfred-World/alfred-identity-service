@@ -33,6 +33,6 @@ public class KeysController : BaseApiController
     public async Task<ActionResult<RotateSigningKeyResult>> RotateKeys()
     {
         var result = await _mediator.Send(new RotateSigningKeyCommand());
-        return Ok(result);
+        return OkResponse(result);
     }
 }

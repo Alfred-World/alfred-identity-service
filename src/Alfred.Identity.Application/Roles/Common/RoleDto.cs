@@ -1,3 +1,4 @@
+using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Roles.Common;
@@ -13,8 +14,11 @@ public class RoleDto
     public bool? IsImmutable { get; set; }
     public bool? IsSystem { get; set; }
     public string? Icon { get; set; }
+    public bool? IsDeleted { get; set; }
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    public IEnumerable<PermissionDto> Permissions { get; set; } = new List<PermissionDto>();
 
     public RoleDto()
     {
@@ -30,8 +34,12 @@ public class RoleDto
             IsImmutable = role.IsImmutable,
             IsSystem = role.IsSystem,
             Icon = role.Icon,
+            IsDeleted = role.IsDeleted,
             CreatedAt = role.CreatedAt,
-            UpdatedAt = role.UpdatedAt
+            UpdatedAt = role.UpdatedAt,
+            Permissions = role.RolePermissions
+                .Select(rp => PermissionDto.FromEntity(rp.Permission))
+                .ToList()
         };
     }
 }

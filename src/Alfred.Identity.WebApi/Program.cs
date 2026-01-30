@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 
 using Alfred.Identity.Application;
@@ -15,6 +16,7 @@ using FluentValidation;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -24,14 +26,73 @@ DotEnvLoader.LoadForEnvironment(environment);
 
 // Load and validate configuration
 AppConfiguration appConfig = new();
+MtlsConfiguration mtlsConfig = new();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Kestrel to listen on the specified hostname and port from environment
-builder.WebHost.ConfigureKestrel((context, options) => { options.ListenAnyIP(appConfig.AppPort); });
+builder.WebHost.ConfigureKestrel((context, options) =>
+{
+    if (mtlsConfig.Enabled)
+    {
+        // Load certificates
+        var serverCert = mtlsConfig.LoadServerCertificate();
+        var caCert = mtlsConfig.LoadCaCertificate();
+
+        // HTTPS endpoint with client certificate requirement (mTLS)
+        options.ListenAnyIP(mtlsConfig.HttpsPort, listenOptions =>
+        {
+            listenOptions.UseHttps(httpsOptions =>
+            {
+                httpsOptions.ServerCertificate = serverCert;
+                httpsOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+                httpsOptions.ClientCertificateValidation = (certificate, chain, errors) =>
+                {
+                    // Validate that the client certificate is signed by our CA
+                    if (chain == null)
+                    {
+                        chain = new X509Chain();
+                    }
+
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                    chain.ChainPolicy.ExtraStore.Add(caCert);
+
+                    var isValid = chain.Build(certificate);
+                    if (!isValid)
+                    {
+                        return false;
+                    }
+
+                    // Verify the certificate chain ends with our CA
+                    var chainContainsCa = chain.ChainElements
+                        .Any(element => element.Certificate.Thumbprint == caCert.Thumbprint);
+
+                    return chainContainsCa;
+                };
+            });
+        });
+
+        Console.WriteLine($"✅ mTLS enabled - HTTPS listening on port {mtlsConfig.HttpsPort}");
+
+        // Optional HTTP endpoint for health checks
+        if (mtlsConfig.AllowHttp)
+        {
+            options.ListenAnyIP(mtlsConfig.HttpPort);
+            Console.WriteLine($"✅ HTTP (health checks) listening on port {mtlsConfig.HttpPort}");
+        }
+    }
+    else
+    {
+        // Standard HTTP-only mode (backward compatible)
+        options.ListenAnyIP(appConfig.AppPort);
+        Console.WriteLine($"ℹ️ mTLS disabled - HTTP listening on port {appConfig.AppPort}");
+    }
+});
 
 // Register AppConfiguration as singleton
 builder.Services.AddSingleton(appConfig);
+builder.Services.AddSingleton(mtlsConfig);
 
 
 builder.Services.AddControllers()
@@ -217,7 +278,12 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
+
+// Only use HTTPS redirection if mTLS is not enabled (mTLS handles dual ports separately)
+if (!mtlsConfig.Enabled)
+{
+    app.UseHttpsRedirection();
+}
 
 // Authentication & Authorization middleware
 app.UseAuthentication();

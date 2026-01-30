@@ -6,7 +6,7 @@ using Alfred.Identity.Application.Roles.Commands.RemovePermissions;
 using Alfred.Identity.Application.Roles.Commands.UpdateRole;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Application.Roles.Queries.GetRoleById;
-using Alfred.Identity.Application.Roles.Queries.GetRolePermissions;
+
 using Alfred.Identity.Application.Roles.Queries.GetRoles;
 using Alfred.Identity.WebApi.Contracts.Common;
 
@@ -49,7 +49,7 @@ public class RolesController : BaseApiController
     /// </summary>
     /// <param name="id">The unique identifier of the role</param>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoleDto>> GetRoleById(long id)
     {
@@ -59,7 +59,7 @@ public class RolesController : BaseApiController
             return NotFound();
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public class RolesController : BaseApiController
     /// <param name="id">ID of the role to update</param>
     /// <param name="command">Role update details</param>
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(UpdateRoleResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<UpdateRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UpdateRoleResult>> UpdateRole(long id, [FromBody] UpdateRoleCommand command)
@@ -102,7 +102,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public class RolesController : BaseApiController
     /// </summary>
     /// <param name="id">ID of the role to delete</param>
     [HttpDelete("{id}")]
-    [ProducesResponseType(typeof(DeleteRoleResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<DeleteRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DeleteRoleResult>> DeleteRole(long id)
@@ -121,20 +121,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get permissions assigned to a role
-    /// </summary>
-    /// <param name="id">ID of the role</param>
-    [HttpGet("{id}/permissions")]
-    [ProducesResponseType(typeof(List<PermissionDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<PermissionDto>>> GetRolePermissions(long id)
-    {
-        var result = await _mediator.Send(new GetRolePermissionsQuery(id));
-        return Ok(result);
+        return OkResponse(result);
     }
 
     /// <summary>
@@ -143,7 +130,7 @@ public class RolesController : BaseApiController
     /// <param name="id">ID of the role</param>
     /// <param name="permissionIds">List of permission IDs to assign</param>
     [HttpPost("{id}/permissions")]
-    [ProducesResponseType(typeof(AddPermissionsToRoleResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<AddPermissionsToRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AddPermissionsToRoleResult>> AddPermissions(long id,
@@ -155,7 +142,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 
     /// <summary>
@@ -164,7 +151,7 @@ public class RolesController : BaseApiController
     /// <param name="id">ID of the role</param>
     /// <param name="permissionIds">List of permission IDs to remove</param>
     [HttpDelete("{id}/permissions")]
-    [ProducesResponseType(typeof(RemovePermissionsFromRoleResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RemovePermissionsFromRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RemovePermissionsFromRoleResult>> RemovePermissions(long id,
@@ -176,6 +163,6 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 }

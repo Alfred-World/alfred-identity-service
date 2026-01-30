@@ -44,7 +44,7 @@ public class UsersController : BaseApiController
     /// <param name="userId">ID of the user</param>
     /// <param name="roleIds">List of role IDs to assign</param>
     [HttpPost("{userId}/roles")]
-    [ProducesResponseType(typeof(AssignRolesToUserResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<AssignRolesToUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssignRolesToUserResult>> AssignRoles(long userId, [FromBody] List<long> roleIds)
@@ -55,7 +55,7 @@ public class UsersController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class UsersController : BaseApiController
     /// <param name="userId">ID of the user</param>
     /// <param name="roleIds">List of role IDs to revoke</param>
     [HttpDelete("{userId}/roles")]
-    [ProducesResponseType(typeof(RevokeRolesFromUserResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RevokeRolesFromUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RevokeRolesFromUserResult>> RevokeRoles(long userId, [FromBody] List<long> roleIds)
@@ -75,6 +75,6 @@ public class UsersController : BaseApiController
             return BadRequest(result);
         }
 
-        return Ok(result);
+        return OkResponse(result);
     }
 }

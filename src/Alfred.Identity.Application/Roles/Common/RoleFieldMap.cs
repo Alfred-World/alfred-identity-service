@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 
+using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Domain.Entities;
@@ -26,8 +27,19 @@ public class RoleFieldMap : BaseFieldMap<Role>
         .Add("isImmutable", r => r.IsImmutable).AllowAll()
         .Add("isSystem", r => r.IsSystem).AllowAll()
         .Add("icon", r => r.Icon!).AllowAll()
+        .Add("isDeleted", r => r.IsDeleted).AllowAll()
         .Add("createdAt", r => r.CreatedAt).AllowAll()
-        .Add("updatedAt", r => r.UpdatedAt!).AllowAll();
+        .Add("createdAt", r => r.CreatedAt).AllowAll()
+        .Add("updatedAt", r => r.UpdatedAt!).AllowAll()
+        .Add("permissions", r => r.RolePermissions.Select(rp => new PermissionDto(
+            rp.Permission.Id,
+            rp.Permission.Code,
+            rp.Permission.Name,
+            rp.Permission.Description,
+            rp.Permission.Resource,
+            rp.Permission.Action,
+            rp.Permission.IsActive
+        ))).AllowAll();
 
     /// <summary>
     /// Available views for Role entity
@@ -35,16 +47,36 @@ public class RoleFieldMap : BaseFieldMap<Role>
     public static ViewRegistry<Role, RoleDto> Views { get; } = new ViewRegistry<Role, RoleDto>()
         .Register("list", new Expression<Func<RoleDto, object?>>[]
         {
-            r => r.Id, r => r.Name, r => r.IsImmutable, r => r.IsSystem, r => r.Icon
+            r => r.Id,
+            r => r.Name,
+            r => r.NormalizedName,
+            r => r.IsImmutable,
+            r => r.IsSystem,
+            r => r.Icon,
+            r => r.IsDeleted,
+            r => r.CreatedAt,
+            r => r.UpdatedAt
         })
         .Register("detail", new Expression<Func<RoleDto, object?>>[]
         {
-            r => r.Id, r => r.Name, r => r.NormalizedName, r => r.IsImmutable, r => r.IsSystem, r => r.Icon,
-            r => r.CreatedAt, r => r.UpdatedAt
+            r => r.Id,
+            r => r.Name,
+            r => r.NormalizedName,
+            r => r.IsImmutable,
+            r => r.IsSystem,
+            r => r.Icon,
+            r => r.IsDeleted,
+            r => r.CreatedAt,
+            r => r.UpdatedAt,
+
+            // Permissions
+            r => r.Permissions
         })
         .Register("minimal", new Expression<Func<RoleDto, object?>>[]
         {
-            r => r.Id, r => r.Name
+            r => r.Id,
+            r => r.Name,
+            r => r.Icon
         })
         .SetDefault("list");
 
