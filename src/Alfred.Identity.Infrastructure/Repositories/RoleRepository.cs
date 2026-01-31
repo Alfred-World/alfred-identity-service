@@ -15,7 +15,7 @@ public class RoleRepository : BaseRepository<Role>, IRoleRepository
     {
     }
 
-    public override async Task<Role?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    public override async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await DbSet
             .Include(r => r.RolePermissions)

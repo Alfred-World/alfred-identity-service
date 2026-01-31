@@ -13,6 +13,9 @@ public class TokenConfiguration : IEntityTypeConfiguration<Token>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.HasIndex(x => x.ReferenceId).IsUnique().HasDatabaseName("IX_OpenIddictTokens_ReferenceId");
         builder.HasIndex(x => x.AuthorizationId).HasDatabaseName("IX_OpenIddictTokens_AuthorizationId");
         builder.HasIndex(x => new { x.ApplicationId, x.Status, x.Subject, x.Type })

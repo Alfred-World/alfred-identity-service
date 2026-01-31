@@ -10,7 +10,7 @@ public interface IRolePermissionRepository
     /// <summary>
     /// Get all permissions for a specific role
     /// </summary>
-    Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(long roleId,
+    Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(Guid roleId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -22,7 +22,7 @@ public interface IRolePermissionRepository
     /// <summary>
     /// Get all roles that have a specific permission
     /// </summary>
-    Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(long permissionId,
+    Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(Guid permissionId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -38,12 +38,12 @@ public interface IRolePermissionRepository
     /// <summary>
     /// Check if a role has a specific permission
     /// </summary>
-    Task<bool> ExistsAsync(long roleId, long permissionId, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(Guid roleId, Guid permissionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a specific role-permission mapping
     /// </summary>
-    Task<RolePermission?> GetAsync(long roleId, long permissionId, CancellationToken cancellationToken = default);
+    Task<RolePermission?> GetAsync(Guid roleId, Guid permissionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Save changes to database

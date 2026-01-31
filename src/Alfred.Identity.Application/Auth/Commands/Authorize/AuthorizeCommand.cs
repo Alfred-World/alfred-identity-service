@@ -14,7 +14,7 @@ public record AuthorizeCommand(
     string? CodeChallenge,
     string? CodeChallengeMethod,
     string? Prompt,
-    long? UserId = null // If user is already authenticated
+    Guid? UserId = null // If user is already authenticated
 ) : IRequest<AuthorizeResult>;
 
 /// <summary>

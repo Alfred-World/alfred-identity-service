@@ -17,7 +17,7 @@ public class BackupCodeConfiguration : IEntityTypeConfiguration<BackupCode>
         builder.HasKey(bc => bc.Id);
 
         builder.Property(bc => bc.Id)
-            .UseIdentityColumn();
+            .HasDefaultValueSql("generate_uuid_v7()");
 
         builder.Property(bc => bc.CodeHash)
             .IsRequired()

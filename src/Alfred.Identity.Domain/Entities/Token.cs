@@ -8,12 +8,12 @@ namespace Alfred.Identity.Domain.Entities;
 /// </summary>
 public class Token : BaseEntity
 {
-    public long? ApplicationId { get; private set; }
-    public long? AuthorizationId { get; private set; }
+    public Guid? ApplicationId { get; private set; }
+    public Guid? AuthorizationId { get; private set; }
 
     // User/Subject
     public string? Subject { get; private set; }
-    public long? UserId { get; private set; }
+    public Guid? UserId { get; private set; }
 
     public string Type { get; private set; } = null!; // access_token, refresh_token, authorization_code
     public string? ReferenceId { get; private set; } // The actual token string/hash/id used for lookup
@@ -42,12 +42,12 @@ public class Token : BaseEntity
 
     public static Token Create(
         string type,
-        long? applicationId,
+        Guid? applicationId,
         string subject,
-        long? userId,
+        Guid? userId,
         DateTime? expirationDate,
         string? referenceId = null,
-        long? authorizationId = null,
+        Guid? authorizationId = null,
         string? payload = null,
         string? properties = null,
         string? ipAddress = null,

@@ -20,7 +20,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
             .FirstOrDefaultAsync(t => t.ReferenceId == referenceId, cancellationToken);
     }
 
-    public async Task<Token?> GetByAuthorizationIdAsync(long authorizationId, string type,
+    public async Task<Token?> GetByAuthorizationIdAsync(Guid authorizationId, string type,
         CancellationToken cancellationToken = default)
     {
         return await DbSet.AsNoTracking()
@@ -28,14 +28,14 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
                 cancellationToken);
     }
 
-    public async Task RevokeAllByUserIdAsync(long userId, CancellationToken cancellationToken = default)
+    public async Task RevokeAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         await DbSet
             .Where(t => t.UserId == userId && t.Status == TokenStatus.Valid)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, TokenStatus.Revoked), cancellationToken);
     }
 
-    public async Task RevokeAllByAuthorizationIdAsync(long authorizationId,
+    public async Task RevokeAllByAuthorizationIdAsync(Guid authorizationId,
         CancellationToken cancellationToken = default)
     {
         await DbSet

@@ -13,6 +13,9 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.HasIndex(x => x.NormalizedName).IsUnique().HasDatabaseName("RoleNameIndex");
 
         builder.Property(x => x.Name).HasMaxLength(256);

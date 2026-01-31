@@ -16,6 +16,6 @@ public record RegisterUserCommand(
 /// </summary>
 public record RegisterUserResult(
     bool Success,
-    long? UserId = null,
+    Guid? UserId = null,
     string? Error = null
 );

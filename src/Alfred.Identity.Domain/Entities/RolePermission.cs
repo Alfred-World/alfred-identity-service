@@ -8,8 +8,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// </summary>
 public class RolePermission : IHasCreationTime, IHasCreator
 {
-    public long RoleId { get; private set; }
-    public long PermissionId { get; private set; }
+    public Guid RoleId { get; private set; }
+    public Guid PermissionId { get; private set; }
 
     /// <summary>
     /// Navigation property to the Role
@@ -22,7 +22,7 @@ public class RolePermission : IHasCreationTime, IHasCreator
     public virtual Permission Permission { get; private set; } = null!;
 
     public DateTime CreatedAt { get; set; }
-    public long? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
 
     private RolePermission()
     {
@@ -31,7 +31,7 @@ public class RolePermission : IHasCreationTime, IHasCreator
     /// <summary>
     /// Creates a new role-permission mapping
     /// </summary>
-    public static RolePermission Create(long roleId, long permissionId, long? createdById = null)
+    public static RolePermission Create(Guid roleId, Guid permissionId, Guid? createdById = null)
     {
         return new RolePermission
         {

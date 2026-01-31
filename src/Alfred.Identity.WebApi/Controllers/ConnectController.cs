@@ -79,7 +79,7 @@ public class ConnectController : ControllerBase
         var userIdClaim = authenticateResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? authenticateResult.Principal.FindFirst("sub")?.Value;
 
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
             return BadRequest(new { error = "invalid_user" });
         }
@@ -156,7 +156,7 @@ public class ConnectController : ControllerBase
         // Extract user ID from token
         var subClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (string.IsNullOrEmpty(subClaim) || !long.TryParse(subClaim, out var userId))
+        if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var userId))
         {
             return Unauthorized(new { error = "invalid_token" });
         }

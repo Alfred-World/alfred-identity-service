@@ -47,7 +47,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<AssignRolesToUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AssignRolesToUserResult>> AssignRoles(long userId, [FromBody] List<long> roleIds)
+    public async Task<ActionResult<AssignRolesToUserResult>> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new AssignRolesToUserCommand(userId, roleIds));
         if (!result.Success)
@@ -67,7 +67,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<RevokeRolesFromUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RevokeRolesFromUserResult>> RevokeRoles(long userId, [FromBody] List<long> roleIds)
+    public async Task<ActionResult<RevokeRolesFromUserResult>> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new RevokeRolesFromUserCommand(userId, roleIds));
         if (!result.Success)

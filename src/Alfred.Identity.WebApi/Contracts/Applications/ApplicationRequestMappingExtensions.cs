@@ -26,7 +26,7 @@ public static class ApplicationRequestMappingExtensions
     /// <summary>
     /// Map UpdateApplicationRequest to UpdateApplicationCommand
     /// </summary>
-    public static UpdateApplicationCommand ToUpdateCommand(this UpdateApplicationRequest request, long id)
+    public static UpdateApplicationCommand ToUpdateCommand(this UpdateApplicationRequest request, Guid id)
     {
         return new UpdateApplicationCommand(
             id,

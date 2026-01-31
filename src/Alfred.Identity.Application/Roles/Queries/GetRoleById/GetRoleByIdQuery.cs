@@ -4,4 +4,4 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Roles.Queries.GetRoleById;
 
-public record GetRoleByIdQuery(long Id) : IRequest<RoleDto?>;
+public record GetRoleByIdQuery(Guid Id) : IRequest<RoleDto?>;

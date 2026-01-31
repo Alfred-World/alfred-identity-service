@@ -122,7 +122,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         _tokenRepository.Update(authCodeToken);
 
         // 7. Generate Tokens
-        var userId = authCodeToken.UserId ?? 0;
+        var userId = authCodeToken.UserId ?? Guid.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {
@@ -232,7 +232,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         _tokenRepository.Update(tokenEntity);
 
         // 6. Generate New Tokens
-        var userId = tokenEntity.UserId ?? 0;
+        var userId = tokenEntity.UserId ?? Guid.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {

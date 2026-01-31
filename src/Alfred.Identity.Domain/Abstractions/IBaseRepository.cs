@@ -54,8 +54,8 @@ public interface IRepository<T, TId> : IReadRepository<T> where T : class
 }
 
 /// <summary>
-/// Repository for entities with long Id
+/// Repository for entities with Guid Id
 /// </summary>
-public interface IRepository<T> : IRepository<T, long> where T : BaseEntity
+public interface IRepository<T> : IRepository<T, Guid> where T : BaseEntity
 {
 }

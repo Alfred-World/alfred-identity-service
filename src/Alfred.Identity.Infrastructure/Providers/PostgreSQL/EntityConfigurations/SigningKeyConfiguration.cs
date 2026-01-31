@@ -13,6 +13,9 @@ public class SigningKeyConfiguration : IEntityTypeConfiguration<SigningKey>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.Property(x => x.KeyId)
             .IsRequired()
             .HasMaxLength(100);

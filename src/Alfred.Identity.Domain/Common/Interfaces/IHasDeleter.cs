@@ -5,5 +5,5 @@ namespace Alfred.Identity.Domain.Common.Interfaces;
 /// </summary>
 public interface IHasDeleter
 {
-    long? DeletedById { get; set; }
+    Guid? DeletedById { get; set; }
 }

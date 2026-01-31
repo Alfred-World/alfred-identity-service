@@ -13,7 +13,7 @@ public class AuthorizationRepository : BaseRepository<Authorization>, IAuthoriza
     {
     }
 
-    public async Task<Authorization?> GetValidAsync(long applicationId, long userId, string scopes,
+    public async Task<Authorization?> GetValidAsync(Guid applicationId, Guid userId, string scopes,
         CancellationToken cancellationToken = default)
     {
         // Simple exact match or subset logic? For now assume exact string match or simplified

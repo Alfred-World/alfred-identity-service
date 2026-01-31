@@ -3,7 +3,7 @@ using Alfred.Identity.Domain.Entities;
 namespace Alfred.Identity.Application.Permissions.Common;
 
 public record PermissionDto(
-    long Id,
+    Guid Id,
     string Code,
     string Name,
     string? Description,

@@ -9,7 +9,7 @@ namespace Alfred.Identity.Application.Applications.Commands.Update;
 /// Command to update an application
 /// </summary>
 public record UpdateApplicationCommand(
-    long Id,
+    Guid Id,
     string DisplayName,
     string RedirectUris,
     string? PostLogoutRedirectUris,

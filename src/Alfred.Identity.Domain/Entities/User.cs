@@ -30,16 +30,16 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
 
     // Audit fields
     public DateTime CreatedAt { get; set; }
-    public long? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public long? UpdatedById { get; set; }
+    public Guid? UpdatedById { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
-    public long? DeletedById { get; set; }
+    public Guid? DeletedById { get; set; }
 
     public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
-    public void AddRole(long roleId, long? creatorId = null)
+    public void AddRole(Guid roleId, Guid? creatorId = null)
     {
         if (UserRoles.Any(ur => ur.RoleId == roleId))
         {
@@ -49,7 +49,7 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         UserRoles.Add(UserRole.Create(Id, roleId, creatorId));
     }
 
-    public void RemoveRole(long roleId)
+    public void RemoveRole(Guid roleId)
     {
         var role = UserRoles.FirstOrDefault(ur => ur.RoleId == roleId);
         if (role != null)
@@ -63,7 +63,7 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     }
 
     public static User Create(string email, string? passwordHash, string fullName, bool emailConfirmed = false,
-        long? createdById = null)
+        Guid? createdById = null)
     {
         return new User
         {

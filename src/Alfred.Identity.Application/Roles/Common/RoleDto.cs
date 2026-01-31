@@ -8,7 +8,7 @@ namespace Alfred.Identity.Application.Roles.Common;
 /// </summary>
 public class RoleDto
 {
-    public long Id { get; set; }
+    public Guid Id { get; set; }
     public string? Name { get; set; }
     public string? NormalizedName { get; set; }
     public bool? IsImmutable { get; set; }

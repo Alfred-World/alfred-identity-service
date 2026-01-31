@@ -25,7 +25,7 @@ public interface IUserRepository : IRepository<User>
     /// <summary>
     /// Get user by ID including roles
     /// </summary>
-    Task<User?> GetByIdWithRolesAsync(long id, CancellationToken cancellationToken = default);
+    Task<User?> GetByIdWithRolesAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if email exists

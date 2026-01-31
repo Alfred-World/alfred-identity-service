@@ -47,9 +47,9 @@ public sealed record SsoSessionResponse
 public sealed record SessionUserInfoDto
 {
     /// <summary>
-    /// User ID (long/int64 - matches DB schema)
+    /// User ID (Guid - matches DB schema)
     /// </summary>
-    public long Id { get; init; }
+    public Guid Id { get; init; }
 
     public string Email { get; init; } = "";
     public string? FullName { get; init; }

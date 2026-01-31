@@ -18,7 +18,7 @@ public interface IJwtTokenService
     /// <summary>
     /// Generate an access token for a user (async for RSA key retrieval)
     /// </summary>
-    Task<string> GenerateAccessTokenAsync(long userId, string email, string? fullName, long? applicationId = null);
+    Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName, Guid? applicationId = null);
 
     /// <summary>
     /// Generate a refresh token
@@ -43,7 +43,7 @@ public interface IJwtTokenService
     /// <summary>
     /// Generate an ID token for OIDC (contains user identity claims)
     /// </summary>
-    Task<string> GenerateIdTokenAsync(long userId, string email, string? fullName, string clientId,
+    Task<string> GenerateIdTokenAsync(Guid userId, string email, string? fullName, string clientId,
         string? nonce = null);
 }
 
@@ -53,7 +53,7 @@ public interface IJwtTokenService
 public class TokenValidationResult
 {
     public bool IsValid { get; set; }
-    public long? UserId { get; set; }
+    public Guid? UserId { get; set; }
     public string? Email { get; set; }
     public string? JwtId { get; set; }
     public string? Error { get; set; }

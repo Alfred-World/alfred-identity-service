@@ -6,7 +6,7 @@ namespace Alfred.Identity.Application.Users.Common;
 /// Data Transfer Object for User entity
 /// </summary>
 public record UserDto(
-    long Id,
+    Guid Id,
     string UserName,
     string Email,
     string FullName,

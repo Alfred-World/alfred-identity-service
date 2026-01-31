@@ -16,7 +16,7 @@ public class BackupCode : BaseEntity
     /// <summary>
     /// The user this code belongs to
     /// </summary>
-    public long UserId { get; private set; }
+    public Guid UserId { get; private set; }
 
     /// <summary>
     /// Whether this code has been used
@@ -44,7 +44,7 @@ public class BackupCode : BaseEntity
     /// <summary>
     /// Create a new backup code
     /// </summary>
-    public static BackupCode Create(string codeHash, long userId)
+    public static BackupCode Create(string codeHash, Guid userId)
     {
         return new BackupCode
         {

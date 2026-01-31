@@ -51,7 +51,7 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         return await GetByUsernameAsync(normalizedIdentity, cancellationToken);
     }
 
-    public async Task<User?> GetByIdWithRolesAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<User?> GetByIdWithRolesAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await DbSet
             .Include(u => u.UserRoles)

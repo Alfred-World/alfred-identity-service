@@ -263,9 +263,9 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
 }
 
 /// <summary>
-/// Generic repository implementation for entities with long Id
+/// Generic repository implementation for entities with Guid Id
 /// </summary>
-public abstract class BaseRepository<TEntity> : BaseRepository<TEntity, long>, IRepository<TEntity>
+public abstract class BaseRepository<TEntity> : BaseRepository<TEntity, Guid>, IRepository<TEntity>
     where TEntity : BaseEntity
 {
     protected BaseRepository(IDbContext context) : base(context)

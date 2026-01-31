@@ -13,6 +13,9 @@ public class ScopeConfiguration : IEntityTypeConfiguration<Scope>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.HasIndex(x => x.Name).IsUnique().HasDatabaseName("IX_OpenIddictScopes_Name");
 
         builder.Property(x => x.Name).HasMaxLength(200);

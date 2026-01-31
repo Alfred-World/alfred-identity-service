@@ -11,11 +11,11 @@ public class TestEntity : BaseEntity
     {
     }
 
-    public TestEntity(long id) : base(id)
+    public TestEntity(Guid id) : base(id)
     {
     }
 
-    public void SetId(long id)
+    public void SetId(Guid id)
     {
         Id = id;
     }
@@ -40,21 +40,24 @@ public class TestEntityWithStringId : BaseEntity<string>
 
 public class BaseEntityTests
 {
+    private static readonly Guid _testGuid1 = Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
+    private static readonly Guid _testGuid2 = Guid.Parse("fedcba98-7654-3210-fedc-ba9876543210");
+
     [Fact]
-    public void Constructor_WithoutId_ShouldCreateEntityWithDefaultId()
+    public void Constructor_WithoutId_ShouldCreateEntityWithUuidV7()
     {
         // Act
         TestEntity entity = new();
 
         // Assert
-        entity.Id.Should().Be(0L); // default for long
+        entity.Id.Should().NotBe(Guid.Empty); // UUID v7 should be generated
     }
 
     [Fact]
     public void Constructor_WithId_ShouldCreateEntityWithSpecifiedId()
     {
         // Arrange
-        const long expectedId = 123L;
+        var expectedId = _testGuid1;
 
         // Act
         TestEntity entity = new(expectedId);
@@ -67,7 +70,7 @@ public class BaseEntityTests
     public void Equals_WithSameIdAndType_ShouldReturnTrue()
     {
         // Arrange
-        const long id = 123L;
+        var id = _testGuid1;
         TestEntity entity1 = new();
         entity1.SetId(id);
         TestEntity entity2 = new();
@@ -85,9 +88,9 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity entity1 = new();
-        entity1.SetId(123L);
+        entity1.SetId(_testGuid1);
         TestEntity entity2 = new();
-        entity2.SetId(456L);
+        entity2.SetId(_testGuid2);
 
         // Act & Assert
         entity1.Should().NotBe(entity2);
@@ -100,8 +103,10 @@ public class BaseEntityTests
     public void Equals_WithTransientEntities_ShouldReturnFalse()
     {
         // Arrange
-        TestEntity entity1 = new(); // Id = 0, transient
-        TestEntity entity2 = new(); // Id = 0, transient
+        TestEntity entity1 = new();
+        entity1.SetId(Guid.Empty); // Transient
+        TestEntity entity2 = new();
+        entity2.SetId(Guid.Empty); // Transient
 
         // Act & Assert
         entity1.Should().NotBe(entity2);
@@ -113,7 +118,7 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity entity = new();
-        entity.SetId(123L);
+        entity.SetId(_testGuid1);
 
         // Act & Assert
         entity.Should().Be(entity);
@@ -126,7 +131,7 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity? entity = new();
-        entity.SetId(123L);
+        entity.SetId(_testGuid1);
 
         // Act & Assert
         entity.Equals(null).Should().BeFalse();
@@ -137,7 +142,7 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity entity = new();
-        entity.SetId(123L);
+        entity.SetId(_testGuid1);
         var differentObject = "not an entity";
 
         // Act & Assert
@@ -148,7 +153,7 @@ public class BaseEntityTests
     public void GetHashCode_WithSameIdAndType_ShouldReturnSameHashCode()
     {
         // Arrange
-        const long id = 123L;
+        var id = _testGuid1;
         TestEntity entity1 = new();
         entity1.SetId(id);
         TestEntity entity2 = new();
@@ -163,9 +168,9 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity entity1 = new();
-        entity1.SetId(123L);
+        entity1.SetId(_testGuid1);
         TestEntity entity2 = new();
-        entity2.SetId(456L);
+        entity2.SetId(_testGuid2);
 
         // Act & Assert
         entity1.GetHashCode().Should().NotBe(entity2.GetHashCode());
@@ -178,7 +183,7 @@ public class BaseEntityTests
         TestEntity? entity1 = null;
         TestEntity? entity2 = null;
         TestEntity entity3 = new();
-        entity3.SetId(123L);
+        entity3.SetId(_testGuid1);
 
         // Act & Assert
         (entity1 == entity2).Should().BeTrue(); // both null
@@ -191,11 +196,11 @@ public class BaseEntityTests
     {
         // Arrange
         TestEntity entity1 = new();
-        entity1.SetId(123L);
+        entity1.SetId(_testGuid1);
         TestEntity entity2 = new();
-        entity2.SetId(123L);
+        entity2.SetId(_testGuid1);
         TestEntity entity3 = new();
-        entity3.SetId(456L);
+        entity3.SetId(_testGuid2);
 
         // Act & Assert
         (entity1 != entity2).Should().BeFalse(); // same

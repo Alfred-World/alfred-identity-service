@@ -13,6 +13,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         // NOTE: Standard Identity schema behavior for indexes
         builder.HasIndex(x => x.NormalizedUserName).IsUnique().HasDatabaseName("UserNameIndex");
         builder.HasIndex(x => x.NormalizedEmail).HasDatabaseName("EmailIndex");

@@ -45,12 +45,12 @@ public class SigningKey : BaseEntity
 
     // Audit fields
     public DateTime CreatedAt { get; set; }
-    public long? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public long? UpdatedById { get; set; }
+    public Guid? UpdatedById { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
-    public long? DeletedById { get; set; }
+    public Guid? DeletedById { get; set; }
 
     private SigningKey()
     {
@@ -68,7 +68,7 @@ public class SigningKey : BaseEntity
         string privateKey,
         string algorithm = "RS256",
         bool isActive = true,
-        long? createdById = null)
+        Guid? createdById = null)
     {
         return new SigningKey
         {

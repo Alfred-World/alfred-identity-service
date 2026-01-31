@@ -43,8 +43,8 @@ public class JwtTokenService : IJwtTokenService
     }
 
     /// <inheritdoc />
-    public async Task<string> GenerateAccessTokenAsync(long userId, string email, string? fullName,
-        long? applicationId = null)
+    public async Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName,
+        Guid? applicationId = null)
     {
         var activeKey = await _keyRepository.GetActiveKeyAsync();
         if (activeKey == null)
@@ -160,7 +160,7 @@ public class JwtTokenService : IJwtTokenService
             return new TokenValidationResult
             {
                 IsValid = true,
-                UserId = long.TryParse(userId, out var id) ? id : null,
+                UserId = Guid.TryParse(userId, out var id) ? id : null,
                 Email = email,
                 JwtId = jwtId
             };
@@ -188,7 +188,7 @@ public class JwtTokenService : IJwtTokenService
     }
 
     /// <inheritdoc />
-    public async Task<string> GenerateIdTokenAsync(long userId, string email, string? fullName, string clientId,
+    public async Task<string> GenerateIdTokenAsync(Guid userId, string email, string? fullName, string clientId,
         string? nonce = null)
     {
         var activeKey = await _keyRepository.GetActiveKeyAsync();

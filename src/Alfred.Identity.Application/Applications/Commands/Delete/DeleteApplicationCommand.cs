@@ -7,4 +7,4 @@ namespace Alfred.Identity.Application.Applications.Commands.Delete;
 /// <summary>
 /// Command to delete an application
 /// </summary>
-public record DeleteApplicationCommand(long Id) : IRequest<Result<bool>>;
+public record DeleteApplicationCommand(Guid Id) : IRequest<Result<bool>>;

@@ -209,8 +209,8 @@ public class AuthController : BaseApiController
             return UnauthorizedResponse("Invalid session data");
         }
 
-        // Parse long instead of Guid (DB schema uses int8/long)
-        if (!long.TryParse(userIdStr, out var userId))
+        // Parse Guid (DB schema uses UUID v7)
+        if (!Guid.TryParse(userIdStr, out var userId))
         {
             return UnauthorizedResponse("Invalid user ID format in session");
         }
@@ -252,7 +252,7 @@ public class AuthController : BaseApiController
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (!string.IsNullOrEmpty(userIdStr) && long.TryParse(userIdStr, out var userId))
+            if (!string.IsNullOrEmpty(userIdStr) && Guid.TryParse(userIdStr, out var userId))
             {
                 // Generate one-time token for the app to exchange
                 var authToken = await _authTokenService.GenerateTokenAsync(new AuthTokenData

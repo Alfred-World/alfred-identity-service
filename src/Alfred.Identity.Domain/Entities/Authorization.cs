@@ -7,8 +7,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// </summary>
 public class Authorization : BaseEntity
 {
-    public long ApplicationId { get; private set; }
-    public long UserId { get; private set; } // Subject
+    public Guid ApplicationId { get; private set; }
+    public Guid UserId { get; private set; } // Subject
     public string? Subject { get; private set; } // String representation of UserId if needed, or strictly UserId
 
     public string Status { get; private set; } = "Valid"; // Valid/Revoked/Inactive
@@ -26,7 +26,7 @@ public class Authorization : BaseEntity
     {
     }
 
-    public static Authorization Create(long applicationId, long userId, string scopes, string type = "Permanent")
+    public static Authorization Create(Guid applicationId, Guid userId, string scopes, string type = "Permanent")
     {
         return new Authorization
         {

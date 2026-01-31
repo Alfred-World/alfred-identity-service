@@ -75,15 +75,16 @@ public abstract class BaseEntity<TId> where TId : IEquatable<TId>
 }
 
 /// <summary>
-/// Base entity with long ID (most common case)
+/// Base entity with Guid ID using UUID v7 (time-ordered, most common case)
 /// </summary>
-public abstract class BaseEntity : BaseEntity<long>
+public abstract class BaseEntity : BaseEntity<Guid>
 {
     protected BaseEntity() : base()
     {
+        Id = Guid.CreateVersion7();
     }
 
-    protected BaseEntity(long id) : base(id)
+    protected BaseEntity(Guid id) : base(id)
     {
     }
 }

@@ -24,11 +24,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Application", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("ApplicationType")
                         .HasMaxLength(50)
@@ -98,14 +97,13 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Authorization", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("ApplicationId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConcurrencyToken")
                         .HasMaxLength(50)
@@ -134,8 +132,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -149,11 +147,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.BackupCode", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("CodeHash")
                         .IsRequired()
@@ -171,8 +168,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("UsedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -183,11 +180,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Permission", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -202,8 +198,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -227,8 +223,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("UpdatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -244,11 +240,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Role", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
@@ -256,14 +251,14 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("DeletedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Icon")
                         .HasMaxLength(256)
@@ -295,8 +290,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("UpdatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -309,17 +304,17 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.RolePermission", b =>
                 {
-                    b.Property<long>("RoleId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
 
-                    b.Property<long>("PermissionId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("RoleId", "PermissionId");
 
@@ -333,11 +328,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Scope", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("ConcurrencyToken")
                         .HasMaxLength(50)
@@ -377,11 +371,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.SigningKey", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<string>("Algorithm")
                         .IsRequired()
@@ -391,14 +384,14 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("DeletedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -429,8 +422,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("UpdatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -444,17 +437,16 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.Token", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uuid");
 
-                    b.Property<long?>("ApplicationId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("AuthorizationId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("AuthorizationId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConcurrencyToken")
                         .HasMaxLength(50)
@@ -505,8 +497,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<long?>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -527,11 +519,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.User", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
@@ -542,14 +533,14 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("DeletedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -606,8 +597,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("UpdatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -628,20 +619,20 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserRole", b =>
                 {
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<long>("RoleId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("CreatedById")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
-                    b.Property<long?>("UserId1")
-                        .HasColumnType("bigint");
+                    b.Property<Guid?>("UserId1")
+                        .HasColumnType("uuid");
 
                     b.HasKey("UserId", "RoleId");
 

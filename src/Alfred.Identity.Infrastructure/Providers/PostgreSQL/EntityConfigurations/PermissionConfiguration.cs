@@ -13,6 +13,9 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         // Unique index on Code
         builder.HasIndex(x => x.Code)
             .IsUnique()

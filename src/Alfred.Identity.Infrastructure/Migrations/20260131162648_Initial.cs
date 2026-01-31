@@ -2,8 +2,6 @@
 
 using Microsoft.EntityFrameworkCore.Migrations;
 
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-
 #nullable disable
 
 namespace Alfred.Identity.Infrastructure.Migrations
@@ -14,12 +12,41 @@ namespace Alfred.Identity.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Create UUID v7 generation function for PostgreSQL FIRST
+            // UUID v7 is time-ordered which provides better index performance
+            migrationBuilder.Sql(@"
+                CREATE OR REPLACE FUNCTION generate_uuid_v7()
+                RETURNS uuid
+                AS $$
+                DECLARE
+                    unix_ts_ms bytea;
+                    uuid_bytes bytea;
+                BEGIN
+                    -- Get current Unix timestamp in milliseconds
+                    unix_ts_ms := substring(int8send(floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint) FROM 3 FOR 6);
+                    
+                    -- Generate random bytes for the rest
+                    uuid_bytes := unix_ts_ms || gen_random_bytes(10);
+                    
+                    -- Set version (7) and variant (2) bits
+                    -- Version 7: bits 48-51 should be 0111
+                    uuid_bytes := set_byte(uuid_bytes, 6, (get_byte(uuid_bytes, 6) & 15) | 112);
+                    -- Variant: bits 64-65 should be 10
+                    uuid_bytes := set_byte(uuid_bytes, 8, (get_byte(uuid_bytes, 8) & 63) | 128);
+                    
+                    RETURN encode(uuid_bytes, 'hex')::uuid;
+                END;
+                $$ LANGUAGE plpgsql VOLATILE;
+
+                -- Add a comment to document the function
+                COMMENT ON FUNCTION generate_uuid_v7() IS 'Generates a UUID v7 (time-ordered UUID) for better index performance';
+            ");
+
             migrationBuilder.CreateTable(
                 name: "applications",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     ClientId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ClientSecret = table.Column<string>(type: "text", nullable: true),
                     DisplayName = table.Column<string>(type: "text", nullable: true),
@@ -47,8 +74,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "permissions",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     Code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -56,9 +82,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     Action = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedById = table.Column<long>(type: "bigint", nullable: true)
+                    UpdatedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -69,20 +95,20 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "roles",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Icon = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
                     IsImmutable = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     IsSystem = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedById = table.Column<long>(type: "bigint", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedById = table.Column<long>(type: "bigint", nullable: true)
+                    DeletedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -93,8 +119,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "scopes",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     DisplayName = table.Column<string>(type: "text", nullable: true),
                     DisplayNames = table.Column<string>(type: "jsonb", nullable: true),
@@ -113,8 +138,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "signing_keys",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     KeyId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Algorithm = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Type = table.Column<string>(type: "text", nullable: false),
@@ -123,12 +147,12 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedById = table.Column<long>(type: "bigint", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedById = table.Column<long>(type: "bigint", nullable: true)
+                    DeletedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -139,8 +163,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "users",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
@@ -158,12 +181,12 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     FullName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedById = table.Column<long>(type: "bigint", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedById = table.Column<long>(type: "bigint", nullable: true)
+                    DeletedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -174,10 +197,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "role_permissions",
                 columns: table => new
                 {
-                    RoleId = table.Column<long>(type: "bigint", nullable: false),
-                    PermissionId = table.Column<long>(type: "bigint", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PermissionId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true)
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -200,10 +223,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "authorizations",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ApplicationId = table.Column<long>(type: "bigint", nullable: false),
-                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
+                    ApplicationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Subject = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Type = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -233,10 +255,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "backup_codes",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
                     CodeHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     IsUsed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UsedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -256,11 +277,11 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "user_roles",
                 columns: table => new
                 {
-                    UserId = table.Column<long>(type: "bigint", nullable: false),
-                    RoleId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<long>(type: "bigint", nullable: true),
-                    UserId1 = table.Column<long>(type: "bigint", nullable: true)
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    UserId1 = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -288,12 +309,11 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 name: "tokens",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ApplicationId = table.Column<long>(type: "bigint", nullable: true),
-                    AuthorizationId = table.Column<long>(type: "bigint", nullable: true),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
+                    ApplicationId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AuthorizationId = table.Column<Guid>(type: "uuid", nullable: true),
                     Subject = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    UserId = table.Column<long>(type: "bigint", nullable: true),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
                     Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ReferenceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -471,6 +491,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "users");
+
+            // Drop UUID v7 function
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS generate_uuid_v7();");
         }
     }
 }

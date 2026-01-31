@@ -7,7 +7,7 @@ namespace Alfred.Identity.Application.Applications.Common;
 /// </summary>
 public sealed record ApplicationDto
 {
-    public long Id { get; init; }
+    public Guid Id { get; init; }
 
     public string ClientId { get; init; } = null!;
 

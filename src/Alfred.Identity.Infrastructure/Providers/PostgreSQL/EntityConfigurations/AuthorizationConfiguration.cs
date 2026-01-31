@@ -13,6 +13,9 @@ public class AuthorizationConfiguration : IEntityTypeConfiguration<Authorization
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.HasIndex(x => new { x.ApplicationId, x.Status, x.Subject, x.Type })
             .HasDatabaseName("IX_OpenIddictAuthorizations_ApplicationId_Status_Subject_Type");
 

@@ -55,10 +55,10 @@ public class ApplicationsController : BaseApiController
     /// <summary>
     /// Get application by ID
     /// </summary>
-    [HttpGet("{id:long}")]
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetApplicationByIdQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -107,12 +107,12 @@ public class ApplicationsController : BaseApiController
     /// <summary>
     /// Update an existing application
     /// </summary>
-    [HttpPut("{id:long}")]
+    [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
-        long id,
+        Guid id,
         [FromBody] UpdateApplicationRequest request,
         CancellationToken cancellationToken)
     {
@@ -132,10 +132,10 @@ public class ApplicationsController : BaseApiController
     /// <summary>
     /// Delete an application
     /// </summary>
-    [HttpDelete("{id:long}")]
+    [HttpDelete("{id:guid}")]
     [ProducesResponseType(typeof(ApiSuccessResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeleteApplicationCommand(id);
         var result = await _mediator.Send(command, cancellationToken);
@@ -151,11 +151,11 @@ public class ApplicationsController : BaseApiController
     /// <summary>
     /// Update application status (activate/deactivate)
     /// </summary>
-    [HttpPatch("{id:long}/status")]
+    [HttpPatch("{id:guid}/status")]
     [ProducesResponseType(typeof(ApiSuccessResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateStatus(
-        long id,
+        Guid id,
         [FromBody] UpdateApplicationStatusRequest request,
         CancellationToken cancellationToken)
     {
@@ -173,10 +173,10 @@ public class ApplicationsController : BaseApiController
     /// <summary>
     /// Regenerate client secret (returns the new raw secret)
     /// </summary>
-    [HttpPost("{id:long}/secret/regenerate")]
+    [HttpPost("{id:guid}/secret/regenerate")]
     [ProducesResponseType(typeof(ApiSuccessResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RegenerateSecret(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> RegenerateSecret(Guid id, CancellationToken cancellationToken)
     {
         var command = new RegenerateClientSecretCommand(id);
         var result = await _mediator.Send(command, cancellationToken);

@@ -30,12 +30,12 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
 
     // Audit fields
     public DateTime CreatedAt { get; set; }
-    public long? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public long? UpdatedById { get; set; }
+    public Guid? UpdatedById { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
-    public long? DeletedById { get; set; }
+    public Guid? DeletedById { get; set; }
 
     /// <summary>
     /// Navigation property for Role-Permission relationship
@@ -50,7 +50,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void AddPermission(long permissionId, long? creatorId = null)
+    public void AddPermission(Guid permissionId, Guid? creatorId = null)
     {
         if (RolePermissions.Any(rp => rp.PermissionId == permissionId))
         {
@@ -60,7 +60,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         RolePermissions.Add(RolePermission.Create(Id, permissionId, creatorId));
     }
 
-    public void RemovePermission(long permissionId)
+    public void RemovePermission(Guid permissionId)
     {
         var permission = RolePermissions.FirstOrDefault(rp => rp.PermissionId == permissionId);
         if (permission != null)
@@ -69,10 +69,10 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         }
     }
 
-    public void SyncPermissions(IEnumerable<long> permissionIds, long? creatorId = null)
+    public void SyncPermissions(IEnumerable<Guid> permissionIds, Guid? creatorId = null)
     {
-        var desiredIds = new HashSet<long>(permissionIds);
-        var currentIds = new HashSet<long>(RolePermissions.Select(rp => rp.PermissionId));
+        var desiredIds = new HashSet<Guid>(permissionIds);
+        var currentIds = new HashSet<Guid>(RolePermissions.Select(rp => rp.PermissionId));
 
         // Identify permissions to add
         var toAdd = desiredIds.Except(currentIds);
@@ -94,7 +94,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     }
 
     public static Role Create(string name, string? icon = null, bool isImmutable = false, bool isSystem = false,
-        long? createdById = null)
+        Guid? createdById = null)
     {
         return new Role
         {

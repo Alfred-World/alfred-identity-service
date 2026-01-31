@@ -16,6 +16,9 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("generate_uuid_v7()");
+
         builder.HasIndex(x => x.ClientId).IsUnique().HasDatabaseName("IX_OpenIddictApplications_ClientId");
 
         builder.Property(x => x.ClientId).HasMaxLength(100);

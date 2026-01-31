@@ -43,9 +43,9 @@ public class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModific
 
     // Audit fields
     public DateTime CreatedAt { get; set; }
-    public long? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public long? UpdatedById { get; set; }
+    public Guid? UpdatedById { get; set; }
 
     /// <summary>
     /// Navigation property for Role-Permission many-to-many relationship
@@ -64,7 +64,7 @@ public class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModific
     /// <param name="name">Human-readable name</param>
     /// <param name="description">Optional description</param>
     /// <param name="createdById">Creator ID</param>
-    public static Permission Create(string code, string name, string? description = null, long? createdById = null)
+    public static Permission Create(string code, string name, string? description = null, Guid? createdById = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code, nameof(code));
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
