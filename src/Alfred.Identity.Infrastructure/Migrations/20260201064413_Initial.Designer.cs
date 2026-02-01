@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Alfred.Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(PostgreSqlDbContext))]
-    [Migration("20260131162648_Initial")]
+    [Migration("20260201064413_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -530,6 +530,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Avatar")
+                        .HasColumnType("text");
+
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
 
@@ -634,14 +637,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("UserId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("user_roles", (string)null);
                 });
@@ -726,14 +724,10 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("Alfred.Identity.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Alfred.Identity.Domain.Entities.User", null)
-                        .WithMany("UserRoles")
-                        .HasForeignKey("UserId1");
 
                     b.Navigation("Role");
 

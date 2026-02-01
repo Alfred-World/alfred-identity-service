@@ -18,6 +18,7 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     public string? SecurityStamp { get; private set; }
     public string? ConcurrencyStamp { get; private set; } = Guid.NewGuid().ToString();
     public string? PhoneNumber { get; private set; }
+    public string? Avatar { get; private set; }
     public bool PhoneNumberConfirmed { get; private set; }
     public bool TwoFactorEnabled { get; private set; }
     public DateTimeOffset? LockoutEnd { get; private set; }

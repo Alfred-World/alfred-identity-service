@@ -173,6 +173,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     SecurityStamp = table.Column<string>(type: "text", nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
                     PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    Avatar = table.Column<string>(type: "text", nullable: true),
                     PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -280,8 +281,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    UserId1 = table.Column<Guid>(type: "uuid", nullable: true)
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -298,11 +298,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_user_roles_users_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -440,11 +435,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_user_roles_UserId1",
-                table: "user_roles",
-                column: "UserId1");
-
-            migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "users",
                 column: "NormalizedEmail");
@@ -491,9 +481,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "users");
-
-            // Drop UUID v7 function
-            migrationBuilder.Sql("DROP FUNCTION IF EXISTS generate_uuid_v7();");
         }
     }
 }

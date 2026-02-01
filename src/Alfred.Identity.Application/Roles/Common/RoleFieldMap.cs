@@ -72,7 +72,7 @@ public class RoleFieldMap : BaseFieldMap<Role>
             // Permissions
             r => r.Permissions
         })
-        .Register("minimal", new Expression<Func<RoleDto, object?>>[]
+        .Register("summary", new Expression<Func<RoleDto, object?>>[]
         {
             r => r.Id,
             r => r.Name,

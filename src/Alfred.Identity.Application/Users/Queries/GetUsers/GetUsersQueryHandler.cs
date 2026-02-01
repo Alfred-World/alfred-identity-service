@@ -5,6 +5,7 @@ using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Filtering.Binding;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
+using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
@@ -38,6 +39,9 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PageResult<Us
 
         var page = queryRequest.GetEffectivePage();
         var pageSize = queryRequest.GetEffectivePageSize();
+
+        // Get view from request (or use default)
+        var view = UserFieldMap.Views.GetView(queryRequest.View);
 
         Expression<Func<User, bool>>? filterExpression = null;
         if (!string.IsNullOrWhiteSpace(queryRequest.Filter))
@@ -76,14 +80,19 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PageResult<Us
             queryRequest.Sort,
             page,
             pageSize,
-            null,
+            view.Includes,
             fieldSelector,
             cancellationToken
         );
 
-        var items = await query.ToListAsync(cancellationToken);
-        var dtos = items.Select(UserDto.FromEntity).ToList();
+        // Apply projection at DB level
+        var projectedQuery = ProjectionBinder.ApplyProjection<User, UserDto>(
+            query,
+            view.Fields,
+            fieldMap.Fields);
 
-        return new PageResult<UserDto>(dtos, page, pageSize, total);
+        var items = await projectedQuery.ToListAsync(cancellationToken);
+
+        return new PageResult<UserDto>(items, page, pageSize, total);
     }
 }
