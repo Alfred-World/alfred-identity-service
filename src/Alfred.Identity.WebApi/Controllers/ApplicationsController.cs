@@ -97,11 +97,7 @@ public class ApplicationsController : BaseApiController
             appDto = appDto with { ClientSecret = createResult.Secret };
         }
 
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id },
-            ApiSuccessResponse<ApplicationDto>.Ok(appDto, "Application created successfully")
-        );
+        return CreatedResponse(appDto);
     }
 
     /// <summary>

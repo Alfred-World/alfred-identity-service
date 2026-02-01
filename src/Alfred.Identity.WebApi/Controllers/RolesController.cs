@@ -67,9 +67,9 @@ public class RolesController : BaseApiController
     /// </summary>
     /// <param name="command">Role creation details</param>
     [HttpPost]
-    [ProducesResponseType(typeof(CreateRoleResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RoleDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<CreateRoleResult>> CreateRole([FromBody] CreateRoleCommand command)
+    public async Task<ActionResult<RoleDto>> CreateRole([FromBody] CreateRoleCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Success)
@@ -77,7 +77,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return CreatedAtAction(nameof(GetRoleById), new { id = result.RoleId }, result);
+        return CreatedResponse(result.Data);
     }
 
     /// <summary>
@@ -86,10 +86,10 @@ public class RolesController : BaseApiController
     /// <param name="id">ID of the role to update</param>
     /// <param name="command">Role update details</param>
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<UpdateRoleResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UpdateRoleResult>> UpdateRole(Guid id, [FromBody] UpdateRoleCommand command)
+    public async Task<ActionResult<RoleDto>> UpdateRole(Guid id, [FromBody] UpdateRoleCommand command)
     {
         if (id != command.Id)
         {
@@ -102,7 +102,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return OkResponse(result);
+        return OkResponse(result.Data);
     }
 
     /// <summary>
@@ -110,10 +110,10 @@ public class RolesController : BaseApiController
     /// </summary>
     /// <param name="id">ID of the role to delete</param>
     [HttpDelete("{id}")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<DeleteRoleResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiSuccessResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<DeleteRoleResult>> DeleteRole(Guid id)
+    public async Task<ActionResult<RoleDto>> DeleteRole(Guid id)
     {
         var result = await _mediator.Send(new DeleteRoleCommand(id));
         if (!result.Success)
@@ -121,7 +121,7 @@ public class RolesController : BaseApiController
             return BadRequest(result);
         }
 
-        return OkResponse(result);
+        return OkResponse(result.Data);
     }
 
     /// <summary>

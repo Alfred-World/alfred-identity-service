@@ -122,6 +122,15 @@ public abstract class BaseApiController : ControllerBase
     }
 
     /// <summary>
+    /// Return a created successful response
+    /// </summary>
+    protected ObjectResult CreatedResponse<T>(T data, string? message = null)
+    {
+        var response = ApiSuccessResponse<T>.Ok(data, message);
+        return StatusCode(201, response);
+    }
+
+    /// <summary>
     /// Return a bad request error response
     /// </summary>
     protected BadRequestObjectResult BadRequestResponse(string message, string code = "BAD_REQUEST")

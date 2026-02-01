@@ -1,3 +1,4 @@
+using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
@@ -18,20 +19,27 @@ public class UpdateRoleCommandHandler : IRequestHandler<UpdateRoleCommand, Updat
         var role = await _roleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (role == null)
         {
-            return new UpdateRoleResult(false, "Role not found.");
+            return new UpdateRoleResult(false, Error: "Role not found.");
         }
 
         if (role.IsImmutable)
         {
-            return new UpdateRoleResult(false, "Cannot modify immutable role.");
+            return new UpdateRoleResult(false, Error: "Cannot modify immutable role.");
         }
 
         // Update using domain method
-        role.Update(request.Name, request.Icon);
+        role.Update(request.Name, request.Icon, request.IsImmutable, request.IsSystem);
+
+        if (request.Permissions != null)
+        {
+            role.SyncPermissions(request.Permissions);
+        }
 
         await _roleRepository.UpdateAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
-        return new UpdateRoleResult(true);
+        // Load permissions for DTO
+        var updatedRole = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
+        return new UpdateRoleResult(true, RoleDto.FromEntity(updatedRole!));
     }
 }

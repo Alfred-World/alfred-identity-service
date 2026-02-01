@@ -26,8 +26,8 @@ public class ApplicationFieldMap : BaseFieldMap<ApplicationEntity>
         .Add("applicationType", s => s.ApplicationType!).AllowAll()
         .Add("clientType", s => s.ClientType!).AllowAll()
         .Add("isActive", s => s.IsActive).AllowAll()
-        .Add("createdAt", s => s.CreatedAt).AllowAll()
-        .Add("updatedAt", s => s.UpdatedAt!).AllowAll();
+        .Add("createdAt", s => s.CreatedAt).Sortable().Selectable()
+        .Add("updatedAt", s => s.UpdatedAt!).Sortable().Selectable();
 
     protected override Dictionary<string, Expression<Func<ApplicationEntity, object>>> AllowedIncludes { get; } =
         new(StringComparer.OrdinalIgnoreCase);

@@ -1,3 +1,4 @@
+using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
@@ -18,22 +19,24 @@ public class DeleteRoleCommandHandler : IRequestHandler<DeleteRoleCommand, Delet
         var role = await _roleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (role == null)
         {
-            return new DeleteRoleResult(false, "Role not found.");
+            return new DeleteRoleResult(false, Error: "Role not found.");
         }
 
         if (role.IsImmutable)
         {
-            return new DeleteRoleResult(false, "Cannot delete immutable role.");
+            return new DeleteRoleResult(false, Error: "Cannot delete immutable role.");
         }
 
         if (role.IsSystem)
         {
-            return new DeleteRoleResult(false, "Cannot delete system role.");
+            return new DeleteRoleResult(false, Error: "Cannot delete system role.");
         }
+
+        var deletedRoleDto = RoleDto.FromEntity(role);
 
         await _roleRepository.DeleteAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
-        return new DeleteRoleResult(true);
+        return new DeleteRoleResult(true, deletedRoleDto);
     }
 }

@@ -42,11 +42,13 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// </summary>
     public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
 
-    public void Update(string name, string? icon)
+    public void Update(string name, string? icon, bool isImmutable, bool isSystem)
     {
         Name = name;
         NormalizedName = name.ToUpperInvariant();
         Icon = icon;
+        IsImmutable = isImmutable;
+        IsSystem = isSystem;
         UpdatedAt = DateTime.UtcNow;
     }
 
