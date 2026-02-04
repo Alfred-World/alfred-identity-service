@@ -18,7 +18,10 @@ public class RoleDto
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
-    public IEnumerable<PermissionDto> Permissions { get; set; } = new List<PermissionDto>();
+    /// <summary>
+    /// Permissions list. Null values in PermissionDto properties are skipped during JSON serialization.
+    /// </summary>
+    public IEnumerable<PermissionDto>? Permissions { get; set; }
 
     public RoleDto()
     {

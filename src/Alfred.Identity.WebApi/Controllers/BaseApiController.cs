@@ -133,9 +133,9 @@ public abstract class BaseApiController : ControllerBase
     /// <summary>
     /// Return a bad request error response
     /// </summary>
-    protected BadRequestObjectResult BadRequestResponse(string message, string code = "BAD_REQUEST")
+    protected BadRequestObjectResult BadRequestResponse(string? message, string code = "BAD_REQUEST")
     {
-        var response = ApiErrorResponse.BadRequest(message, code);
+        var response = ApiErrorResponse.BadRequest(message ?? "Bad Request", code);
         return BadRequest(response);
     }
 

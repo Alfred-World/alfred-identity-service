@@ -1,6 +1,8 @@
 using System.Reflection;
 
 using Alfred.Identity.Domain.Entities;
+
+
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Options;
 
@@ -14,6 +16,7 @@ namespace Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 /// </summary>
 public class PostgreSqlDbContext : DbContext, IDbContext
 {
+
     private readonly PostgreSqlOptions _options;
 
     public PostgreSqlDbContext(PostgreSqlOptions options)
@@ -24,6 +27,11 @@ public class PostgreSqlDbContext : DbContext, IDbContext
     // Identity entities
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<BackupCode> BackupCodes { get; set; } = null!;
+    public DbSet<UserBan> UserBans { get; set; } = null!;
+    public DbSet<UserActivityLog> UserActivityLogs { get; set; } = null!;
+    public DbSet<UserLogin> UserLogins { get; set; } = null!;
+
+
 
     // SSO
     public DbSet<Application> Applications { get; set; } = null!;

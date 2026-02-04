@@ -83,7 +83,8 @@ public class GetPermissionsQueryHandler : IRequestHandler<GetPermissionsQuery, P
             cancellationToken
         );
 
-        var items = await query.ToListAsync(cancellationToken);
+        // Use AsNoTracking for read-only queries to reduce memory overhead
+        var items = await query.AsNoTracking().ToListAsync(cancellationToken);
         var dtos = items.Select(PermissionDto.FromEntity).ToList();
 
         return new PageResult<PermissionDto>(dtos, page, pageSize, total);

@@ -1,3 +1,4 @@
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
@@ -8,11 +9,16 @@ public class AssignRolesToUserCommandHandler : IRequestHandler<AssignRolesToUser
 {
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly ICurrentUser _currentUser;
 
-    public AssignRolesToUserCommandHandler(IUserRepository userRepository, IRoleRepository roleRepository)
+    public AssignRolesToUserCommandHandler(
+        IUserRepository userRepository,
+        IRoleRepository roleRepository,
+        ICurrentUser currentUser)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
+        _currentUser = currentUser;
     }
 
     public async Task<AssignRolesToUserResult> Handle(AssignRolesToUserCommand request,
@@ -24,6 +30,8 @@ public class AssignRolesToUserCommandHandler : IRequestHandler<AssignRolesToUser
             return new AssignRolesToUserResult(false, "User not found");
         }
 
+        var currentUserId = _currentUser.UserId;
+
         foreach (var roleId in request.RoleIds)
         {
             var role = await _roleRepository.GetByIdAsync(roleId, cancellationToken);
@@ -32,7 +40,7 @@ public class AssignRolesToUserCommandHandler : IRequestHandler<AssignRolesToUser
                 return new AssignRolesToUserResult(false, $"Role with ID {roleId} not found");
             }
 
-            user.AddRole(roleId);
+            user.AddRole(roleId, currentUserId);
         }
 
         _userRepository.Update(user);
@@ -41,3 +49,4 @@ public class AssignRolesToUserCommandHandler : IRequestHandler<AssignRolesToUser
         return new AssignRolesToUserResult(true);
     }
 }
+

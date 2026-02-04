@@ -1,5 +1,4 @@
 ﻿using System;
-
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -63,7 +62,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -176,18 +177,20 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     Avatar = table.Column<string>(type: "text", nullable: true),
                     PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    TwoFactorSecret = table.Column<string>(type: "text", nullable: true),
                     LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     AccessFailedCount = table.Column<int>(type: "integer", nullable: false),
                     FullName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                    DeletedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsBanned = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -268,6 +271,77 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     table.PrimaryKey("PK_backup_codes", x => x.Id);
                     table.ForeignKey(
                         name: "FK_backup_codes_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_activity_logs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    IpAddress = table.Column<string>(type: "text", nullable: true),
+                    UserAgent = table.Column<string>(type: "text", nullable: true),
+                    OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_user_activity_logs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_user_activity_logs_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_bans",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Reason = table.Column<string>(type: "text", nullable: false),
+                    BannedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    BannedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    UnbannedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UnbannedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_user_bans", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_user_bans_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_logins",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "generate_uuid_v7()"),
+                    LoginProvider = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    ProviderKey = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_user_logins", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_user_logins_users_UserId",
                         column: x => x.UserId,
                         principalTable: "users",
                         principalColumn: "Id",
@@ -430,6 +504,27 @@ namespace Alfred.Identity.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_user_activity_logs_UserId",
+                table: "user_activity_logs",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_user_bans_UserId",
+                table: "user_bans",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_user_logins_LoginProvider_ProviderKey",
+                table: "user_logins",
+                columns: new[] { "LoginProvider", "ProviderKey" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_user_logins_UserId",
+                table: "user_logins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_user_roles_RoleId",
                 table: "user_roles",
                 column: "RoleId");
@@ -463,6 +558,15 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "tokens");
+
+            migrationBuilder.DropTable(
+                name: "user_activity_logs");
+
+            migrationBuilder.DropTable(
+                name: "user_bans");
+
+            migrationBuilder.DropTable(
+                name: "user_logins");
 
             migrationBuilder.DropTable(
                 name: "user_roles");

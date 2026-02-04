@@ -27,6 +27,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Custom fields
         builder.Property(x => x.FullName).IsRequired().HasMaxLength(150);
-        builder.Property(x => x.Status).IsRequired().HasMaxLength(20);
     }
 }

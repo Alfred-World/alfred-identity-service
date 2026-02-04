@@ -8,7 +8,8 @@ using Alfred.Identity.Domain.Entities;
 namespace Alfred.Identity.Application.Users.Common;
 
 /// <summary>
-/// FieldMap for User entity - defines filterable and sortable fields
+/// FieldMap for User entity - defines filterable, sortable fields and views.
+/// Optimized for database-level projection to minimize memory usage.
 /// </summary>
 public class UserFieldMap : BaseFieldMap<User>
 {
@@ -37,7 +38,7 @@ public class UserFieldMap : BaseFieldMap<User>
         })).AllowAll();
 
     public static ViewRegistry<User, UserDto> Views { get; } = new ViewRegistry<User, UserDto>()
-        .Register("list", new Expression<Func<UserDto, object?>>[]
+        .Register("list", new Expression<Func<UserDto, object?>>[] 
         {
             u => u.Id,
             u => u.UserName,
@@ -49,7 +50,7 @@ public class UserFieldMap : BaseFieldMap<User>
             u => u.Avatar,
             u => u.Roles
         })
-        .Register("summary", new Expression<Func<UserDto, object?>>[]
+        .Register("summary", new Expression<Func<UserDto, object?>>[] 
         {
             u => u.Id,
             u => u.UserName,
@@ -59,8 +60,4 @@ public class UserFieldMap : BaseFieldMap<User>
             u => u.Avatar
         })
         .SetDefault("list");
-
-    protected override Dictionary<string, Expression<Func<User, object>>> AllowedIncludes { get; } = new()
-    {
-    };
 }

@@ -85,10 +85,10 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PageResult<Us
             cancellationToken
         );
 
-        // Apply projection at DB level
-        var projectedQuery = ProjectionBinder.ApplyProjection<User, UserDto>(
-            query,
-            view.Fields,
+        // Apply projection at DB level with AsNoTracking for read-only queries
+        var projectedQuery = ProjectionBinder.ApplyProjection(
+            query.AsNoTracking(),
+            view,
             fieldMap.Fields);
 
         var items = await projectedQuery.ToListAsync(cancellationToken);

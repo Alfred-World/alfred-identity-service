@@ -1,19 +1,38 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
+using Alfred.Identity.Application.Querying.Common;
 using Alfred.Identity.Application.Querying.Fields;
 
 namespace Alfred.Identity.Application.Querying.Projection;
 
 /// <summary>
-/// Helper to apply field projection/selection to queries
-/// Optimizes performance by selecting only requested fields from database
+/// Helper to apply field projection/selection to queries.
+/// Optimizes performance by selecting only requested fields from database.
 /// </summary>
 public static class ProjectionBinder
 {
     /// <summary>
-    /// Apply field selection (projection) to query
-    /// If fields is null/empty, returns all fields
+    /// Apply field selection (projection) to query using a ViewDefinition.
+    /// Supports field aliases for mapping DTO properties to different FieldMap keys.
+    /// </summary>
+    public static IQueryable<TDto> ApplyProjection<TSource, TDto>(
+        IQueryable<TSource> query,
+        ViewDefinition<TSource, TDto> view,
+        FieldMap<TSource> fieldMap)
+        where TSource : class
+        where TDto : class, new()
+    {
+        return ApplyProjectionInternal<TSource, TDto>(
+            query,
+            view.Fields,
+            fieldMap,
+            dtoFieldName => view.GetFieldMapKey(dtoFieldName));
+    }
+
+    /// <summary>
+    /// Apply field selection (projection) to query.
+    /// If fields is null/empty, throws exception.
     /// </summary>
     /// <typeparam name="TSource">Source entity type</typeparam>
     /// <typeparam name="TDto">DTO type to project to</typeparam>
@@ -21,6 +40,20 @@ public static class ProjectionBinder
         IQueryable<TSource> query,
         string[]? fields,
         FieldMap<TSource> fieldMap)
+        where TDto : class, new()
+    {
+        return ApplyProjectionInternal<TSource, TDto>(
+            query,
+            fields,
+            fieldMap,
+            dtoFieldName => dtoFieldName); // No aliasing
+    }
+
+    private static IQueryable<TDto> ApplyProjectionInternal<TSource, TDto>(
+        IQueryable<TSource> query,
+        string[]? fields,
+        FieldMap<TSource> fieldMap,
+        Func<string, string> getFieldMapKey)
         where TDto : class, new()
     {
         // If no fields specified, return all (will need manual mapping later)
@@ -32,16 +65,17 @@ public static class ProjectionBinder
         }
 
         // Validate all requested fields exist and are selectable
-        foreach (var field in fields)
+        foreach (var dtoFieldName in fields)
         {
-            if (!fieldMap.TryGet(field, out _, out _))
+            var fieldMapKey = getFieldMapKey(dtoFieldName);
+            if (!fieldMap.TryGet(fieldMapKey, out _, out _))
             {
-                throw new InvalidOperationException($"Field '{field}' not found");
+                throw new InvalidOperationException($"Field '{fieldMapKey}' not found");
             }
 
-            if (!fieldMap.CanSelect(field))
+            if (!fieldMap.CanSelect(fieldMapKey))
             {
-                throw new InvalidOperationException($"Field '{field}' cannot be selected");
+                throw new InvalidOperationException($"Field '{fieldMapKey}' cannot be selected");
             }
         }
 
@@ -52,17 +86,19 @@ public static class ProjectionBinder
         // Create member bindings for each requested field
         List<MemberBinding> bindings = new();
 
-        foreach (var fieldName in fields)
+        foreach (var dtoFieldName in fields)
         {
-            // Get source expression from field map
-            if (!fieldMap.TryGet(fieldName, out var sourceExpression, out _))
+            var fieldMapKey = getFieldMapKey(dtoFieldName);
+
+            // Get source expression from field map using the mapped key
+            if (!fieldMap.TryGet(fieldMapKey, out var sourceExpression, out _))
             {
                 continue;
             }
 
-            // Find matching property in DTO
+            // Find matching property in DTO using the DTO field name
             var dtoProperty = dtoType.GetProperty(
-                fieldName,
+                dtoFieldName,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
             if (dtoProperty == null || !dtoProperty.CanWrite)
@@ -70,9 +106,8 @@ public static class ProjectionBinder
                 continue;
             }
 
-            // Replace parameter in source expression
-            ParameterReplacerVisitor visitor = new(sourceExpression.Parameters[0], parameter);
-            var sourceBody = visitor.Visit(sourceExpression.Body);
+            // Replace parameter in source expression using shared helper
+            var sourceBody = ParameterReplacer.ReplaceIn(sourceExpression, parameter);
 
             // Convert if types don't match
             if (sourceBody.Type != dtoProperty.PropertyType)
@@ -128,9 +163,8 @@ public static class ProjectionBinder
                 continue;
             }
 
-            // Replace parameter in source expression
-            ParameterReplacerVisitor visitor = new(sourceExpression.Parameters[0], parameter);
-            var sourceBody = visitor.Visit(sourceExpression.Body);
+            // Replace parameter in source expression using shared helper
+            var sourceBody = ParameterReplacer.ReplaceIn(sourceExpression, parameter);
 
             // Convert to object
             var objectValue = Expression.Convert(sourceBody, typeof(object));
@@ -179,22 +213,5 @@ public static class ProjectionBinder
         }
 
         return char.ToLowerInvariant(str[0]) + str.Substring(1);
-    }
-
-    private class ParameterReplacerVisitor : ExpressionVisitor
-    {
-        private readonly ParameterExpression _oldParameter;
-        private readonly ParameterExpression _newParameter;
-
-        public ParameterReplacerVisitor(ParameterExpression oldParameter, ParameterExpression newParameter)
-        {
-            _oldParameter = oldParameter;
-            _newParameter = newParameter;
-        }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            return node == _oldParameter ? _newParameter : base.VisitParameter(node);
-        }
     }
 }

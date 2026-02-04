@@ -88,9 +88,10 @@ public class GetRolesQueryHandler : IRequestHandler<GetRolesQuery, PageResult<Ro
         );
 
         // Apply projection at DB level (generates SELECT with only required fields)
-        var projectedQuery = ProjectionBinder.ApplyProjection<Role, RoleDto>(
-            query,
-            view.Fields,
+        // Uses view definition to support field aliases (e.g., permissionsSummary -> permissions)
+        var projectedQuery = ProjectionBinder.ApplyProjection(
+            query.AsNoTracking(), // Disable change tracking for read-only queries
+            view,
             fieldMap.Fields);
 
         var items = await projectedQuery.ToListAsync(cancellationToken);

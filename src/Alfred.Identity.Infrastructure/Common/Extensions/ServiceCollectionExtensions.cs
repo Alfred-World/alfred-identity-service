@@ -2,7 +2,10 @@ using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
+using Alfred.Identity.Infrastructure.Common.Identity;
+
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Providers.Cache;
@@ -29,12 +32,26 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISigningKeyRepository, SigningKeyRepository>();
         services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
         services.AddScoped<IScopeRepository, ScopeRepository>();
+        services.AddScoped<IUserBanRepository, UserBanRepository>();
+        services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository>();
+        services.AddScoped<IUserLoginRepository, UserLoginRepository>();
+        services.AddScoped<IBackupCodeRepository, BackupCodeRepository>();
+
 
         return services;
     }
 
+
+
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
+        // Current User Service (requires IHttpContextAccessor to be registered in WebApi layer)
+        services.AddScoped<ICurrentUser, CurrentUserService>();
+
+        // Activity Logging
+        services.AddScoped<IUserActivityLogger, UserActivityLogger>();
+
+
         // Token Services
         services.AddSingleton<IAuthTokenService, AuthTokenService>();
         services.AddScoped<IJwksService, JwksService>();
@@ -45,8 +62,26 @@ public static class ServiceCollectionExtensions
         services.AddInMemoryCache();
 
         // Location Services
-        services.AddHttpClient<IpApiLocationService>();
         services.AddScoped<ILocationService, IpApiLocationService>();
+        services.AddSingleton<ITwoFactorService, TwoFactorService>();
+
+        
+        // Email Service
+        // Redis
+        var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+        var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+        var redisPassword = Environment.GetEnvironmentVariable("REDIS_PASSWORD") ?? string.Empty;
+        var redisConfig = $"{redisHost}:{redisPort}";
+        if (!string.IsNullOrEmpty(redisPassword))
+        {
+            redisConfig += $",password={redisPassword}";
+        }
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => 
+            StackExchange.Redis.ConnectionMultiplexer.Connect(redisConfig));
+
+        // Email Service
+        services.AddScoped<IEmailSender, RedisEmailSender>();
+
 
         // Other Services
         services.AddScoped<IAuthorizationCodeService, AuthorizationCodeService>();
@@ -103,8 +138,13 @@ public static class ServiceCollectionExtensions
 
         // Register PostgreSQL database provider
         services.AddPostgreSQL(connectionString);
+        
+        // Register IDbContext alias to the provider
+        services.AddScoped<IDbContext>(provider => provider.GetRequiredService<PostgreSqlDbContext>());
 
 
         return services;
     }
 }
+
+

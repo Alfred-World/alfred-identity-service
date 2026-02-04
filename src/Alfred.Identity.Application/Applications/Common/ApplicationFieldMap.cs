@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 using Alfred.Identity.Application.Querying.Fields;
 
 using ApplicationEntity = Alfred.Identity.Domain.Entities.Application;
@@ -7,7 +5,7 @@ using ApplicationEntity = Alfred.Identity.Domain.Entities.Application;
 namespace Alfred.Identity.Application.Applications.Common;
 
 /// <summary>
-/// Field map for Application domain entity - defines allowed fields for filtering and sorting
+/// Field map for Application domain entity - defines allowed fields for filtering and sorting.
 /// </summary>
 public class ApplicationFieldMap : BaseFieldMap<ApplicationEntity>
 {
@@ -28,7 +26,4 @@ public class ApplicationFieldMap : BaseFieldMap<ApplicationEntity>
         .Add("isActive", s => s.IsActive).AllowAll()
         .Add("createdAt", s => s.CreatedAt).Sortable().Selectable()
         .Add("updatedAt", s => s.UpdatedAt!).Sortable().Selectable();
-
-    protected override Dictionary<string, Expression<Func<ApplicationEntity, object>>> AllowedIncludes { get; } =
-        new(StringComparer.OrdinalIgnoreCase);
 }

@@ -21,14 +21,17 @@ public sealed class PrattFilterParser : IFilterParser
             throw new ArgumentException("Filter cannot be empty", nameof(filter));
         }
 
-        if (filter.Length > MaxFilterLength)
+        // Security: Sanitize input before parsing
+        var sanitizedFilter = FilterSanitizer.Sanitize(filter);
+        
+        if (sanitizedFilter.Length > MaxFilterLength)
         {
             throw new ArgumentException(
-                $"Filter string too long (max {MaxFilterLength} characters, got {filter.Length})",
+                $"Filter string too long (max {MaxFilterLength} characters, got {sanitizedFilter.Length})",
                 nameof(filter));
         }
 
-        FilterTokenizer tokenizer = new(filter);
+        FilterTokenizer tokenizer = new(sanitizedFilter);
         _tokens = tokenizer.Tokenize().ToList();
         _current = 0;
 

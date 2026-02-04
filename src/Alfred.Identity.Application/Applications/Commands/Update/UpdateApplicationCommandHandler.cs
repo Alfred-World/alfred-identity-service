@@ -14,13 +14,16 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
 {
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUser _currentUser;
 
     public UpdateApplicationCommandHandler(
         IApplicationRepository applicationRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICurrentUser currentUser)
     {
         _applicationRepository = applicationRepository;
         _unitOfWork = unitOfWork;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<ApplicationDto>> Handle(UpdateApplicationCommand request,
@@ -39,13 +42,14 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
             request.RedirectUris,
             request.PostLogoutRedirectUris,
             request.Permissions,
-            application.ClientType
+            application.ClientType,
+            _currentUser.UserId
         );
 
-        // Use sync Update method from IRepository
         _applicationRepository.Update(application);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<ApplicationDto>.Success(ApplicationDto.FromEntity(application));
     }
 }
+

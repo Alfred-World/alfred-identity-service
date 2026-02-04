@@ -1,8 +1,14 @@
 using Alfred.Identity.Application.Users.Commands.AssignRoles;
+using Alfred.Identity.Application.Users.Commands.Ban;
 using Alfred.Identity.Application.Users.Commands.RevokeRoles;
+using Alfred.Identity.Application.Users.Commands.Unban;
 using Alfred.Identity.Application.Users.Common;
+using Alfred.Identity.Application.Users.Queries.GetActivityLogs;
+using Alfred.Identity.Application.Users.Queries.GetBanHistory;
 using Alfred.Identity.Application.Users.Queries.GetUsers;
+using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.WebApi.Contracts.Common;
+
 
 using MediatR;
 
@@ -77,4 +83,70 @@ public class UsersController : BaseApiController
 
         return OkResponse(result);
     }
+
+    /// <summary>
+    /// Ban a user
+    /// </summary>
+    [HttpPost("{userId}/ban")]
+    [ProducesResponseType(typeof(ApiSuccessResponse<BanUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request)
+    {
+        var command = new BanUserCommand(userId, request.Reason, request.ExpiresAt);
+        var result = await _mediator.Send(command);
+        
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return OkResponse(result);
+    }
+
+    /// <summary>
+    /// Unban a user
+    /// </summary>
+    [HttpPost("{userId}/unban")]
+    [ProducesResponseType(typeof(ApiSuccessResponse<UnbanUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnbanUser(Guid userId)
+    {
+        var command = new UnbanUserCommand(userId);
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return OkResponse(result);
+    }
+
+    /// <summary>
+    /// Get user ban history
+    /// </summary>
+    [HttpGet("{userId}/ban-history")]
+    [ProducesResponseType(typeof(ApiSuccessResponse<List<BanDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBanHistory(Guid userId)
+    {
+        var query = new GetUserBanHistoryQuery(userId);
+        var result = await _mediator.Send(query);
+        return OkResponse(result);
+    }
+
+    /// <summary>
+    /// Get user activity logs
+    /// </summary>
+    [HttpGet("{userId}/activities")]
+    [ProducesResponseType(typeof(ApiPagedResponse<ActivityLogDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetActivityLogs(
+        Guid userId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var query = new GetUserActivityLogsQuery(userId, page, pageSize);
+        var result = await _mediator.Send(query);
+        return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize, result.TotalCount));
+    }
 }
+
+public record BanUserRequest(string Reason, DateTime? ExpiresAt = null);
+

@@ -1,3 +1,4 @@
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 using MediatR;
@@ -9,12 +10,16 @@ public class
 {
     private readonly IRoleRepository _roleRepository;
     private readonly IPermissionRepository _permissionRepository;
+    private readonly ICurrentUser _currentUser;
 
-    public AddPermissionsToRoleCommandHandler(IRoleRepository roleRepository,
-        IPermissionRepository permissionRepository)
+    public AddPermissionsToRoleCommandHandler(
+        IRoleRepository roleRepository,
+        IPermissionRepository permissionRepository,
+        ICurrentUser currentUser)
     {
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
+        _currentUser = currentUser;
     }
 
     public async Task<AddPermissionsToRoleResult> Handle(AddPermissionsToRoleCommand request,
@@ -49,8 +54,8 @@ public class
             }
         }
 
-        // Sync permissions (add new, remove missing)
-        role.SyncPermissions(uniquePermissionIds);
+        // Sync permissions with current user as creator
+        role.SyncPermissions(uniquePermissionIds, _currentUser.UserId);
 
         await _roleRepository.UpdateAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
@@ -58,3 +63,4 @@ public class
         return new AddPermissionsToRoleResult(true);
     }
 }
+

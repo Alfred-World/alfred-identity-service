@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Linq.Expressions;
 
+using Alfred.Identity.Application.Querying.Common;
 using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Filtering.Ast;
 
@@ -90,13 +91,18 @@ public static class EfFilterBinder<T>
             throw new InvalidOperationException($"Field '{node.Name}' not found in field map");
         }
 
-        // Replace parameter in expression
-        ParameterReplacerVisitor visitor = new(expression.Parameters[0], parameter);
-        return visitor.Visit(expression.Body);
+        // Replace parameter in expression using shared helper
+        return ParameterReplacer.ReplaceIn(expression, parameter);
     }
 
     private static Expression BindLiteral(LiteralNode node)
     {
+        // Security: Check for suspicious values in string literals
+        if (node.Value is string strValue && FilterSanitizer.IsSuspiciousValue(strValue))
+        {
+            throw new InvalidOperationException("Filter contains potentially dangerous value");
+        }
+
         return Expression.Constant(node.Value, node.Type);
     }
 
@@ -270,22 +276,5 @@ public static class EfFilterBinder<T>
     private static bool IsNullableType(Type type)
     {
         return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
-    }
-
-    private class ParameterReplacerVisitor : ExpressionVisitor
-    {
-        private readonly ParameterExpression _oldParameter;
-        private readonly ParameterExpression _newParameter;
-
-        public ParameterReplacerVisitor(ParameterExpression oldParameter, ParameterExpression newParameter)
-        {
-            _oldParameter = oldParameter;
-            _newParameter = newParameter;
-        }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            return node == _oldParameter ? _newParameter : base.VisitParameter(node);
-        }
     }
 }

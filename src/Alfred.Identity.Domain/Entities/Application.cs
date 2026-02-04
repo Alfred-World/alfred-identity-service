@@ -1,11 +1,12 @@
 using Alfred.Identity.Domain.Common.Base;
+using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>
 /// Represents an OAuth2 application, aligned with OpenIddictApplications schema
 /// </summary>
-public class Application : BaseEntity
+public class Application : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier
 {
     public string ClientId { get; private set; } = null!;
     public string? ClientSecret { get; private set; } // Hashed
@@ -24,8 +25,12 @@ public class Application : BaseEntity
 
     // Mapping custom fields
     public bool IsActive { get; private set; } = true;
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+
+    // Audit fields
+    public DateTime CreatedAt { get; set; }
+    public Guid? CreatedById { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public Guid? UpdatedById { get; set; }
 
     private Application()
     {
@@ -39,7 +44,8 @@ public class Application : BaseEntity
         string? postLogoutRedirectUris = null,
         string? permissions = null,
         string clientType = "confidential",
-        string applicationType = "web")
+        string applicationType = "web",
+        Guid? createdById = null)
     {
         return new Application
         {
@@ -53,6 +59,7 @@ public class Application : BaseEntity
             ApplicationType = applicationType,
             ConcurrencyToken = Guid.NewGuid().ToString(),
             CreatedAt = DateTime.UtcNow,
+            CreatedById = createdById,
             IsActive = true
         };
     }
@@ -62,7 +69,8 @@ public class Application : BaseEntity
         string? redirectUris,
         string? postLogoutRedirectUris,
         string? permissions,
-        string? clientType)
+        string? clientType,
+        Guid? updatedById = null)
     {
         DisplayName = displayName;
         RedirectUris = redirectUris;
@@ -71,24 +79,29 @@ public class Application : BaseEntity
         ClientType = clientType;
 
         UpdatedAt = DateTime.UtcNow;
+        UpdatedById = updatedById;
     }
 
-    public void UpdateRedirectUris(string redirectUris)
+    public void UpdateRedirectUris(string redirectUris, Guid? updatedById = null)
     {
         RedirectUris = redirectUris;
         UpdatedAt = DateTime.UtcNow;
+        UpdatedById = updatedById;
     }
 
-    public void RotateSecret(string newSecretHash)
+    public void RotateSecret(string newSecretHash, Guid? updatedById = null)
     {
         ClientSecret = newSecretHash;
         ConcurrencyToken = Guid.NewGuid().ToString();
         UpdatedAt = DateTime.UtcNow;
+        UpdatedById = updatedById;
     }
 
-    public void SetStatus(bool isActive)
+    public void SetStatus(bool isActive, Guid? updatedById = null)
     {
         IsActive = isActive;
         UpdatedAt = DateTime.UtcNow;
+        UpdatedById = updatedById;
     }
 }
+

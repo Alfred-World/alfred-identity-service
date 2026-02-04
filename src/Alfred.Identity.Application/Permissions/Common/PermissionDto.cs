@@ -2,14 +2,19 @@ using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Permissions.Common;
 
+/// <summary>
+/// DTO for Permission entity.
+/// Non-essential fields are nullable to support partial projection.
+/// JSON serializer will skip null values to reduce bandwidth.
+/// </summary>
 public record PermissionDto(
     Guid Id,
     string Code,
     string Name,
-    string? Description,
-    string Resource,
-    string Action,
-    bool IsActive
+    string? Description = null,
+    string? Resource = null,
+    string? Action = null,
+    bool? IsActive = null
 )
 {
     public static PermissionDto FromEntity(Permission permission)

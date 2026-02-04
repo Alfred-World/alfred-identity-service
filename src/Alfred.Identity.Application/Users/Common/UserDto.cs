@@ -31,7 +31,7 @@ public class UserDto
             UserName = user.UserName,
             Email = user.Email,
             FullName = user.FullName,
-            Status = user.Status,
+            Status = user.Status.ToString(),
             EmailConfirmed = user.EmailConfirmed,
             PhoneNumber = user.PhoneNumber,
             Avatar = user.Avatar,
@@ -42,3 +42,4 @@ public class UserDto
         };
     }
 }
+

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Alfred.Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(PostgreSqlDbContext))]
-    [Migration("20260201064413_Initial")]
+    [Migration("20260202092955_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -59,6 +59,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("DisplayName")
                         .HasColumnType("text");
 
@@ -88,6 +91,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -561,6 +567,9 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<bool>("IsBanned")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -592,13 +601,14 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -621,6 +631,116 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_activity_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserBan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("BannedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("BannedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UnbannedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UnbannedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_bans", (string)null);
+                });
+
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("generate_uuid_v7()");
+
+                    b.Property<string>("LoginProvider")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("LoginProvider", "ProviderKey")
+                        .IsUnique();
+
+                    b.ToTable("user_logins", (string)null);
                 });
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserRole", b =>
@@ -715,6 +835,39 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserActivityLog", b =>
+                {
+                    b.HasOne("Alfred.Identity.Domain.Entities.User", "User")
+                        .WithMany("ActivityLogs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserBan", b =>
+                {
+                    b.HasOne("Alfred.Identity.Domain.Entities.User", "User")
+                        .WithMany("UserBans")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserLogin", b =>
+                {
+                    b.HasOne("Alfred.Identity.Domain.Entities.User", "User")
+                        .WithMany("UserLogins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserRole", b =>
                 {
                     b.HasOne("Alfred.Identity.Domain.Entities.Role", "Role")
@@ -746,6 +899,12 @@ namespace Alfred.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.User", b =>
                 {
+                    b.Navigation("ActivityLogs");
+
+                    b.Navigation("UserBans");
+
+                    b.Navigation("UserLogins");
+
                     b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618

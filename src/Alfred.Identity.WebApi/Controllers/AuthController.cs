@@ -327,6 +327,43 @@ public class AuthController : BaseApiController
         return OkResponse(new { Success = true, Message = "Logged out successfully" });
     }
 
+    /// <summary>
+    /// Initiate forgot password flow
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new Alfred.Identity.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommand(request.Email);
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return BadRequestResponse(result.Error);
+        }
+
+        return OkResponse(new { Success = true, Message = "If the email exists, a reset link has been sent." });
+    }
+
+    /// <summary>
+    /// Reset password using token
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var command = new Alfred.Identity.Application.Auth.Commands.ResetPassword.ResetPasswordCommand(request.Email, request.Token, request.NewPassword);
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return BadRequestResponse(result.Error);
+        }
+
+        return OkResponse(new { Success = true, Message = "Password has been reset successfully." });
+    }
+
+
     #region Private Methods
 
     /// <summary>

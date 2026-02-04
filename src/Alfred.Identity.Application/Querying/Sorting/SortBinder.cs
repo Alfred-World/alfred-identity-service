@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 
+using Alfred.Identity.Application.Querying.Common;
 using Alfred.Identity.Application.Querying.Fields;
 
 namespace Alfred.Identity.Application.Querying.Sorting;
@@ -54,8 +55,7 @@ public static class SortBinder
 
             // Cast to Expression<Func<T, object>> for sorting
             var parameter = Expression.Parameter(typeof(T), "x");
-            ParameterReplacerVisitor visitor = new(expression.Parameters[0], parameter);
-            var body = visitor.Visit(expression.Body);
+            var body = ParameterReplacer.ReplaceIn(expression, parameter);
 
             // Box value types to object for sorting
             if (body.Type.IsValueType)
@@ -73,22 +73,5 @@ public static class SortBinder
         }
 
         return orderedQuery ?? query;
-    }
-
-    private class ParameterReplacerVisitor : ExpressionVisitor
-    {
-        private readonly ParameterExpression _oldParameter;
-        private readonly ParameterExpression _newParameter;
-
-        public ParameterReplacerVisitor(ParameterExpression oldParameter, ParameterExpression newParameter)
-        {
-            _oldParameter = oldParameter;
-            _newParameter = newParameter;
-        }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            return node == _oldParameter ? _newParameter : base.VisitParameter(node);
-        }
     }
 }
