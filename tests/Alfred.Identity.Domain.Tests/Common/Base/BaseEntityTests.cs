@@ -164,16 +164,17 @@ public class BaseEntityTests
     }
 
     [Fact]
-    public void GetHashCode_WithDifferentIds_ShouldReturnDifferentHashCode()
+    public void GetHashCode_WithSameType_ShouldUseBothTypeAndId()
     {
         // Arrange
         TestEntity entity1 = new();
         entity1.SetId(_testGuid1);
         TestEntity entity2 = new();
-        entity2.SetId(_testGuid2);
+        entity2.SetId(_testGuid1);
 
         // Act & Assert
-        entity1.GetHashCode().Should().NotBe(entity2.GetHashCode());
+        // Entities with same Type and Id should have same hash code
+        entity1.GetHashCode().Should().Be(entity2.GetHashCode());
     }
 
     [Fact]

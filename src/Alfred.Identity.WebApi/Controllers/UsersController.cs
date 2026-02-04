@@ -8,6 +8,7 @@ using Alfred.Identity.Application.Users.Queries.GetActivityLogs;
 using Alfred.Identity.Application.Users.Queries.GetBanHistory;
 using Alfred.Identity.Application.Users.Queries.GetUsers;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Contracts.Users;
 
 using MediatR;
 
@@ -150,6 +151,4 @@ public class UsersController : BaseApiController
         return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize, result.TotalCount));
     }
 }
-
-public record BanUserRequest(string Reason, DateTime? ExpiresAt = null);
 
