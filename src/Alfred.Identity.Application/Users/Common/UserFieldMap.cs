@@ -38,7 +38,7 @@ public class UserFieldMap : BaseFieldMap<User>
         })).AllowAll();
 
     public static ViewRegistry<User, UserDto> Views { get; } = new ViewRegistry<User, UserDto>()
-        .Register("list", new Expression<Func<UserDto, object?>>[] 
+        .Register("list", new Expression<Func<UserDto, object?>>[]
         {
             u => u.Id,
             u => u.UserName,
@@ -50,7 +50,7 @@ public class UserFieldMap : BaseFieldMap<User>
             u => u.Avatar,
             u => u.Roles
         })
-        .Register("summary", new Expression<Func<UserDto, object?>>[] 
+        .Register("summary", new Expression<Func<UserDto, object?>>[]
         {
             u => u.Id,
             u => u.UserName,

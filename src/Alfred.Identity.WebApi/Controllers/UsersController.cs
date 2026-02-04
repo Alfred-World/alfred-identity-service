@@ -1,3 +1,4 @@
+using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Users.Commands.AssignRoles;
 using Alfred.Identity.Application.Users.Commands.Ban;
 using Alfred.Identity.Application.Users.Commands.RevokeRoles;
@@ -6,9 +7,7 @@ using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Application.Users.Queries.GetActivityLogs;
 using Alfred.Identity.Application.Users.Queries.GetBanHistory;
 using Alfred.Identity.Application.Users.Queries.GetUsers;
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.WebApi.Contracts.Common;
-
 
 using MediatR;
 
@@ -95,9 +94,11 @@ public class UsersController : BaseApiController
     {
         var command = new BanUserCommand(userId, request.Reason, request.ExpiresAt);
         var result = await _mediator.Send(command);
-        
+
         if (!result.IsSuccess)
+        {
             return BadRequest(result.Error);
+        }
 
         return OkResponse(result);
     }
@@ -115,7 +116,9 @@ public class UsersController : BaseApiController
         var result = await _mediator.Send(command);
 
         if (!result.IsSuccess)
+        {
             return BadRequest(result.Error);
+        }
 
         return OkResponse(result);
     }

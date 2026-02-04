@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILocationService, IpApiLocationService>();
         services.AddSingleton<ITwoFactorService, TwoFactorService>();
 
-        
+
         // Email Service
         // Redis
         var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
@@ -76,7 +76,7 @@ public static class ServiceCollectionExtensions
         {
             redisConfig += $",password={redisPassword}";
         }
-        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => 
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
             StackExchange.Redis.ConnectionMultiplexer.Connect(redisConfig));
 
         // Email Service
@@ -138,7 +138,7 @@ public static class ServiceCollectionExtensions
 
         // Register PostgreSQL database provider
         services.AddPostgreSQL(connectionString);
-        
+
         // Register IDbContext alias to the provider
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<PostgreSqlDbContext>());
 

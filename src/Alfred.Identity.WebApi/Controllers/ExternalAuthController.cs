@@ -1,6 +1,9 @@
 using System.Security.Claims;
+
 using Alfred.Identity.Application.Auth.Commands.ExternalLogin;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -49,30 +52,36 @@ public class ExternalAuthController : BaseApiController
     public async Task<IActionResult> Callback([FromQuery] string? returnUrl = "/")
     {
         var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        
+
         // If Cookie Auth failed, check if we have External Cookie (from temporary signin)
         // Actually, AddGoogle usually signs in to "External" scheme or Default scheme.
         // In this setup, we stick to default Cookie scheme? 
         // Typically: Challenge -> Provider -> Callback -> AuthenticateAsync(ProviderScheme?)
         // Wait, default AddGoogle uses "Google" scheme.
-        
+
         // We should authenticate against the Provider Scheme to get the claims
         var authenticateResult = await HttpContext.AuthenticateAsync("Google");
-        
+
         if (!authenticateResult.Succeeded)
         {
             return Unauthorized("External authentication failed");
         }
 
         var claimsPrincipal = authenticateResult.Principal;
-        if (claimsPrincipal == null) return Unauthorized();
+        if (claimsPrincipal == null)
+        {
+            return Unauthorized();
+        }
 
         // Extract info
         var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier); // Google User ID
         var emailClaim = claimsPrincipal.FindFirst(ClaimTypes.Email);
         var nameClaim = claimsPrincipal.FindFirst(ClaimTypes.Name);
 
-        if (userIdClaim == null) return BadRequest("External provider did not return User ID");
+        if (userIdClaim == null)
+        {
+            return BadRequest("External provider did not return User ID");
+        }
 
         // Execute Command to Find/Create User
         var command = new LoginWithExternalProviderCommand(
@@ -98,9 +107,16 @@ public class ExternalAuthController : BaseApiController
             new(ClaimTypes.Email, user.Email ?? ""),
             new("sub", user.Id.ToString())
         };
-        
-        if (!string.IsNullOrEmpty(user.FullName)) claims.Add(new(ClaimTypes.Name, user.FullName));
-        if (!string.IsNullOrEmpty(user.UserName)) claims.Add(new("username", user.UserName));
+
+        if (!string.IsNullOrEmpty(user.FullName))
+        {
+            claims.Add(new(ClaimTypes.Name, user.FullName));
+        }
+
+        if (!string.IsNullOrEmpty(user.UserName))
+        {
+            claims.Add(new("username", user.UserName));
+        }
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var authProperties = new AuthenticationProperties

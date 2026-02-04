@@ -28,7 +28,7 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
         if (userLogin != null)
         {
             return Result<LoginWithExternalProviderResult>.Success(new LoginWithExternalProviderResult(
-                UserDto.FromEntity(userLogin.User), 
+                UserDto.FromEntity(userLogin.User),
                 false));
         }
 
@@ -43,10 +43,10 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
         if (user == null)
         {
             // 3. Create new user if not found
-            var userName = !string.IsNullOrEmpty(request.Email) 
-                ? request.Email.Split('@')[0] 
+            var userName = !string.IsNullOrEmpty(request.Email)
+                ? request.Email.Split('@')[0]
                 : $"user_{Guid.NewGuid().ToString("N")[..8]}";
-            
+
             // Ensure unique username
             while (await _userRepository.GetByUsernameAsync(userName, cancellationToken) != null)
             {
@@ -69,20 +69,20 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
 
         // 4. Link UserLogin
         user.AddLogin(request.Provider, request.ProviderKey, request.DisplayName);
-        
+
         // If existing user, we need to update to save the new Login
         if (!isNewUser)
         {
             _userRepository.Update(user);
         }
-        
+
         await _userRepository.SaveChangesAsync(cancellationToken);
 
         // Reload user to get Roles/includes
         user = await _userRepository.GetByIdWithRolesAsync(user.Id, cancellationToken);
-        
+
         return Result<LoginWithExternalProviderResult>.Success(new LoginWithExternalProviderResult(
-            UserDto.FromEntity(user!), 
+            UserDto.FromEntity(user!),
             isNewUser));
     }
 }

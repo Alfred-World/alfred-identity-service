@@ -178,10 +178,19 @@ public static partial class FilterSanitizer
             }
             else if (!inString)
             {
-                if (ch == '(') count++;
-                else if (ch == ')') count--;
+                if (ch == '(')
+                {
+                    count++;
+                }
+                else if (ch == ')')
+                {
+                    count--;
+                }
 
-                if (count < 0) return false;
+                if (count < 0)
+                {
+                    return false;
+                }
             }
         }
 

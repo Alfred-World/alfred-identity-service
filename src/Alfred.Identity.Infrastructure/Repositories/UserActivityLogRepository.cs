@@ -20,9 +20,9 @@ public class UserActivityLogRepository : BaseRepository<UserActivityLog>, IUserA
     }
 
     public async Task<(List<UserActivityLog> Items, int TotalCount)> GetPagedAsync(
-        Guid userId, 
-        int page, 
-        int pageSize, 
+        Guid userId,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
         var query = _context.Set<UserActivityLog>()
@@ -30,7 +30,7 @@ public class UserActivityLogRepository : BaseRepository<UserActivityLog>, IUserA
             .OrderByDescending(l => l.OccurredAt);
 
         var totalCount = await query.CountAsync(cancellationToken);
-        
+
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

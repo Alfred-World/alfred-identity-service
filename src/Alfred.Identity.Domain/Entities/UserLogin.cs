@@ -12,13 +12,13 @@ public class UserLogin : BaseEntity
     public string LoginProvider { get; private set; } = null!; // e.g., "Google"
 
     public string ProviderKey { get; private set; } = null!; // e.g., "1234567890" (Google User ID)
-    
+
     public string? ProviderDisplayName { get; private set; } // e.g., "Van Anh"
-    
+
     public Guid UserId { get; private set; }
     public virtual User User { get; private set; } = null!;
 
-    private UserLogin() 
+    private UserLogin()
     {
     }
 

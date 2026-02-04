@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Mail;
+
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Infrastructure.Common.Settings;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,11 +21,11 @@ public class SmtpEmailSender : IEmailSender
     }
 
     public async Task SendEmailAsync(
-        string to, 
-        string subject, 
-        string htmlBody, 
-        string? templateCode = null, 
-        object? templateParams = null, 
+        string to,
+        string subject,
+        string htmlBody,
+        string? templateCode = null,
+        object? templateParams = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -41,7 +43,7 @@ public class SmtpEmailSender : IEmailSender
                 Body = htmlBody,
                 IsBodyHtml = true
             };
-            
+
             mailMessage.To.Add(to);
 
             await client.SendMailAsync(mailMessage, cancellationToken);
@@ -51,7 +53,7 @@ public class SmtpEmailSender : IEmailSender
         {
             _logger.LogError(ex, "Failed to send email to {To}", to);
             // We might want to throw or handle depending on requirements. For now logging is safer.
-            throw; 
+            throw;
         }
     }
 }

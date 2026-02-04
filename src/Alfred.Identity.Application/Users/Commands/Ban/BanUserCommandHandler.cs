@@ -12,7 +12,7 @@ public class BanUserCommandHandler : IRequestHandler<BanUserCommand, BanUserResu
     private readonly IUserActivityLogger _activityLogger;
 
     public BanUserCommandHandler(
-        IUserRepository userRepository, 
+        IUserRepository userRepository,
         ICurrentUser currentUser,
         IUserActivityLogger activityLogger)
     {
@@ -43,9 +43,9 @@ public class BanUserCommandHandler : IRequestHandler<BanUserCommand, BanUserResu
 
         // Log activity
         await _activityLogger.LogAsync(
-            request.UserId, 
-            "BanUser", 
-            $"Banned by {_currentUser.Username}. Reason: {request.Reason}", 
+            request.UserId,
+            "BanUser",
+            $"Banned by {_currentUser.Username}. Reason: {request.Reason}",
             cancellationToken);
 
         return new BanUserResult(true);

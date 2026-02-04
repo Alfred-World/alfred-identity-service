@@ -84,7 +84,10 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
 
     public void Ban(string reason, Guid? bannedById, DateTime? expiresAt = null)
     {
-        if (IsBanned) return;
+        if (IsBanned)
+        {
+            return;
+        }
 
         IsBanned = true;
         Status = UserStatus.Banned;
@@ -99,7 +102,10 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
 
     public void Unban(Guid? unbannedById)
     {
-        if (!IsBanned) return;
+        if (!IsBanned)
+        {
+            return;
+        }
 
         IsBanned = false;
         Status = UserStatus.Active;
@@ -139,7 +145,7 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
         };
     }
 
-    
+
     // ...
 
     public bool CanLogin()

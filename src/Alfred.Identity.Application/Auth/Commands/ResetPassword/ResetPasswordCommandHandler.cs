@@ -3,6 +3,7 @@ using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.Domain.Common.Enums;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.ResetPassword;
@@ -14,8 +15,8 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     private readonly IPasswordHasher _passwordHasher;
 
     public ResetPasswordCommandHandler(
-        IUserRepository userRepository, 
-        ITokenRepository tokenRepository, 
+        IUserRepository userRepository,
+        ITokenRepository tokenRepository,
         IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;

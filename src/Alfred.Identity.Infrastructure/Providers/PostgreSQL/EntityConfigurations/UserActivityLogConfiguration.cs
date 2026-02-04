@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +13,7 @@ public class UserActivityLogConfiguration : IEntityTypeConfiguration<UserActivit
 
         // Key is inherited but good to be explicit about table mapping
         builder.HasKey(x => x.Id);
-        
+
         builder.HasOne(x => x.User)
             .WithMany(u => u.ActivityLogs)
             .HasForeignKey(x => x.UserId)

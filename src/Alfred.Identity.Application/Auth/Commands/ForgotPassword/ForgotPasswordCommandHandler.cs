@@ -3,6 +3,7 @@ using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.Domain.Entities;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.ForgotPassword;
@@ -14,8 +15,8 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
     private readonly IEmailSender _emailSender;
 
     public ForgotPasswordCommandHandler(
-        IUserRepository userRepository, 
-        ITokenRepository tokenRepository, 
+        IUserRepository userRepository,
+        ITokenRepository tokenRepository,
         IEmailSender emailSender)
     {
         _userRepository = userRepository;
@@ -55,10 +56,10 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         // Send Email
         var resetLink = $"https://your-app.com/reset-password?token={resetToken}&email={user.Email}";
         await _emailSender.SendEmailAsync(
-            to: user.Email, 
-            subject: "Reset Your Password", 
-            htmlBody: string.Empty, 
-            templateCode: "forgot_password", 
+            to: user.Email,
+            subject: "Reset Your Password",
+            htmlBody: string.Empty,
+            templateCode: "forgot_password",
             templateParams: new { fullName = user.FullName, resetLink },
             cancellationToken: cancellationToken);
 

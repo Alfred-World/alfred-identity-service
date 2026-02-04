@@ -24,7 +24,7 @@ public class UserActivityLogger : IUserActivityLogger
         var userAgent = httpContext?.Request.Headers["User-Agent"].ToString();
 
         var log = UserActivityLog.Create(userId, action, description, ipAddress, userAgent);
-        
+
         await _dbContext.Set<UserActivityLog>().AddAsync(log, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

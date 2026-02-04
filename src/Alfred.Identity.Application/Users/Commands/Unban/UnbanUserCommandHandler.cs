@@ -12,7 +12,7 @@ public class UnbanUserCommandHandler : IRequestHandler<UnbanUserCommand, UnbanUs
     private readonly IUserActivityLogger _activityLogger;
 
     public UnbanUserCommandHandler(
-        IUserRepository userRepository, 
+        IUserRepository userRepository,
         ICurrentUser currentUser,
         IUserActivityLogger activityLogger)
     {
@@ -43,9 +43,9 @@ public class UnbanUserCommandHandler : IRequestHandler<UnbanUserCommand, UnbanUs
 
         // Log activity
         await _activityLogger.LogAsync(
-            request.UserId, 
-            "UnbanUser", 
-            $"Unbanned by {_currentUser.Username}", 
+            request.UserId,
+            "UnbanUser",
+            $"Unbanned by {_currentUser.Username}",
             cancellationToken);
 
         return new UnbanUserResult(true);

@@ -1,8 +1,9 @@
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
-using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;
@@ -15,7 +16,7 @@ public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnabl
     private readonly IPasswordHasher _passwordHasher;
 
     public ConfirmEnableTwoFactorCommandHandler(
-        IUserRepository userRepository, 
+        IUserRepository userRepository,
         ITwoFactorService twoFactorService,
         IBackupCodeRepository backupCodeRepository,
         IPasswordHasher passwordHasher)
@@ -29,10 +30,20 @@ public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnabl
     public async Task<Result<IEnumerable<string>>> Handle(ConfirmEnableTwoFactorCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
-        if (user == null) return Result<IEnumerable<string>>.Failure("User not found");
+        if (user == null)
+        {
+            return Result<IEnumerable<string>>.Failure("User not found");
+        }
 
-        if (user.TwoFactorEnabled) return Result<IEnumerable<string>>.Failure("2FA already enabled");
-        if (string.IsNullOrEmpty(user.TwoFactorSecret)) return Result<IEnumerable<string>>.Failure("Two-factor initiation required.");
+        if (user.TwoFactorEnabled)
+        {
+            return Result<IEnumerable<string>>.Failure("2FA already enabled");
+        }
+
+        if (string.IsNullOrEmpty(user.TwoFactorSecret))
+        {
+            return Result<IEnumerable<string>>.Failure("Two-factor initiation required.");
+        }
 
         if (!_twoFactorService.ValidateCode(user.TwoFactorSecret, request.Code))
         {
@@ -55,7 +66,7 @@ public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnabl
 
         // Clear any existing codes (though unlikely if just enabling, but safe to do)
         await _backupCodeRepository.DeleteByUserIdAsync(user.Id, cancellationToken);
-        
+
         foreach (var entity in backupCodeEntities)
         {
             await _backupCodeRepository.AddAsync(entity, cancellationToken);

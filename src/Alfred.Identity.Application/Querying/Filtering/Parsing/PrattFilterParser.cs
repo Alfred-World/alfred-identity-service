@@ -23,7 +23,7 @@ public sealed class PrattFilterParser : IFilterParser
 
         // Security: Sanitize input before parsing
         var sanitizedFilter = FilterSanitizer.Sanitize(filter);
-        
+
         if (sanitizedFilter.Length > MaxFilterLength)
         {
             throw new ArgumentException(

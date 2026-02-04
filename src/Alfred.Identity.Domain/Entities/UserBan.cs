@@ -10,10 +10,10 @@ public class UserBan : BaseEntity, IHasCreationTime, IHasCreator
     public DateTime BannedAt { get; private set; }
     public Guid? BannedById { get; private set; }
     public DateTime? ExpiresAt { get; private set; }
-    
+
     // To track active status of usage
     public bool IsActive { get; private set; }
-    
+
     public DateTime? UnbannedAt { get; private set; }
     public Guid? UnbannedById { get; private set; }
 
@@ -27,9 +27,9 @@ public class UserBan : BaseEntity, IHasCreationTime, IHasCreator
     private UserBan() { }
 
     public static UserBan Create(
-        Guid userId, 
-        string reason, 
-        Guid? bannedById, 
+        Guid userId,
+        string reason,
+        Guid? bannedById,
         DateTime? expiresAt = null)
     {
         return new UserBan
@@ -47,7 +47,10 @@ public class UserBan : BaseEntity, IHasCreationTime, IHasCreator
 
     public void Unban(Guid? unbannedById)
     {
-        if (!IsActive) return;
+        if (!IsActive)
+        {
+            return;
+        }
 
         IsActive = false;
         UnbannedAt = DateTime.UtcNow;

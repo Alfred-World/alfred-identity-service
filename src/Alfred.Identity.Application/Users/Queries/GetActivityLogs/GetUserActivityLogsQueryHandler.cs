@@ -20,9 +20,9 @@ public class GetUserActivityLogsQueryHandler : IRequestHandler<GetUserActivityLo
     public async Task<ActivityLogPageResult> Handle(GetUserActivityLogsQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _activityLogRepository.GetPagedAsync(
-            request.UserId, 
-            request.Page, 
-            request.PageSize, 
+            request.UserId,
+            request.Page,
+            request.PageSize,
             cancellationToken);
 
         var dtos = items.Select(l => ActivityLogDto.FromEntity(l)).ToList();

@@ -3,7 +3,9 @@ using Alfred.Identity.Application.Auth.Commands.TwoFactor;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.WebApi.Contracts.Account;
 using Alfred.Identity.WebApi.Contracts.Common;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,7 +33,10 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        if (_currentUser.UserId == null) return UnauthorizedResponse("User not identified");
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
 
         var command = new ChangePasswordCommand(_currentUser.UserId.Value, request.OldPassword, request.NewPassword);
         var result = await _mediator.Send(command);
@@ -52,7 +57,10 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<InitiateEnableTwoFactorResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> InitiateEnableTwoFactor()
     {
-        if (_currentUser.UserId == null) return UnauthorizedResponse("User not identified");
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
 
         // Need email for QR Code
         // Assuming current user context has email, or need to fetch it? 
@@ -62,11 +70,11 @@ public class AccountController : BaseApiController
         // Wait, InitiateEnableTwoFactorCommand expects Email.
         // I should fetch user info or pass Email if I have it in claims.
         // Let's check ICurrentUser.
-        
-        var command = new InitiateEnableTwoFactorCommand(_currentUser.UserId.Value, _currentUser.Email ?? ""); 
+
+        var command = new InitiateEnableTwoFactorCommand(_currentUser.UserId.Value, _currentUser.Email ?? "");
         // If Email is missing in claims, the handler *could* look it up by ID if we modify Command to be ID only, 
         // or we just trust Claims have it. My CurrentUserService implementation usually puts Email in claims.
-        
+
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -84,7 +92,10 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ConfirmEnableTwoFactor([FromBody] ConfirmTwoFactorRequest request)
     {
-        if (_currentUser.UserId == null) return UnauthorizedResponse("User not identified");
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
 
         var command = new ConfirmEnableTwoFactorCommand(_currentUser.UserId.Value, request.Code);
         var result = await _mediator.Send(command);
@@ -104,7 +115,10 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DisableTwoFactor()
     {
-        if (_currentUser.UserId == null) return UnauthorizedResponse("User not identified");
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
 
         var command = new DisableTwoFactorCommand(_currentUser.UserId.Value);
         var result = await _mediator.Send(command);

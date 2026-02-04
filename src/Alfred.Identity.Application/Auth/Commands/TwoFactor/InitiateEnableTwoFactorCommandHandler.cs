@@ -1,6 +1,7 @@
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
+
 using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;
@@ -19,7 +20,10 @@ public class InitiateEnableTwoFactorCommandHandler : IRequestHandler<InitiateEna
     public async Task<Result<InitiateEnableTwoFactorResult>> Handle(InitiateEnableTwoFactorCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
-        if (user == null) return Result<InitiateEnableTwoFactorResult>.Failure("User not found");
+        if (user == null)
+        {
+            return Result<InitiateEnableTwoFactorResult>.Failure("User not found");
+        }
 
         if (user.TwoFactorEnabled)
         {

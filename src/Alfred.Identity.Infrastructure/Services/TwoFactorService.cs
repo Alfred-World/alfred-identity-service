@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+
 using Alfred.Identity.Domain.Abstractions.Services;
 
 namespace Alfred.Identity.Infrastructure.Services;
@@ -14,7 +15,7 @@ public class TwoFactorService : ITwoFactorService
         // Generate random bytes and base32 encode (simplified, or just use base64 for internal storage but OTP usually uses Base32)
         // For simplicity in this zero-dep implementation, let's use Base32-like char set or standard implementation if possible.
         // Or cleaner: Use a simple custom Base32 generator.
-        
+
         var bytes = new byte[20]; // 160 bits
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(bytes);
@@ -30,14 +31,20 @@ public class TwoFactorService : ITwoFactorService
 
     public bool ValidateCode(string secret, string code)
     {
-        if (string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(code)) return false;
+        if (string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(code))
+        {
+            return false;
+        }
 
         // Try validation for current, previous, and next interval (drift)
         var currentStep = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / Period;
-        
+
         for (long i = -1; i <= 1; i++)
         {
-            if (CheckCode(secret, code, currentStep + i)) return true;
+            if (CheckCode(secret, code, currentStep + i))
+            {
+                return true;
+            }
         }
 
         return false;
@@ -129,7 +136,10 @@ public class TwoFactorService : ITwoFactorService
 
         foreach (char c in input)
         {
-            if (!CharMap.TryGetValue(c, out int val)) continue;
+            if (!CharMap.TryGetValue(c, out int val))
+            {
+                continue;
+            }
 
             buffer = (buffer << 5) | val;
             bitsLeft += 5;
@@ -140,7 +150,7 @@ public class TwoFactorService : ITwoFactorService
                 bitsLeft -= 8;
             }
         }
-        
+
         return result.ToArray();
     }
 }

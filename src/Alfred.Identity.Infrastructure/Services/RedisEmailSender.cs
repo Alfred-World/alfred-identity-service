@@ -1,6 +1,9 @@
 using System.Text.Json;
+
 using Alfred.Identity.Domain.Abstractions.Services;
+
 using Microsoft.Extensions.Logging;
+
 using StackExchange.Redis;
 
 namespace Alfred.Identity.Infrastructure.Services;
@@ -18,11 +21,11 @@ public class RedisEmailSender : IEmailSender
     }
 
     public async Task SendEmailAsync(
-        string to, 
-        string subject, 
-        string htmlBody, 
-        string? templateCode = null, 
-        object? templateParams = null, 
+        string to,
+        string subject,
+        string htmlBody,
+        string? templateCode = null,
+        object? templateParams = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -38,10 +41,10 @@ public class RedisEmailSender : IEmailSender
             };
 
             var json = JsonSerializer.Serialize(payload);
-            
+
             // Push to the left of the list (Producer)
             await db.ListLeftPushAsync(QueueKey, json);
-            
+
             _logger.LogInformation("Email job queued for {To}", to);
         }
         catch (Exception ex)
