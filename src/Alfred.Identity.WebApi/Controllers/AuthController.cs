@@ -63,7 +63,7 @@ public class AuthController : BaseApiController
     /// Flow: Login API → Get Exchange Token → Browser navigates to Exchange URL → Cookie set
     /// </remarks>
     [HttpPost("sso-login")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<SsoLoginResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SsoLoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SsoLogin([FromBody] SsoLoginRequest request)
     {
@@ -193,7 +193,7 @@ public class AuthController : BaseApiController
     /// Get current session - verifies SSO cookie and returns user info
     /// </summary>
     [HttpGet("session")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<SsoSessionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SsoSessionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public IActionResult GetSession()
     {
@@ -282,11 +282,13 @@ public class AuthController : BaseApiController
     /// Used by frontend to get user data from sso_token before creating local session
     /// </summary>
     [HttpGet("validate-token")]
-    public async Task<IActionResult> ValidateToken([FromQuery] string token)
+    [ProducesResponseType(typeof(ApiResponse<SessionUserInfoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SessionUserInfoDto>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<SessionUserInfoDto>> ValidateToken([FromQuery] string token)
     {
         if (string.IsNullOrEmpty(token))
         {
-            return BadRequest(new { success = false, error = "token is required" });
+            return BadRequestResponse<SessionUserInfoDto>("token is required");
         }
 
         try
@@ -295,24 +297,22 @@ public class AuthController : BaseApiController
             var tokenData = await _authTokenService.ValidateAndConsumeTokenAsync(token);
             if (tokenData == null)
             {
-                return BadRequest(new { success = false, error = "Invalid or expired token" });
+                return BadRequestResponse<SessionUserInfoDto>("Invalid or expired token");
             }
 
-            return Ok(new
+            var userInfo = new SessionUserInfoDto
             {
-                success = true,
-                result = new
-                {
-                    userId = tokenData.UserId,
-                    email = tokenData.Email,
-                    fullName = tokenData.FullName,
-                    userName = tokenData.UserName
-                }
-            });
+                Id = tokenData.UserId,
+                Email = tokenData.Email,
+                FullName = tokenData.FullName,
+                UserName = tokenData.UserName
+            };
+
+            return OkResponse(userInfo);
         }
         catch (Exception ex)
         {
-            return BadRequest(new { success = false, error = ex.Message });
+            return BadRequestResponse<SessionUserInfoDto>(ex.Message);
         }
     }
 
@@ -320,7 +320,7 @@ public class AuthController : BaseApiController
     /// SSO Logout - clears the authentication cookie
     /// </summary>
     [HttpPost("logout")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -331,7 +331,7 @@ public class AuthController : BaseApiController
     /// Initiate forgot password flow
     /// </summary>
     [HttpPost("forgot-password")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         var command = new Alfred.Identity.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommand(request.Email);
@@ -349,7 +349,7 @@ public class AuthController : BaseApiController
     /// Reset password using token
     /// </summary>
     [HttpPost("reset-password")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         var command = new Alfred.Identity.Application.Auth.Commands.ResetPassword.ResetPasswordCommand(request.Email, request.Token, request.NewPassword);

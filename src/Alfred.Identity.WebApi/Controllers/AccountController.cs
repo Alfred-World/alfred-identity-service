@@ -30,7 +30,7 @@ public class AccountController : BaseApiController
     /// Change current user's password
     /// </summary>
     [HttpPost("change-password")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         if (_currentUser.UserId == null)
@@ -54,7 +54,7 @@ public class AccountController : BaseApiController
     /// </summary>
     /// <returns>Secret Key and QR Code URI</returns>
     [HttpPost("2fa/enable")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<InitiateEnableTwoFactorResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<InitiateEnableTwoFactorResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> InitiateEnableTwoFactor()
     {
         if (_currentUser.UserId == null)
@@ -89,7 +89,7 @@ public class AccountController : BaseApiController
     /// Confirm 2FA Setup and get recovery codes
     /// </summary>
     [HttpPost("2fa/confirm")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ConfirmEnableTwoFactor([FromBody] ConfirmTwoFactorRequest request)
     {
         if (_currentUser.UserId == null)
@@ -112,7 +112,7 @@ public class AccountController : BaseApiController
     /// Disable 2FA
     /// </summary>
     [HttpPost("2fa/disable")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DisableTwoFactor()
     {
         if (_currentUser.UserId == null)

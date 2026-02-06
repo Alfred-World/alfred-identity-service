@@ -96,12 +96,11 @@ public abstract class BaseApiController : ControllerBase
     #region Response Helpers
 
     /// <summary>
-    /// Return a successful response with data
+    /// Return a successful response with data (unified ApiResponse)
     /// </summary>
     protected OkObjectResult OkResponse<T>(T data, string? message = null)
     {
-        var response = ApiSuccessResponse<T>.Ok(data, message);
-        return Ok(response);
+        return Ok(ApiResponse<T>.Ok(data, message));
     }
 
     /// <summary>
@@ -109,8 +108,7 @@ public abstract class BaseApiController : ControllerBase
     /// </summary>
     protected OkObjectResult OkResponse(string? message = null)
     {
-        ApiSuccessResponse<object> response = new(true, message, null);
-        return Ok(response);
+        return Ok(ApiResponse<object>.Ok(null, message));
     }
 
     /// <summary>
@@ -126,17 +124,23 @@ public abstract class BaseApiController : ControllerBase
     /// </summary>
     protected ObjectResult CreatedResponse<T>(T data, string? message = null)
     {
-        var response = ApiSuccessResponse<T>.Ok(data, message);
-        return StatusCode(201, response);
+        return StatusCode(201, ApiResponse<T>.Ok(data, message));
     }
 
     /// <summary>
-    /// Return a bad request error response
+    /// Return a bad request error response (unified ApiResponse)
     /// </summary>
     protected BadRequestObjectResult BadRequestResponse(string? message, string code = "BAD_REQUEST")
     {
-        var response = ApiErrorResponse.BadRequest(message ?? "Bad Request", code);
-        return BadRequest(response);
+        return BadRequest(ApiResponse<object>.BadRequest(message ?? "Bad Request", code));
+    }
+
+    /// <summary>
+    /// Return a bad request error response with typed result (for swagger type inference)
+    /// </summary>
+    protected BadRequestObjectResult BadRequestResponse<T>(string? message, string code = "BAD_REQUEST")
+    {
+        return BadRequest(ApiResponse<T>.BadRequest(message ?? "Bad Request", code));
     }
 
     /// <summary>
@@ -145,8 +149,7 @@ public abstract class BaseApiController : ControllerBase
     protected UnauthorizedObjectResult UnauthorizedResponse(string message = "Unauthorized",
         string code = "UNAUTHORIZED")
     {
-        var response = ApiErrorResponse.Unauthorized(message, code);
-        return Unauthorized(response);
+        return Unauthorized(ApiErrorResponse.Unauthorized(message, code));
     }
 
     /// <summary>
@@ -154,8 +157,7 @@ public abstract class BaseApiController : ControllerBase
     /// </summary>
     protected ObjectResult ForbiddenResponse(string message, string code = "FORBIDDEN")
     {
-        var response = ApiErrorResponse.Forbidden(message, code);
-        return StatusCode(403, response);
+        return StatusCode(403, ApiErrorResponse.Forbidden(message, code));
     }
 
     /// <summary>
@@ -163,8 +165,7 @@ public abstract class BaseApiController : ControllerBase
     /// </summary>
     protected NotFoundObjectResult NotFoundResponse(string message, string code = "NOT_FOUND")
     {
-        var response = ApiErrorResponse.NotFound(message, code);
-        return NotFound(response);
+        return NotFound(ApiErrorResponse.NotFound(message, code));
     }
 
     /// <summary>
@@ -172,8 +173,7 @@ public abstract class BaseApiController : ControllerBase
     /// </summary>
     protected BadRequestObjectResult ValidationErrorResponse(params ApiError[] errors)
     {
-        var response = ApiErrorResponse.ValidationError(errors);
-        return BadRequest(response);
+        return BadRequest(ApiResponse<object>.ValidationError(errors));
     }
 
     /// <summary>
@@ -182,8 +182,7 @@ public abstract class BaseApiController : ControllerBase
     protected ObjectResult InternalErrorResponse(string message = "An internal server error occurred",
         string code = "INTERNAL_SERVER_ERROR")
     {
-        var response = ApiErrorResponse.InternalServerError(message, code);
-        return StatusCode(500, response);
+        return StatusCode(500, ApiErrorResponse.InternalServerError(message, code));
     }
 
     #endregion

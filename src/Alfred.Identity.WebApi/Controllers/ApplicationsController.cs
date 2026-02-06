@@ -44,7 +44,7 @@ public class ApplicationsController : BaseApiController
     /// Get application metadata (types, permissions)
     /// </summary>
     [HttpGet("metadata")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationMetadataDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ApplicationMetadataDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMetadata(CancellationToken cancellationToken)
     {
         var query = new GetApplicationMetadataQuery();
@@ -56,7 +56,7 @@ public class ApplicationsController : BaseApiController
     /// Get application by ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -75,7 +75,7 @@ public class ApplicationsController : BaseApiController
     /// Create a new OAuth2 client application
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
         [FromBody] CreateApplicationRequest request,
@@ -104,7 +104,7 @@ public class ApplicationsController : BaseApiController
     /// Update an existing application
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<ApplicationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
@@ -129,7 +129,7 @@ public class ApplicationsController : BaseApiController
     /// Delete an application
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
@@ -148,7 +148,7 @@ public class ApplicationsController : BaseApiController
     /// Update application status (activate/deactivate)
     /// </summary>
     [HttpPatch("{id:guid}/status")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateStatus(
         Guid id,
@@ -170,7 +170,7 @@ public class ApplicationsController : BaseApiController
     /// Regenerate client secret (returns the new raw secret)
     /// </summary>
     [HttpPost("{id:guid}/secret/regenerate")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegenerateSecret(Guid id, CancellationToken cancellationToken)
     {

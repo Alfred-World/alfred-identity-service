@@ -34,7 +34,7 @@ public class UsersController : BaseApiController
     /// </remarks>
     [HttpGet]
     [ProducesResponseType(typeof(ApiPagedResponse<UserDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiPagedResponse<UserDto>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetUsers(
         [FromQuery] PaginationQueryParameters queryRequest,
         CancellationToken cancellationToken)
@@ -50,15 +50,15 @@ public class UsersController : BaseApiController
     /// <param name="userId">ID of the user</param>
     /// <param name="roleIds">List of role IDs to assign</param>
     [HttpPost("{userId}/roles")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<AssignRolesToUserResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<AssignRolesToUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AssignRolesToUserResult>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssignRolesToUserResult>> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new AssignRolesToUserCommand(userId, roleIds));
         if (!result.Success)
         {
-            return BadRequest(result);
+            return BadRequestResponse<AssignRolesToUserResult>(result.Error);
         }
 
         return OkResponse(result);
@@ -70,15 +70,15 @@ public class UsersController : BaseApiController
     /// <param name="userId">ID of the user</param>
     /// <param name="roleIds">List of role IDs to revoke</param>
     [HttpDelete("{userId}/roles")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<RevokeRolesFromUserResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<RevokeRolesFromUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<RevokeRolesFromUserResult>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RevokeRolesFromUserResult>> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new RevokeRolesFromUserCommand(userId, roleIds));
         if (!result.Success)
         {
-            return BadRequest(result);
+            return BadRequestResponse<RevokeRolesFromUserResult>(result.Error);
         }
 
         return OkResponse(result);
@@ -88,8 +88,8 @@ public class UsersController : BaseApiController
     /// Ban a user
     /// </summary>
     [HttpPost("{userId}/ban")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<BanUserResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<BanUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BanUserResult>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request)
     {
@@ -108,8 +108,8 @@ public class UsersController : BaseApiController
     /// Unban a user
     /// </summary>
     [HttpPost("{userId}/unban")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<UnbanUserResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<UnbanUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<UnbanUserResult>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnbanUser(Guid userId)
     {
@@ -128,7 +128,7 @@ public class UsersController : BaseApiController
     /// Get user ban history
     /// </summary>
     [HttpGet("{userId}/ban-history")]
-    [ProducesResponseType(typeof(ApiSuccessResponse<List<BanDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<BanDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBanHistory(Guid userId)
     {
         var query = new GetUserBanHistoryQuery(userId);
