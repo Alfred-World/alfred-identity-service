@@ -303,7 +303,7 @@ public class AuthController : BaseApiController
             var userInfo = new SessionUserInfoDto
             {
                 Id = tokenData.UserId,
-                Email = tokenData.Email,
+                Email = tokenData.Email ?? "",
                 FullName = tokenData.FullName,
                 UserName = tokenData.UserName
             };

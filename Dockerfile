@@ -1,7 +1,7 @@
 # ============================================
 # Build Stage - Compile ứng dụng
 # ============================================
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore dependencies (tận dụng Docker layer caching)
@@ -39,7 +39,7 @@ RUN dotnet publish "Alfred.Identity.Cli.csproj" -c Release -o /app/publish/cli /
 # ============================================
 # Final Stage - Image runtime siêu nhẹ
 # ============================================
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Tạo non-root user để bảo mật
