@@ -6,7 +6,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Backup code for 2FA recovery.
 /// Each code can only be used once.
 /// </summary>
-public class BackupCode : BaseEntity
+public sealed class BackupCode : BaseEntity
 {
     /// <summary>
     /// Hash of the backup code value
@@ -34,7 +34,7 @@ public class BackupCode : BaseEntity
     public DateTime? UsedAt { get; private set; }
 
     // Navigation property
-    public virtual User User { get; private set; } = null!;
+    public User User { get; private set; } = null!;
 
     // Private constructor for EF Core
     private BackupCode()

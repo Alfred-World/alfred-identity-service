@@ -6,7 +6,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Represents a role-permission mapping (many-to-many relationship).
 /// This is the join table between Role and Permission.
 /// </summary>
-public class RolePermission : IHasCreationTime, IHasCreator
+public sealed class RolePermission : IHasCreationTime, IHasCreator
 {
     public Guid RoleId { get; private set; }
     public Guid PermissionId { get; private set; }
@@ -14,12 +14,12 @@ public class RolePermission : IHasCreationTime, IHasCreator
     /// <summary>
     /// Navigation property to the Role
     /// </summary>
-    public virtual Role Role { get; private set; } = null!;
+    public Role Role { get; private set; } = null!;
 
     /// <summary>
     /// Navigation property to the Permission
     /// </summary>
-    public virtual Permission Permission { get; private set; } = null!;
+    public Permission Permission { get; private set; } = null!;
 
     public DateTime CreatedAt { get; set; }
     public Guid? CreatedById { get; set; }

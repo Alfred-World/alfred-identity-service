@@ -5,7 +5,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a scope, aligned with OpenIddictScopes schema
 /// </summary>
-public class Scope : BaseEntity
+public sealed class Scope : BaseEntity
 {
     public string Name { get; private set; } = null!;
     public string? DisplayName { get; private set; }

@@ -3,7 +3,7 @@ using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
-public class UserBan : BaseEntity, IHasCreationTime, IHasCreator
+public sealed class UserBan : BaseEntity, IHasCreationTime, IHasCreator
 {
     public Guid UserId { get; private set; }
     public string Reason { get; private set; } = null!;
@@ -22,7 +22,7 @@ public class UserBan : BaseEntity, IHasCreationTime, IHasCreator
     public Guid? CreatedById { get; set; }
 
     // Navigation
-    public virtual User User { get; private set; } = null!;
+    public User User { get; private set; } = null!;
 
     private UserBan() { }
 

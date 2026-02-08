@@ -6,7 +6,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Represents a login from an external provider (Google, Facebook, etc.)
 /// Linked to a specific User
 /// </summary>
-public class UserLogin : BaseEntity
+public sealed class UserLogin : BaseEntity
 {
     // Composite Key -> Now Unique Index
     public string LoginProvider { get; private set; } = null!; // e.g., "Google"
@@ -16,7 +16,7 @@ public class UserLogin : BaseEntity
     public string? ProviderDisplayName { get; private set; } // e.g., "Van Anh"
 
     public Guid UserId { get; private set; }
-    public virtual User User { get; private set; } = null!;
+    public User User { get; private set; } = null!;
 
     private UserLogin()
     {

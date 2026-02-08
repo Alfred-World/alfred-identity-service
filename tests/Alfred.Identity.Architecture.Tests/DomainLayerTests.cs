@@ -81,9 +81,11 @@ public class DomainLayerTests
         // Act
         var result = Types.InAssembly(assembly)
             .That()
-            .ResideInNamespace($"{DomainNamespace}.*.Entities")
+            .ResideInNamespace($"{DomainNamespace}.Entities")
             .And()
             .AreClasses()
+            .And()
+            .DoNotHaveName("BaseEntity")
             .Should()
             .BeSealed()
             .Or()

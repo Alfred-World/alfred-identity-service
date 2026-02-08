@@ -7,7 +7,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Represents a permission that can be assigned to roles.
 /// Permissions follow the pattern: "resource:action" (e.g., "finance:read", "server:reboot")
 /// </summary>
-public class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier
+public sealed class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier
 {
     /// <summary>
     /// Unique code for the permission (e.g., "finance:write")
@@ -50,7 +50,7 @@ public class Permission : BaseEntity, IHasCreationTime, IHasCreator, IHasModific
     /// <summary>
     /// Navigation property for Role-Permission many-to-many relationship
     /// </summary>
-    public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
+    public ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
 
     private Permission()
     {

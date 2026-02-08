@@ -5,7 +5,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a cryptographic signing key used for JWT signing and verification.
 /// </summary>
-public class SigningKey : BaseEntity
+public sealed class SigningKey : BaseEntity
 {
     /// <summary>
     /// The Key ID (kid) included in the JWT header.

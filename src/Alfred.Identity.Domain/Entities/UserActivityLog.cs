@@ -2,7 +2,7 @@ using Alfred.Identity.Domain.Common.Base;
 
 namespace Alfred.Identity.Domain.Entities;
 
-public class UserActivityLog : BaseEntity
+public sealed class UserActivityLog : BaseEntity
 {
     public Guid UserId { get; private set; }
     public string Action { get; private set; } = null!;
@@ -12,7 +12,7 @@ public class UserActivityLog : BaseEntity
     public DateTime OccurredAt { get; private set; }
 
     // Navigation
-    public virtual User User { get; private set; } = null!;
+    public User User { get; private set; } = null!;
 
     private UserActivityLog() { }
 

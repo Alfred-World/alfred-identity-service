@@ -5,7 +5,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents an authorization, aligned with OpenIddictAuthorizations schema
 /// </summary>
-public class Authorization : BaseEntity
+public sealed class Authorization : BaseEntity
 {
     public Guid ApplicationId { get; private set; }
     public Guid UserId { get; private set; } // Subject
@@ -19,8 +19,8 @@ public class Authorization : BaseEntity
     public DateTime CreationDate { get; private set; }
 
     // Navigation props
-    public virtual Application Application { get; private set; } = null!;
-    public virtual User User { get; private set; } = null!;
+    public Application Application { get; private set; } = null!;
+    public User User { get; private set; } = null!;
 
     private Authorization()
     {

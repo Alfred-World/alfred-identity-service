@@ -8,7 +8,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Protection is based on Owner ID hardcode + IsImmutable flag.
 /// Owner role is marked as IsImmutable=true and cannot be modified/assigned.
 /// </summary>
-public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
+public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
     IHasDeleter
 {
     public string Name { get; private set; } = null!;
@@ -40,7 +40,7 @@ public class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     /// <summary>
     /// Navigation property for Role-Permission relationship
     /// </summary>
-    public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
+    public ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
 
     public void Update(string name, string? icon, bool isImmutable, bool isSystem)
     {

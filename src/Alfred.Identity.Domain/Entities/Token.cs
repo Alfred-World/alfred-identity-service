@@ -6,7 +6,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a token (RefreshToken, AccessToken reference, AuthorizationCode), aligned with OpenIddictTokens schema
 /// </summary>
-public class Token : BaseEntity
+public sealed class Token : BaseEntity
 {
     public Guid? ApplicationId { get; private set; }
     public Guid? AuthorizationId { get; private set; }
@@ -32,9 +32,9 @@ public class Token : BaseEntity
     public string? ConcurrencyToken { get; private set; } = Guid.NewGuid().ToString();
 
     // Navigation properties
-    public virtual Application? Application { get; private set; }
-    public virtual Authorization? Authorization { get; private set; }
-    public virtual User? User { get; private set; }
+    public Application? Application { get; private set; }
+    public Authorization? Authorization { get; private set; }
+    public User? User { get; private set; }
 
     private Token()
     {

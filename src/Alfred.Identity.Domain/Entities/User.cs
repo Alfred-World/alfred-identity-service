@@ -8,7 +8,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a user identity, aligned with AspNetUsers schema
 /// </summary>
-public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
+public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
     IHasDeleter
 {
     public string UserName { get; private set; } = null!;
@@ -46,10 +46,10 @@ public class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationT
     public bool IsBanned { get; private set; }
 
     // Navigation properties
-    public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
-    public virtual ICollection<UserBan> UserBans { get; private set; } = new List<UserBan>();
-    public virtual ICollection<UserActivityLog> ActivityLogs { get; private set; } = new List<UserActivityLog>();
-    public virtual ICollection<UserLogin> UserLogins { get; private set; } = new List<UserLogin>();
+    public ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
+    public ICollection<UserBan> UserBans { get; private set; } = new List<UserBan>();
+    public ICollection<UserActivityLog> ActivityLogs { get; private set; } = new List<UserActivityLog>();
+    public ICollection<UserLogin> UserLogins { get; private set; } = new List<UserLogin>();
 
     public void AddLogin(string loginProvider, string providerKey, string? displayName)
     {
