@@ -52,4 +52,3 @@ public class UpdateApplicationCommandHandler : IRequestHandler<UpdateApplication
         return Result<ApplicationDto>.Success(ApplicationDto.FromEntity(application));
     }
 }
-

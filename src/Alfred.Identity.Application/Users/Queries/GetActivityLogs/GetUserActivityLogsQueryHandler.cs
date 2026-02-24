@@ -17,7 +17,8 @@ public class GetUserActivityLogsQueryHandler : IRequestHandler<GetUserActivityLo
         _activityLogRepository = activityLogRepository;
     }
 
-    public async Task<ActivityLogPageResult> Handle(GetUserActivityLogsQuery request, CancellationToken cancellationToken)
+    public async Task<ActivityLogPageResult> Handle(GetUserActivityLogsQuery request,
+        CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _activityLogRepository.GetPagedAsync(
             request.UserId,
@@ -30,4 +31,3 @@ public class GetUserActivityLogsQueryHandler : IRequestHandler<GetUserActivityLo
         return new ActivityLogPageResult(dtos, totalCount, request.Page, request.PageSize);
     }
 }
-

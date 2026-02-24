@@ -21,4 +21,3 @@ public class GetUserBanHistoryQueryHandler : IRequestHandler<GetUserBanHistoryQu
         return history.Select(b => BanDto.FromEntity(b)).ToList();
     }
 }
-

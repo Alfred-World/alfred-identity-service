@@ -56,12 +56,12 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         // Send Email
         var resetLink = $"https://your-app.com/reset-password?token={resetToken}&email={user.Email}";
         await _emailSender.SendEmailAsync(
-            to: user.Email,
-            subject: "Reset Your Password",
-            htmlBody: string.Empty,
-            templateCode: "forgot_password",
-            templateParams: new { fullName = user.FullName, resetLink },
-            cancellationToken: cancellationToken);
+            user.Email,
+            "Reset Your Password",
+            string.Empty,
+            "forgot_password",
+            new { fullName = user.FullName, resetLink },
+            cancellationToken);
 
         return Result<bool>.Success(true);
     }

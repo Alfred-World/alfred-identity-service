@@ -25,7 +25,8 @@ public sealed class ParameterReplacer : ExpressionVisitor
     /// <summary>
     /// Replace the parameter in the given expression body
     /// </summary>
-    public static Expression Replace(Expression body, ParameterExpression oldParameter, ParameterExpression newParameter)
+    public static Expression Replace(Expression body, ParameterExpression oldParameter,
+        ParameterExpression newParameter)
     {
         var replacer = new ParameterReplacer(oldParameter, newParameter);
         return replacer.Visit(body);

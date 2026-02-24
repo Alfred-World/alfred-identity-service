@@ -1,10 +1,7 @@
 using Alfred.Identity.Application.Common;
-using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Application.Users.Common;
-using Alfred.Identity.Domain.Entities;
 
 using MediatR;
-
 
 namespace Alfred.Identity.Application.Auth.Commands.ExternalLogin;
 

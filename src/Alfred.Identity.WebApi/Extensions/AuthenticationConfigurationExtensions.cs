@@ -53,5 +53,4 @@ public static class AuthenticationConfigurationExtensions
 
         return services;
     }
-
 }

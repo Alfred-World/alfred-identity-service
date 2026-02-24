@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 namespace Alfred.Identity.Application.Querying.Fields;
 
 /// <summary>

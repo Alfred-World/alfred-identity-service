@@ -5,7 +5,6 @@ using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Identity;
-
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Providers.Cache;
@@ -16,6 +15,8 @@ using Alfred.Identity.Infrastructure.Services.Security;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
+using StackExchange.Redis;
 
 namespace Alfred.Identity.Infrastructure.Common.Extensions;
 
@@ -40,7 +41,6 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
 
 
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
@@ -76,8 +76,9 @@ public static class ServiceCollectionExtensions
         {
             redisConfig += $",password={redisPassword}";
         }
-        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
-            StackExchange.Redis.ConnectionMultiplexer.Connect(redisConfig));
+
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(redisConfig));
 
         // Email Service
         services.AddScoped<IEmailSender, RedisEmailSender>();
@@ -146,5 +147,3 @@ public static class ServiceCollectionExtensions
         return services;
     }
 }
-
-

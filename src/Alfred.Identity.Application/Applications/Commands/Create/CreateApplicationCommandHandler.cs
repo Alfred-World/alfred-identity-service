@@ -62,4 +62,3 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
         return new CreateApplicationResult(app.Id, request.Type == "confidential" ? rawSecret : null);
     }
 }
-

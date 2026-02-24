@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -55,7 +56,7 @@ public class TwoFactorService : ITwoFactorService
         try
         {
             var secretBytes = Base32Decode(secret);
-            var stepBytes = BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(step));
+            var stepBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(step));
 
             using var hmac = new HMACSHA1(secretBytes);
             var hash = hmac.ComputeHash(stepBytes);
@@ -84,7 +85,7 @@ public class TwoFactorService : ITwoFactorService
         using var rng = RandomNumberGenerator.Create();
         var bytes = new byte[4];
 
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             // Simple logic: 8 digit hex or similar complexity. User said "10 mã".
             // Let's use 8-char alphanumeric or hex. 
@@ -92,12 +93,14 @@ public class TwoFactorService : ITwoFactorService
             rng.GetBytes(bytes);
             codes[i] = BitConverter.ToString(bytes).Replace("-", "").ToUpperInvariant();
         }
+
         return codes;
     }
 
     // Base32 Implementation (RFC 4648)
 
     private static readonly char[] Base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".ToCharArray();
+
     private static readonly Dictionary<char, int> CharMap = Base32Chars
         .Select((c, i) => new { c, i })
         .ToDictionary(x => x.c, x => x.i);
@@ -105,10 +108,10 @@ public class TwoFactorService : ITwoFactorService
     private static string Base32Encode(byte[] data)
     {
         var result = new StringBuilder();
-        int buffer = 0;
-        int bitsLeft = 0;
+        var buffer = 0;
+        var bitsLeft = 0;
 
-        foreach (byte b in data)
+        foreach (var b in data)
         {
             buffer = (buffer << 8) | b;
             bitsLeft += 8;
@@ -131,12 +134,12 @@ public class TwoFactorService : ITwoFactorService
     {
         input = input.Trim().ToUpperInvariant().Replace("=", "");
         var result = new List<byte>();
-        int buffer = 0;
-        int bitsLeft = 0;
+        var buffer = 0;
+        var bitsLeft = 0;
 
-        foreach (char c in input)
+        foreach (var c in input)
         {
-            if (!CharMap.TryGetValue(c, out int val))
+            if (!CharMap.TryGetValue(c, out var val))
             {
                 continue;
             }

@@ -49,4 +49,3 @@ public class UpdateRoleCommandHandler : IRequestHandler<UpdateRoleCommand, Updat
         return new UpdateRoleResult(true, RoleDto.FromEntity(updatedRole!));
     }
 }
-

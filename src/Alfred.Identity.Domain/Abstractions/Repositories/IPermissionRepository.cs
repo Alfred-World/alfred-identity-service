@@ -26,6 +26,4 @@ public interface IPermissionRepository : IRepository<Permission>
     /// Check if a permission code already exists
     /// </summary>
     Task<bool> CodeExistsAsync(string code, CancellationToken cancellationToken = default);
-
-
 }

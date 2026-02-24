@@ -33,7 +33,8 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
             return Result<bool>.Failure("Invalid token");
         }
 
-        if (token.Status != TokenStatus.Valid || (token.ExpirationDate.HasValue && token.ExpirationDate < DateTime.UtcNow))
+        if (token.Status != TokenStatus.Valid ||
+            (token.ExpirationDate.HasValue && token.ExpirationDate < DateTime.UtcNow))
         {
             return Result<bool>.Failure("Token expired or already used");
         }

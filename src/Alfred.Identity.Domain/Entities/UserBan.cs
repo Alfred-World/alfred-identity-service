@@ -24,7 +24,9 @@ public sealed class UserBan : BaseEntity, IHasCreationTime, IHasCreator
     // Navigation
     public User User { get; private set; } = null!;
 
-    private UserBan() { }
+    private UserBan()
+    {
+    }
 
     public static UserBan Create(
         Guid userId,

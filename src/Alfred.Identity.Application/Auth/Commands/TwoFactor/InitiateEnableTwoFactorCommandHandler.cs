@@ -6,7 +6,9 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;
 
-public class InitiateEnableTwoFactorCommandHandler : IRequestHandler<InitiateEnableTwoFactorCommand, Result<InitiateEnableTwoFactorResult>>
+public class
+    InitiateEnableTwoFactorCommandHandler : IRequestHandler<InitiateEnableTwoFactorCommand,
+    Result<InitiateEnableTwoFactorResult>>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITwoFactorService _twoFactorService;
@@ -17,7 +19,8 @@ public class InitiateEnableTwoFactorCommandHandler : IRequestHandler<InitiateEna
         _twoFactorService = twoFactorService;
     }
 
-    public async Task<Result<InitiateEnableTwoFactorResult>> Handle(InitiateEnableTwoFactorCommand request, CancellationToken cancellationToken)
+    public async Task<Result<InitiateEnableTwoFactorResult>> Handle(InitiateEnableTwoFactorCommand request,
+        CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user == null)

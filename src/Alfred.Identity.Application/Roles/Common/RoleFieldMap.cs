@@ -49,10 +49,10 @@ public class RoleFieldMap : BaseFieldMap<Role>
             rp.Permission.Id,
             rp.Permission.Code,
             rp.Permission.Name,
-            null,  // Description - skipped in JSON
-            null,  // Resource - skipped in JSON  
-            null,  // Action - skipped in JSON
-            null   // IsActive - skipped in JSON
+            null, // Description - skipped in JSON
+            null, // Resource - skipped in JSON
+            null, // Action - skipped in JSON
+            null // IsActive - skipped in JSON
         ))).Selectable();
 
     /// <summary>

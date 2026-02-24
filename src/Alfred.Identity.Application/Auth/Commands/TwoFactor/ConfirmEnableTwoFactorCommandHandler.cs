@@ -8,7 +8,8 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;
 
-public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnableTwoFactorCommand, Result<IEnumerable<string>>>
+public class
+    ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnableTwoFactorCommand, Result<IEnumerable<string>>>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITwoFactorService _twoFactorService;
@@ -27,7 +28,8 @@ public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnabl
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<IEnumerable<string>>> Handle(ConfirmEnableTwoFactorCommand request, CancellationToken cancellationToken)
+    public async Task<Result<IEnumerable<string>>> Handle(ConfirmEnableTwoFactorCommand request,
+        CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user == null)
@@ -71,6 +73,7 @@ public class ConfirmEnableTwoFactorCommandHandler : IRequestHandler<ConfirmEnabl
         {
             await _backupCodeRepository.AddAsync(entity, cancellationToken);
         }
+
         await _backupCodeRepository.SaveChangesAsync(cancellationToken);
 
         return Result<IEnumerable<string>>.Success(plainCodes);

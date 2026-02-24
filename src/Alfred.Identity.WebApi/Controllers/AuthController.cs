@@ -2,7 +2,9 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Web;
 
+using Alfred.Identity.Application.Auth.Commands.ForgotPassword;
 using Alfred.Identity.Application.Auth.Commands.Login;
+using Alfred.Identity.Application.Auth.Commands.ResetPassword;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
@@ -254,8 +256,8 @@ public class AuthController : BaseApiController
                 ExpiresAt = DateTime.UtcNow.AddSeconds(60)
             });
 
-                // Redirect back to app with token
-                var separator = returnUrl.Contains('?') ? "&" : "?";
+            // Redirect back to app with token
+            var separator = returnUrl.Contains('?') ? "&" : "?";
             var redirectUrl = $"{returnUrl}{separator}sso_token={Uri.EscapeDataString(authToken)}";
             return Redirect(redirectUrl);
         }
@@ -323,7 +325,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var command = new Alfred.Identity.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommand(request.Email);
+        var command = new ForgotPasswordCommand(request.Email);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -342,7 +344,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
-        var command = new Alfred.Identity.Application.Auth.Commands.ResetPassword.ResetPasswordCommand(request.Email, request.Token, request.NewPassword);
+        var command = new ResetPasswordCommand(request.Email, request.Token, request.NewPassword);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)

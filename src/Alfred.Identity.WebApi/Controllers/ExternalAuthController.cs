@@ -7,7 +7,6 @@ using MediatR;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
@@ -114,12 +113,12 @@ public class ExternalAuthController : BaseApiController
 
         if (!string.IsNullOrEmpty(user.FullName))
         {
-            claims.Add(new(ClaimTypes.Name, user.FullName));
+            claims.Add(new Claim(ClaimTypes.Name, user.FullName));
         }
 
         if (!string.IsNullOrEmpty(user.UserName))
         {
-            claims.Add(new("username", user.UserName));
+            claims.Add(new Claim("username", user.UserName));
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

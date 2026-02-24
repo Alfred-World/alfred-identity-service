@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Alfred.Identity.Application.Querying.Filtering;
@@ -23,39 +24,39 @@ public static partial class FilterSanitizer
     /// </summary>
     private static readonly string[] DangerousPatterns =
     [
-        "--",           // SQL comment
-        ";",            // SQL statement terminator
-        "/*",           // Block comment start
-        "*/",           // Block comment end
-        "xp_",          // Extended stored procedures
-        "sp_",          // System stored procedures
-        "exec(",        // Execute
-        "execute(",     // Execute
-        "insert(",      // Insert statement
-        "update(",      // Update statement
-        "delete(",      // Delete statement
-        "drop(",        // Drop statement
-        "truncate(",    // Truncate statement
-        "alter(",       // Alter statement
-        "create(",      // Create statement
-        "union(",       // Union (SQL injection)
-        "union ",       // Union with space
-        "select(",      // Select statement
-        "select ",      // Select with space
-        "0x",           // Hex encoding
-        "char(",        // Character conversion
-        "nchar(",       // Unicode character
-        "varchar(",     // Varchar conversion
-        "cast(",        // Type casting
-        "convert(",     // Type conversion
-        "waitfor",      // Time-based injection
-        "benchmark(",   // MySQL benchmark
-        "sleep(",       // Sleep function
-        "pg_sleep(",    // PostgreSQL sleep
-        "<script",      // XSS script tag
-        "javascript:",  // JavaScript protocol
-        "onerror",      // XSS event handler
-        "onload",       // XSS event handler
+        "--", // SQL comment
+        ";", // SQL statement terminator
+        "/*", // Block comment start
+        "*/", // Block comment end
+        "xp_", // Extended stored procedures
+        "sp_", // System stored procedures
+        "exec(", // Execute
+        "execute(", // Execute
+        "insert(", // Insert statement
+        "update(", // Update statement
+        "delete(", // Delete statement
+        "drop(", // Drop statement
+        "truncate(", // Truncate statement
+        "alter(", // Alter statement
+        "create(", // Create statement
+        "union(", // Union (SQL injection)
+        "union ", // Union with space
+        "select(", // Select statement
+        "select ", // Select with space
+        "0x", // Hex encoding
+        "char(", // Character conversion
+        "nchar(", // Unicode character
+        "varchar(", // Varchar conversion
+        "cast(", // Type casting
+        "convert(", // Type conversion
+        "waitfor", // Time-based injection
+        "benchmark(", // MySQL benchmark
+        "sleep(", // Sleep function
+        "pg_sleep(", // PostgreSQL sleep
+        "<script", // XSS script tag
+        "javascript:", // JavaScript protocol
+        "onerror", // XSS event handler
+        "onload" // XSS event handler
     ];
 
     /// <summary>
@@ -204,7 +205,7 @@ public static partial class FilterSanitizer
     {
         var inString = false;
         var stringChar = '\0';
-        var currentLiteral = new System.Text.StringBuilder();
+        var currentLiteral = new StringBuilder();
 
         for (var i = 0; i < filter.Length; i++)
         {

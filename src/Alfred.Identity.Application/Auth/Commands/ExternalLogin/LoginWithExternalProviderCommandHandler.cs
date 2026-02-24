@@ -1,6 +1,4 @@
 using Alfred.Identity.Application.Common;
-
-
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
@@ -9,21 +7,26 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.ExternalLogin;
 
-public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWithExternalProviderCommand, Result<LoginWithExternalProviderResult>>
+public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWithExternalProviderCommand,
+    Result<LoginWithExternalProviderResult>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IUserLoginRepository _userLoginRepository;
 
-    public LoginWithExternalProviderCommandHandler(IUserRepository userRepository, IUserLoginRepository userLoginRepository)
+    public LoginWithExternalProviderCommandHandler(IUserRepository userRepository,
+        IUserLoginRepository userLoginRepository)
     {
         _userRepository = userRepository;
         _userLoginRepository = userLoginRepository;
     }
 
-    public async Task<Result<LoginWithExternalProviderResult>> Handle(LoginWithExternalProviderCommand request, CancellationToken cancellationToken)
+    public async Task<Result<LoginWithExternalProviderResult>> Handle(LoginWithExternalProviderCommand request,
+        CancellationToken cancellationToken)
     {
         // 1. Check if user exists via UserLogin
-        var userLogin = await _userLoginRepository.GetByProviderAndKeyAsync(request.Provider, request.ProviderKey, cancellationToken);
+        var userLogin =
+            await _userLoginRepository.GetByProviderAndKeyAsync(request.Provider, request.ProviderKey,
+                cancellationToken);
 
         if (userLogin != null)
         {
@@ -39,7 +42,7 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
             user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
         }
 
-        bool isNewUser = false;
+        var isNewUser = false;
         if (user == null)
         {
             // 3. Create new user if not found
@@ -86,5 +89,3 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
             isNewUser));
     }
 }
-
-

@@ -26,7 +26,6 @@ public static class OAuthConstants
         public const string AuthorizationCode = "authorization_code";
         public const string IdToken = "id_token";
         public const string PasswordReset = "password_reset";
-
     }
 
     /// <summary>

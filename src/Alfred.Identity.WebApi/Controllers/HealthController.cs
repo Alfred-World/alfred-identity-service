@@ -1,4 +1,5 @@
 using Alfred.Identity.WebApi.Contracts.Common;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

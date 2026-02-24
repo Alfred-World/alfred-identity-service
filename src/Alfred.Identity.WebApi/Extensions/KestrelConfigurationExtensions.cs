@@ -2,6 +2,7 @@ using System.Security.Cryptography.X509Certificates;
 
 using Alfred.Identity.WebApi.Configuration;
 
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 
 namespace Alfred.Identity.WebApi.Extensions;
@@ -35,7 +36,7 @@ public static class KestrelConfigurationExtensions
     }
 
     private static void ConfigureMtlsEndpoints(
-        Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions options,
+        KestrelServerOptions options,
         MtlsConfiguration mtlsConfig)
     {
         // Load certificates
@@ -65,7 +66,7 @@ public static class KestrelConfigurationExtensions
     }
 
     private static void ConfigureHttpOnlyEndpoint(
-        Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions options,
+        KestrelServerOptions options,
         AppConfiguration appConfig)
     {
         options.ListenAnyIP(appConfig.AppPort);

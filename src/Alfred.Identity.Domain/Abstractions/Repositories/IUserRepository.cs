@@ -31,6 +31,4 @@ public interface IUserRepository : IRepository<User>
     /// Check if email exists
     /// </summary>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
-
-
 }

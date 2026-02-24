@@ -1,4 +1,3 @@
-using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Roles.Commands.AddPermissions;
 using Alfred.Identity.Application.Roles.Commands.CreateRole;
 using Alfred.Identity.Application.Roles.Commands.DeleteRole;
@@ -6,7 +5,6 @@ using Alfred.Identity.Application.Roles.Commands.RemovePermissions;
 using Alfred.Identity.Application.Roles.Commands.UpdateRole;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Application.Roles.Queries.GetRoleById;
-
 using Alfred.Identity.Application.Roles.Queries.GetRoles;
 using Alfred.Identity.WebApi.Contracts.Common;
 

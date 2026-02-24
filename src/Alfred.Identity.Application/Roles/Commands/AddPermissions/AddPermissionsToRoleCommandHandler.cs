@@ -63,4 +63,3 @@ public class
         return new AddPermissionsToRoleResult(true);
     }
 }
-

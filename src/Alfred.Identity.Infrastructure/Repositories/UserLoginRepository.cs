@@ -13,7 +13,8 @@ public class UserLoginRepository : BaseRepository<UserLogin>, IUserLoginReposito
     {
     }
 
-    public async Task<UserLogin?> GetByProviderAndKeyAsync(string provider, string key, CancellationToken cancellationToken = default)
+    public async Task<UserLogin?> GetByProviderAndKeyAsync(string provider, string key,
+        CancellationToken cancellationToken = default)
     {
         return await DbSet
             .Include(ul => ul.User)

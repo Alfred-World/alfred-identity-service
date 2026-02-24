@@ -17,7 +17,8 @@ public class UserActivityLogger : IUserActivityLogger
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task LogAsync(Guid userId, string action, string? description = null, CancellationToken cancellationToken = default)
+    public async Task LogAsync(Guid userId, string action, string? description = null,
+        CancellationToken cancellationToken = default)
     {
         var httpContext = _httpContextAccessor.HttpContext;
         var ipAddress = httpContext?.Connection.RemoteIpAddress?.ToString();
@@ -29,4 +30,3 @@ public class UserActivityLogger : IUserActivityLogger
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
-

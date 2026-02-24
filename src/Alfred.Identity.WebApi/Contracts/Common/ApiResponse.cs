@@ -22,45 +22,67 @@ public sealed record ApiResponse<TResult>
 
     // --- Success factory methods ---
     public static ApiResponse<TResult> Ok(TResult? result, string? message = null)
-        => new() { Success = true, Message = message, Result = result };
+    {
+        return new ApiResponse<TResult> { Success = true, Message = message, Result = result };
+    }
 
     public static ApiResponse<TResult> Ok(TResult? result, string? message, params object?[] args)
-        => new()
+    {
+        return new ApiResponse<TResult>
         {
             Success = true,
             Message = message != null ? string.Format(message, args) : null,
             Result = result
         };
+    }
 
     // --- Error factory methods ---
     public static ApiResponse<TResult> Fail(string message, string code = "BAD_REQUEST")
-        => new() { Success = false, Errors = [new ApiError(message, code)] };
+    {
+        return new ApiResponse<TResult> { Success = false, Errors = [new ApiError(message, code)] };
+    }
 
     public static ApiResponse<TResult> Fail(List<ApiError> errors)
-        => new() { Success = false, Errors = errors };
+    {
+        return new ApiResponse<TResult> { Success = false, Errors = errors };
+    }
 
     public static ApiResponse<TResult> BadRequest(string message, string code = "BAD_REQUEST")
-        => Fail(message, code);
+    {
+        return Fail(message, code);
+    }
 
     public static ApiResponse<TResult> Unauthorized(string message, string code = "UNAUTHORIZED")
-        => Fail(message, code);
+    {
+        return Fail(message, code);
+    }
 
     public static ApiResponse<TResult> Forbidden(string message, string code = "FORBIDDEN")
-        => Fail(message, code);
+    {
+        return Fail(message, code);
+    }
 
     public static ApiResponse<TResult> NotFound(string message, string code = "NOT_FOUND")
-        => Fail(message, code);
+    {
+        return Fail(message, code);
+    }
 
     public static ApiResponse<TResult> InternalServerError(
         string message = "An internal server error occurred",
         string code = "INTERNAL_SERVER_ERROR")
-        => Fail(message, code);
+    {
+        return Fail(message, code);
+    }
 
     public static ApiResponse<TResult> ValidationError(params ApiError[] errors)
-        => new() { Success = false, Errors = errors.ToList() };
+    {
+        return new ApiResponse<TResult> { Success = false, Errors = errors.ToList() };
+    }
 
     public static ApiResponse<TResult> From(Exception ex, string code = "INTERNAL_SERVER_ERROR")
-        => new() { Success = false, Errors = [new ApiError(ex.Message, code)] };
+    {
+        return new ApiResponse<TResult> { Success = false, Errors = [new ApiError(ex.Message, code)] };
+    }
 }
 
 /// <summary>
@@ -74,27 +96,41 @@ public sealed record ApiErrorResponse(
 )
 {
     public static ApiErrorResponse BadRequest(string message, string code = "BAD_REQUEST")
-        => new(false, [new ApiError(message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(message, code)]);
+    }
 
     public static ApiErrorResponse Unauthorized(string message, string code = "UNAUTHORIZED")
-        => new(false, [new ApiError(message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(message, code)]);
+    }
 
     public static ApiErrorResponse Forbidden(string message, string code = "FORBIDDEN")
-        => new(false, [new ApiError(message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(message, code)]);
+    }
 
     public static ApiErrorResponse NotFound(string message, string code = "NOT_FOUND")
-        => new(false, [new ApiError(message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(message, code)]);
+    }
 
     public static ApiErrorResponse InternalServerError(
         string message = "An internal server error occurred",
         string code = "INTERNAL_SERVER_ERROR")
-        => new(false, [new ApiError(message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(message, code)]);
+    }
 
     public static ApiErrorResponse ValidationError(params ApiError[] errors)
-        => new(false, errors.ToList());
+    {
+        return new ApiErrorResponse(false, errors.ToList());
+    }
 
     public static ApiErrorResponse From(Exception ex, string code = "INTERNAL_SERVER_ERROR")
-        => new(false, [new ApiError(ex.Message, code)]);
+    {
+        return new ApiErrorResponse(false, [new ApiError(ex.Message, code)]);
+    }
 }
 
 /// <summary>
@@ -119,8 +155,12 @@ public sealed record ApiPagedResponse<T>
     public List<ApiError>? Errors { get; init; }
 
     public static ApiPagedResponse<T> Ok(PageResult<T> result, string? message = null)
-        => new() { Success = true, Message = message, Result = result };
+    {
+        return new ApiPagedResponse<T> { Success = true, Message = message, Result = result };
+    }
 
     public static ApiPagedResponse<T> Fail(string message, string code = "BAD_REQUEST")
-        => new() { Success = false, Errors = [new ApiError(message, code)] };
+    {
+        return new ApiPagedResponse<T> { Success = false, Errors = [new ApiError(message, code)] };
+    }
 }

@@ -46,4 +46,3 @@ public class DeleteRoleCommandHandler : IRequestHandler<DeleteRoleCommand, Delet
         return new DeleteRoleResult(true, deletedRoleDto);
     }
 }
-

@@ -1,6 +1,5 @@
 using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Interfaces;
-
 using Alfred.Identity.Domain.Enums;
 
 namespace Alfred.Identity.Domain.Entities;
@@ -8,7 +7,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a user identity, aligned with AspNetUsers schema
 /// </summary>
-public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier, IHasDeletionTime,
+public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier,
+    IHasDeletionTime,
     IHasDeleter
 {
     public string UserName { get; private set; } = null!;
@@ -63,7 +63,6 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
 
     public void AddRole(Guid roleId, Guid? creatorId = null)
     {
-
         if (UserRoles.Any(ur => ur.RoleId == roleId))
         {
             return;
@@ -124,7 +123,8 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         return CreateWithUsername(email, email, passwordHash, fullName, emailConfirmed, createdById);
     }
 
-    public static User CreateWithUsername(string email, string userName, string? passwordHash, string fullName, bool emailConfirmed = false,
+    public static User CreateWithUsername(string email, string userName, string? passwordHash, string fullName,
+        bool emailConfirmed = false,
         Guid? createdById = null)
     {
         return new User
@@ -179,6 +179,7 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         {
             throw new InvalidOperationException("Cannot enable 2FA without a secret key.");
         }
+
         TwoFactorEnabled = true;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -195,7 +196,4 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         TwoFactorSecret = null; // Clear secret on disable? Or keep it? Usually clear to force reset.
         UpdatedAt = DateTime.UtcNow;
     }
-
-
 }
-

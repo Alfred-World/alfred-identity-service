@@ -2,8 +2,6 @@ using Alfred.Identity.Application.Querying.Filtering;
 
 using FluentAssertions;
 
-using Xunit;
-
 namespace Alfred.Identity.Application.Tests.Querying.Filtering;
 
 public class FilterSanitizerTests
@@ -44,12 +42,12 @@ public class FilterSanitizerTests
     }
 
     [Theory]
-    [InlineData("name == 'test'; DROP TABLE users'")]  // SQL injection
-    [InlineData("name == 'test' -- comment")]          // SQL comment
-    [InlineData("name == 'test' /* block */")]         // Block comment
-    [InlineData("name == 'exec(cmd)'")]                // Exec attempt
-    [InlineData("name == 'select * from users'")]      // Select statement
-    [InlineData("name == 'union select 1'")]           // Union injection
+    [InlineData("name == 'test'; DROP TABLE users'")] // SQL injection
+    [InlineData("name == 'test' -- comment")] // SQL comment
+    [InlineData("name == 'test' /* block */")] // Block comment
+    [InlineData("name == 'exec(cmd)'")] // Exec attempt
+    [InlineData("name == 'select * from users'")] // Select statement
+    [InlineData("name == 'union select 1'")] // Union injection
     public void Sanitize_DangerousPattern_ThrowsException(string filter)
     {
         // Act & Assert
@@ -59,8 +57,8 @@ public class FilterSanitizerTests
     }
 
     [Theory]
-    [InlineData("name == 0x414243")]                   // Hex encoding (detected as dangerous pattern due to 0x)
-    [InlineData("name == '0x48656C6C6F'")]             // Hex in string (detected as dangerous pattern due to 0x)
+    [InlineData("name == 0x414243")] // Hex encoding (detected as dangerous pattern due to 0x)
+    [InlineData("name == '0x48656C6C6F'")] // Hex in string (detected as dangerous pattern due to 0x)
     public void Sanitize_HexEncoding_ThrowsException(string filter)
     {
         // Act & Assert - hex patterns are caught (either as dangerous pattern or hex encoding)
@@ -69,8 +67,8 @@ public class FilterSanitizerTests
     }
 
     [Theory]
-    [InlineData("name == ''''")]                       // Multiple quotes
-    [InlineData("name == '''test'''")]                 // Triple quotes
+    [InlineData("name == ''''")] // Multiple quotes
+    [InlineData("name == '''test'''")] // Triple quotes
     public void Sanitize_MultipleQuotes_ThrowsException(string filter)
     {
         // Act & Assert
@@ -80,9 +78,9 @@ public class FilterSanitizerTests
     }
 
     [Theory]
-    [InlineData("name == 'test' and (status == 1")]    // Unbalanced open
-    [InlineData("name == 'test' and status == 1)")]    // Unbalanced close
-    [InlineData("((name == 'test')")]                  // Missing close
+    [InlineData("name == 'test' and (status == 1")] // Unbalanced open
+    [InlineData("name == 'test' and status == 1)")] // Unbalanced close
+    [InlineData("((name == 'test')")] // Missing close
     public void Sanitize_UnbalancedParentheses_ThrowsException(string filter)
     {
         // Act & Assert
@@ -147,7 +145,7 @@ public class FilterSanitizerTests
     }
 
     [Theory]
-    [InlineData("name @contains('\\u0041')")]          // Unicode escape
+    [InlineData("name @contains('\\u0041')")] // Unicode escape
     public void Sanitize_UnicodeEscape_ThrowsException(string filter)
     {
         // Act & Assert

@@ -6,5 +6,4 @@ public interface ITwoFactorService
     string GenerateQrCodeUri(string email, string secret);
     bool ValidateCode(string secret, string code);
     string[] GenerateBackupCodes(int count = 10);
-
 }

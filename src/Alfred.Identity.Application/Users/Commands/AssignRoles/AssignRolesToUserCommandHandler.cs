@@ -49,4 +49,3 @@ public class AssignRolesToUserCommandHandler : IRequestHandler<AssignRolesToUser
         return new AssignRolesToUserResult(true);
     }
 }
-

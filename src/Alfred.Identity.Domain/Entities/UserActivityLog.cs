@@ -14,7 +14,9 @@ public sealed class UserActivityLog : BaseEntity
     // Navigation
     public User User { get; private set; } = null!;
 
-    private UserActivityLog() { }
+    private UserActivityLog()
+    {
+    }
 
     public static UserActivityLog Create(
         Guid userId,

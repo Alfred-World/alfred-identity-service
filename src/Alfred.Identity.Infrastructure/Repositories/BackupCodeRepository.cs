@@ -24,7 +24,8 @@ public class BackupCodeRepository : BaseRepository<BackupCode>, IBackupCodeRepos
         DbSet.RemoveRange(codes);
     }
 
-    public async Task<BackupCode?> GetByCodeHashAsync(Guid userId, string codeHash, CancellationToken cancellationToken = default)
+    public async Task<BackupCode?> GetByCodeHashAsync(Guid userId, string codeHash,
+        CancellationToken cancellationToken = default)
     {
         return await DbSet.FirstOrDefaultAsync(x => x.UserId == userId && x.CodeHash == codeHash, cancellationToken);
     }

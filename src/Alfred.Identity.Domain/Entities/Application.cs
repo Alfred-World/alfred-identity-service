@@ -104,4 +104,3 @@ public sealed class Application : BaseEntity, IHasCreationTime, IHasCreator, IHa
         UpdatedById = updatedById;
     }
 }
-

@@ -50,4 +50,3 @@ public class CreateRoleCommandHandler : IRequestHandler<CreateRoleCommand, Creat
         return new CreateRoleResult(true, role.Id, RoleDto.FromEntity(createdRole!));
     }
 }
-

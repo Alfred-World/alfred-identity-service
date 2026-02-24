@@ -148,7 +148,7 @@ public class UsersController : BaseApiController
     {
         var query = new GetUserActivityLogsQuery(userId, page, pageSize);
         var result = await _mediator.Send(query);
-        return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize, result.TotalCount));
+        return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize,
+            result.TotalCount));
     }
 }
-
