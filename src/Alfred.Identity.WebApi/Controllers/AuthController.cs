@@ -27,6 +27,7 @@ namespace Alfred.Identity.WebApi.Controllers;
 public class AuthController : BaseApiController
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUser _currentUser;
     private readonly IAuthTokenService _authTokenService;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUserRepository _userRepository;
@@ -36,6 +37,7 @@ public class AuthController : BaseApiController
 
     public AuthController(
         IMediator mediator,
+        ICurrentUser currentUser,
         IAuthTokenService authTokenService,
         IApplicationRepository applicationRepository,
         IUserRepository userRepository,
@@ -44,6 +46,7 @@ public class AuthController : BaseApiController
         ITokenRepository tokenRepository)
     {
         _mediator = mediator;
+        _currentUser = currentUser;
         _authTokenService = authTokenService;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
@@ -135,17 +138,14 @@ public class AuthController : BaseApiController
     /// is set in first-party context and won't be blocked by third-party cookie restrictions.
     /// </remarks>
     [HttpGet("exchange-token")]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ExchangeToken([FromQuery] string token, [FromQuery] string? returnUrl)
     {
         // 1. Validate and consume the token (single-use)
         var tokenData = await _authTokenService.ValidateAndConsumeTokenAsync(token);
         if (tokenData == null)
         {
-            return BadRequest(new
-            {
-                error = "invalid_token",
-                error_description = "Token is invalid, expired, or has already been used"
-            });
+            return BadRequestResponse("Token is invalid, expired, or has already been used", "INVALID_TOKEN");
         }
 
         // 2. Create claims for cookie authentication
@@ -197,22 +197,14 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public IActionResult GetSession()
     {
-        if (!User.Identity?.IsAuthenticated ?? true)
+        if (!_currentUser.IsAuthenticated)
         {
             return UnauthorizedResponse("No valid session");
         }
 
-        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdStr))
+        if (_currentUser.UserId == null)
         {
             return UnauthorizedResponse("Invalid session data");
-        }
-
-        // Parse Guid (DB schema uses UUID v7)
-        if (!Guid.TryParse(userIdStr, out var userId))
-        {
-            return UnauthorizedResponse("Invalid user ID format in session");
         }
 
         return OkResponse(new SsoSessionResponse
@@ -220,10 +212,10 @@ public class AuthController : BaseApiController
             IsAuthenticated = true,
             User = new SessionUserInfoDto
             {
-                Id = userId,
-                Email = User.FindFirst(ClaimTypes.Email)?.Value ?? "",
-                FullName = User.FindFirst(ClaimTypes.Name)?.Value,
-                UserName = User.FindFirst("username")?.Value
+                Id = _currentUser.UserId.Value,
+                Email = _currentUser.Email ?? "",
+                FullName = _currentUser.Principal?.FindFirst(ClaimTypes.Name)?.Value,
+                UserName = _currentUser.Username
             }
         });
     }
@@ -240,36 +232,32 @@ public class AuthController : BaseApiController
     /// 4. If not authenticated: redirect back with error param
     /// </remarks>
     [HttpGet("check-sso")]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CheckSso([FromQuery] string returnUrl)
     {
         if (string.IsNullOrEmpty(returnUrl))
         {
-            return BadRequest(new { error = "returnUrl is required" });
+            return BadRequestResponse("returnUrl is required");
         }
 
         // Check if user is authenticated via SSO cookie
-        if (User.Identity?.IsAuthenticated == true)
+        if (_currentUser.IsAuthenticated && _currentUser.UserId != null)
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!string.IsNullOrEmpty(userIdStr) && Guid.TryParse(userIdStr, out var userId))
+            // Generate one-time token for the app to exchange
+            var authToken = await _authTokenService.GenerateTokenAsync(new AuthTokenData
             {
-                // Generate one-time token for the app to exchange
-                var authToken = await _authTokenService.GenerateTokenAsync(new AuthTokenData
-                {
-                    UserId = userId,
-                    Email = User.FindFirst(ClaimTypes.Email)?.Value ?? "",
-                    FullName = User.FindFirst(ClaimTypes.Name)?.Value,
-                    UserName = User.FindFirst("username")?.Value,
-                    RememberMe = true,
-                    ExpiresAt = DateTime.UtcNow.AddSeconds(60)
-                });
+                UserId = _currentUser.UserId.Value,
+                Email = _currentUser.Email ?? "",
+                FullName = _currentUser.Principal?.FindFirst(ClaimTypes.Name)?.Value,
+                UserName = _currentUser.Username,
+                RememberMe = true,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(60)
+            });
 
                 // Redirect back to app with token
                 var separator = returnUrl.Contains('?') ? "&" : "?";
-                var redirectUrl = $"{returnUrl}{separator}sso_token={Uri.EscapeDataString(authToken)}";
-                return Redirect(redirectUrl);
-            }
+            var redirectUrl = $"{returnUrl}{separator}sso_token={Uri.EscapeDataString(authToken)}";
+            return Redirect(redirectUrl);
         }
 
         // Not authenticated - redirect back with error
@@ -324,7 +312,7 @@ public class AuthController : BaseApiController
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return OkResponse(new { Success = true, Message = "Logged out successfully" });
+        return OkResponse("Logged out successfully");
     }
 
     /// <summary>
@@ -332,6 +320,7 @@ public class AuthController : BaseApiController
     /// </summary>
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         var command = new Alfred.Identity.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommand(request.Email);
@@ -342,7 +331,7 @@ public class AuthController : BaseApiController
             return BadRequestResponse(result.Error);
         }
 
-        return OkResponse(new { Success = true, Message = "If the email exists, a reset link has been sent." });
+        return OkResponse("If the email exists, a reset link has been sent.");
     }
 
     /// <summary>
@@ -350,6 +339,7 @@ public class AuthController : BaseApiController
     /// </summary>
     [HttpPost("reset-password")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         var command = new Alfred.Identity.Application.Auth.Commands.ResetPassword.ResetPasswordCommand(request.Email, request.Token, request.NewPassword);
@@ -360,7 +350,7 @@ public class AuthController : BaseApiController
             return BadRequestResponse(result.Error);
         }
 
-        return OkResponse(new { Success = true, Message = "Password has been reset successfully." });
+        return OkResponse("Password has been reset successfully.");
     }
 
 

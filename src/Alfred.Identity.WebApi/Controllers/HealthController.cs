@@ -1,3 +1,4 @@
+using Alfred.Identity.WebApi.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,8 +17,9 @@ public class HealthController : BaseApiController
     /// Used by load balancers and monitoring tools.
     /// </remarks>
     [HttpGet("health")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public IActionResult Health()
     {
-        return OkResponse(new { status = "Healthy", timestamp = DateTime.UtcNow });
+        return OkResponse("Healthy");
     }
 }

@@ -31,6 +31,8 @@ public class AccountController : BaseApiController
     /// </summary>
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         if (_currentUser.UserId == null)
@@ -46,7 +48,7 @@ public class AccountController : BaseApiController
             return BadRequestResponse(result.Error);
         }
 
-        return OkResponse(new { Success = true, Message = "Password changed successfully" });
+        return OkResponse("Password changed successfully");
     }
 
     /// <summary>
@@ -55,6 +57,8 @@ public class AccountController : BaseApiController
     /// <returns>Secret Key and QR Code URI</returns>
     [HttpPost("2fa/enable")]
     [ProducesResponseType(typeof(ApiResponse<InitiateEnableTwoFactorResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> InitiateEnableTwoFactor()
     {
         if (_currentUser.UserId == null)
@@ -90,6 +94,8 @@ public class AccountController : BaseApiController
     /// </summary>
     [HttpPost("2fa/confirm")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ConfirmEnableTwoFactor([FromBody] ConfirmTwoFactorRequest request)
     {
         if (_currentUser.UserId == null)
@@ -113,6 +119,8 @@ public class AccountController : BaseApiController
     /// </summary>
     [HttpPost("2fa/disable")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DisableTwoFactor()
     {
         if (_currentUser.UserId == null)
@@ -128,6 +136,6 @@ public class AccountController : BaseApiController
             return BadRequestResponse(result.Error);
         }
 
-        return OkResponse(new { Success = true, Message = "Two-factor authentication disabled successfully" });
+        return OkResponse("Two-factor authentication disabled successfully");
     }
 }

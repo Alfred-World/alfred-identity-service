@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("users")]
+[Route("identity/users")]
 public class UsersController : BaseApiController
 {
     private readonly IMediator _mediator;
@@ -52,7 +52,7 @@ public class UsersController : BaseApiController
     [HttpPost("{userId}/roles")]
     [ProducesResponseType(typeof(ApiResponse<AssignRolesToUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<AssignRolesToUserResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssignRolesToUserResult>> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new AssignRolesToUserCommand(userId, roleIds));
@@ -72,7 +72,7 @@ public class UsersController : BaseApiController
     [HttpDelete("{userId}/roles")]
     [ProducesResponseType(typeof(ApiResponse<RevokeRolesFromUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RevokeRolesFromUserResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RevokeRolesFromUserResult>> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         var result = await _mediator.Send(new RevokeRolesFromUserCommand(userId, roleIds));
@@ -90,7 +90,7 @@ public class UsersController : BaseApiController
     [HttpPost("{userId}/ban")]
     [ProducesResponseType(typeof(ApiResponse<BanUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BanUserResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request)
     {
         var command = new BanUserCommand(userId, request.Reason, request.ExpiresAt);
@@ -98,7 +98,7 @@ public class UsersController : BaseApiController
 
         if (!result.IsSuccess)
         {
-            return BadRequest(result.Error);
+            return BadRequestResponse(result.Error);
         }
 
         return OkResponse(result);
@@ -110,7 +110,7 @@ public class UsersController : BaseApiController
     [HttpPost("{userId}/unban")]
     [ProducesResponseType(typeof(ApiResponse<UnbanUserResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<UnbanUserResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnbanUser(Guid userId)
     {
         var command = new UnbanUserCommand(userId);
@@ -118,7 +118,7 @@ public class UsersController : BaseApiController
 
         if (!result.IsSuccess)
         {
-            return BadRequest(result.Error);
+            return BadRequestResponse(result.Error);
         }
 
         return OkResponse(result);

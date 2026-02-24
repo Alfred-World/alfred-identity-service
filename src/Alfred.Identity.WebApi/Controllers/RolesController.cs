@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("roles")]
+[Route("identity/roles")]
 public class RolesController : BaseApiController
 {
     private readonly IMediator _mediator;
@@ -50,13 +50,13 @@ public class RolesController : BaseApiController
     /// <param name="id">The unique identifier of the role</param>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoleDto>> GetRoleById(Guid id)
     {
         var result = await _mediator.Send(new GetRoleByIdQuery(id));
         if (result == null)
         {
-            return NotFound();
+            return NotFoundResponse("Role not found");
         }
 
         return OkResponse(result);
@@ -88,7 +88,7 @@ public class RolesController : BaseApiController
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoleDto>> UpdateRole(Guid id, [FromBody] UpdateRoleCommand command)
     {
         if (id != command.Id)
@@ -112,7 +112,7 @@ public class RolesController : BaseApiController
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoleDto>> DeleteRole(Guid id)
     {
         var result = await _mediator.Send(new DeleteRoleCommand(id));
@@ -132,7 +132,7 @@ public class RolesController : BaseApiController
     [HttpPost("{id}/permissions")]
     [ProducesResponseType(typeof(ApiResponse<AddPermissionsToRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<AddPermissionsToRoleResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AddPermissionsToRoleResult>> AddPermissions(Guid id,
         [FromBody] List<Guid> permissionIds)
     {
@@ -153,7 +153,7 @@ public class RolesController : BaseApiController
     [HttpDelete("{id}/permissions")]
     [ProducesResponseType(typeof(ApiResponse<RemovePermissionsFromRoleResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RemovePermissionsFromRoleResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RemovePermissionsFromRoleResult>> RemovePermissions(Guid id,
         [FromBody] List<Guid> permissionIds)
     {

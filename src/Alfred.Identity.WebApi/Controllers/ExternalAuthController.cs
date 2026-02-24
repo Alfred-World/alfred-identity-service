@@ -1,6 +1,7 @@
 using System.Security.Claims;
 
 using Alfred.Identity.Application.Auth.Commands.ExternalLogin;
+using Alfred.Identity.WebApi.Contracts.Common;
 
 using MediatR;
 
@@ -26,11 +27,12 @@ public class ExternalAuthController : BaseApiController
     /// Initiates a challenge to an external provider (e.g., Google)
     /// </summary>
     [HttpGet("challenge")]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public IActionResult Challenge([FromQuery] string provider, [FromQuery] string? returnUrl = "/")
     {
         if (string.IsNullOrEmpty(provider))
         {
-            return BadRequest("Provider is required");
+            return BadRequestResponse("Provider is required");
         }
 
         // Validate returnUrl (simplify for now, rely on Callback to validate or default)
@@ -49,6 +51,8 @@ public class ExternalAuthController : BaseApiController
     /// Handle callback from external provider
     /// </summary>
     [HttpGet("callback")]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Callback([FromQuery] string? returnUrl = "/")
     {
         var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -64,13 +68,13 @@ public class ExternalAuthController : BaseApiController
 
         if (!authenticateResult.Succeeded)
         {
-            return Unauthorized("External authentication failed");
+            return UnauthorizedResponse("External authentication failed");
         }
 
         var claimsPrincipal = authenticateResult.Principal;
         if (claimsPrincipal == null)
         {
-            return Unauthorized();
+            return UnauthorizedResponse("Authentication principal not found");
         }
 
         // Extract info
@@ -80,7 +84,7 @@ public class ExternalAuthController : BaseApiController
 
         if (userIdClaim == null)
         {
-            return BadRequest("External provider did not return User ID");
+            return BadRequestResponse("External provider did not return User ID");
         }
 
         // Execute Command to Find/Create User
@@ -95,7 +99,7 @@ public class ExternalAuthController : BaseApiController
 
         if (loginResult.IsFailure)
         {
-            return Unauthorized(loginResult.Error);
+            return UnauthorizedResponse(loginResult.Error ?? "External login failed");
         }
 
         var user = loginResult.Value!.User;

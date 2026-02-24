@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("applications")]
+[Route("identity/applications")]
 // [Authorize(Roles = "Admin")] // Uncomment when roles are set up
 public class ApplicationsController : BaseApiController
 {

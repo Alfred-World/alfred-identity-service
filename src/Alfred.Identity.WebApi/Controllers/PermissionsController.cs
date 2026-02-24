@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("permissions")]
+[Route("identity/permissions")]
 public class PermissionsController : BaseApiController
 {
     private readonly IMediator _mediator;

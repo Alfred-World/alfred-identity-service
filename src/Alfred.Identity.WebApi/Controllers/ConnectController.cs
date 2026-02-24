@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using Alfred.Identity.Application.Auth.Commands.Authorize;
 using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Connect;
 
@@ -23,17 +24,20 @@ namespace Alfred.Identity.WebApi.Controllers;
 public class ConnectController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUser _currentUser;
     private readonly IConfiguration _configuration;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUserRepository _userRepository;
 
     public ConnectController(
         IMediator mediator,
+        ICurrentUser currentUser,
         IConfiguration configuration,
         IApplicationRepository applicationRepository,
         IUserRepository userRepository)
     {
         _mediator = mediator;
+        _currentUser = currentUser;
         _configuration = configuration;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
@@ -153,16 +157,13 @@ public class ConnectController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UserInfo()
     {
-        // Extract user ID from token
-        var subClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(subClaim) || !Guid.TryParse(subClaim, out var userId))
+        if (_currentUser.UserId == null)
         {
             return Unauthorized(new { error = "invalid_token" });
         }
 
         // Get user from database
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _userRepository.GetByIdAsync(_currentUser.UserId.Value);
         if (user == null)
         {
             return NotFound(new { error = "user_not_found" });
@@ -173,7 +174,7 @@ public class ConnectController : ControllerBase
 
         var userInfo = new Dictionary<string, object>
         {
-            ["sub"] = userId.ToString()
+            ["sub"] = _currentUser.UserId.Value.ToString()
         };
 
         // Profile scope: name, preferred_username

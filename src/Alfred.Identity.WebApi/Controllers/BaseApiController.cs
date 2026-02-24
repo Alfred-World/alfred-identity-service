@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.WebApi.Contracts.Common;
 
@@ -17,36 +15,6 @@ namespace Alfred.Identity.WebApi.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")] // Fallback, but specific controllers should override
 public abstract class BaseApiController : ControllerBase
 {
-    /// <summary>
-    /// Get the current authenticated user's ID from JWT claims
-    /// </summary>
-    /// <returns>User ID</returns>
-    /// <exception cref="UnauthorizedAccessException">If user ID is not found in token</exception>
-    protected long GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? User.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID not found in token");
-        }
-
-        return userId;
-    }
-
-    /// <summary>
-    /// Try to get the current authenticated user's ID from JWT claims
-    /// </summary>
-    /// <returns>User ID if found and valid, null otherwise</returns>
-    protected long? TryGetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? User.FindFirst("sub")?.Value;
-
-        return long.TryParse(userIdClaim, out var userId) ? userId : null;
-    }
-
     /// <summary>
     /// Get the client's IP address from request headers or connection
     /// </summary>
