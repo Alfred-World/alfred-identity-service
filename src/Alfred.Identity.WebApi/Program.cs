@@ -47,8 +47,8 @@ builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context => { context.ProblemDetails.Extensions.Clear(); };
 });
 
-// Add Swagger
-builder.Services.AddSwaggerConfiguration();
+// Add Scalar API documentation
+builder.Services.AddScalarConfiguration();
 
 // Add CORS
 builder.Services.AddCorsConfiguration(appConfig);
@@ -93,8 +93,8 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-// Use Swagger in development
-app.UseSwaggerInDevelopment();
+// Use Scalar API reference in development
+app.UseScalarInDevelopment();
 
 // Add global exception handler (must be early in pipeline)
 app.UseExceptionHandler();

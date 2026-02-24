@@ -2,19 +2,22 @@ using System.Reflection;
 
 using Microsoft.OpenApi.Models;
 
+using Scalar.AspNetCore;
+
 namespace Alfred.Identity.WebApi.Extensions;
 
 /// <summary>
-/// Extension methods for configuring Swagger/OpenAPI
+/// Extension methods for configuring Scalar API documentation
 /// </summary>
-public static class SwaggerConfigurationExtensions
+public static class ScalarConfigurationExtensions
 {
     /// <summary>
-    /// Add Swagger/OpenAPI configuration
+    /// Add OpenAPI specification generation configuration
     /// </summary>
-    public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
+    public static IServiceCollection AddScalarConfiguration(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
+
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo
@@ -33,7 +36,7 @@ public static class SwaggerConfigurationExtensions
             c.UseAllOfForInheritance();
             c.UseAllOfToExtendReferenceSchemas();
 
-            // Add JWT authentication to Swagger
+            // Add JWT authentication
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Description = "Enter only your JWT token (the Bearer prefix will be added automatically)",
@@ -69,17 +72,20 @@ public static class SwaggerConfigurationExtensions
     }
 
     /// <summary>
-    /// Use Swagger middleware in development
+    /// Use Scalar API reference in development
     /// </summary>
-    public static WebApplication UseSwaggerInDevelopment(this WebApplication app)
+    public static WebApplication UseScalarInDevelopment(this WebApplication app)
     {
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            app.MapScalarApiReference("/docs", c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity Service v1");
-                c.RoutePrefix = "swagger";
+                c.Title = "Identity Service API";
+                c.Theme = ScalarTheme.Purple;
+                c.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+                c.OpenApiRoutePattern = "/swagger/{documentName}/swagger.json";
+                c.PersistentAuthentication = true;
             });
         }
 
