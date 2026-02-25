@@ -1,14 +1,8 @@
-using Alfred.Identity.Application.Roles.Commands.AddPermissions;
-using Alfred.Identity.Application.Roles.Commands.CreateRole;
-using Alfred.Identity.Application.Roles.Commands.DeleteRole;
-using Alfred.Identity.Application.Roles.Commands.RemovePermissions;
-using Alfred.Identity.Application.Roles.Commands.UpdateRole;
+using Alfred.Identity.Application.Permissions.Common;
+using Alfred.Identity.Application.Roles;
 using Alfred.Identity.Application.Roles.Common;
-using Alfred.Identity.Application.Roles.Queries.GetRoleById;
-using Alfred.Identity.Application.Roles.Queries.GetRoles;
 using Alfred.Identity.WebApi.Contracts.Common;
-
-using MediatR;
+using Alfred.Identity.WebApi.Contracts.Roles;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,19 +11,14 @@ namespace Alfred.Identity.WebApi.Controllers;
 [Route("identity/roles")]
 public class RolesController : BaseApiController
 {
-    private readonly IMediator _mediator;
+    private readonly IRoleService _roleService;
 
-    public RolesController(IMediator mediator)
+    public RolesController(IRoleService roleService)
     {
-        _mediator = mediator;
+        _roleService = roleService;
     }
 
-    /// <summary>
-    /// Get paginated list of roles
-    /// </summary>
-    /// <remarks>
-    /// Supports filtering, sorting, and pagination via query parameters.
-    /// </remarks>
+    /// <summary>Get paginated list of roles</summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiPagedResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -37,21 +26,17 @@ public class RolesController : BaseApiController
         [FromQuery] PaginationQueryParameters queryRequest,
         CancellationToken cancellationToken)
     {
-        var query = new GetRolesQuery(queryRequest.ToQueryRequest());
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await _roleService.GetAllRolesAsync(queryRequest.ToQueryRequest(), cancellationToken);
         return OkPaginatedResponse(result);
     }
 
-    /// <summary>
-    /// Get role by ID
-    /// </summary>
-    /// <param name="id">The unique identifier of the role</param>
-    [HttpGet("{id}")]
+    /// <summary>Get role by ID</summary>
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RoleDto>> GetRoleById(Guid id)
+    public async Task<IActionResult> GetRoleById(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetRoleByIdQuery(id));
+        var result = await _roleService.GetRoleByIdAsync(id, cancellationToken);
         if (result == null)
         {
             return NotFoundResponse("Role not found");
@@ -60,107 +45,66 @@ public class RolesController : BaseApiController
         return OkResponse(result);
     }
 
-    /// <summary>
-    /// Create a new role
-    /// </summary>
-    /// <param name="command">Role creation details</param>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<RoleDto>> CreateRole([FromBody] CreateRoleCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (!result.Success)
-        {
-            return BadRequestResponse<RoleDto>(result.Error);
-        }
-
-        return CreatedResponse(result.Data);
-    }
-
-    /// <summary>
-    /// Update an existing role
-    /// </summary>
-    /// <param name="id">ID of the role to update</param>
-    /// <param name="command">Role update details</param>
-    [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status400BadRequest)]
+    /// <summary>Get permissions of a role</summary>
+    [HttpGet("{id:guid}/permissions")]
+    [ProducesResponseType(typeof(ApiResponse<List<PermissionDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RoleDto>> UpdateRole(Guid id, [FromBody] UpdateRoleCommand command)
+    public async Task<IActionResult> GetRolePermissions(Guid id, CancellationToken cancellationToken)
     {
-        if (id != command.Id)
-        {
-            return BadRequestResponse<RoleDto>("ID mismatch");
-        }
-
-        var result = await _mediator.Send(command);
-        if (!result.Success)
-        {
-            return BadRequestResponse<RoleDto>(result.Error);
-        }
-
-        return OkResponse(result.Data);
-    }
-
-    /// <summary>
-    /// Delete a role
-    /// </summary>
-    /// <param name="id">ID of the role to delete</param>
-    [HttpDelete("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RoleDto>> DeleteRole(Guid id)
-    {
-        var result = await _mediator.Send(new DeleteRoleCommand(id));
-        if (!result.Success)
-        {
-            return BadRequestResponse<RoleDto>(result.Error);
-        }
-
-        return OkResponse(result.Data);
-    }
-
-    /// <summary>
-    /// Assign permissions to a role
-    /// </summary>
-    /// <param name="id">ID of the role</param>
-    /// <param name="permissionIds">List of permission IDs to assign</param>
-    [HttpPost("{id}/permissions")]
-    [ProducesResponseType(typeof(ApiResponse<AddPermissionsToRoleResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<AddPermissionsToRoleResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AddPermissionsToRoleResult>> AddPermissions(Guid id,
-        [FromBody] List<Guid> permissionIds)
-    {
-        var result = await _mediator.Send(new AddPermissionsToRoleCommand(id, permissionIds));
-        if (!result.Success)
-        {
-            return BadRequestResponse<AddPermissionsToRoleResult>(result.Error);
-        }
-
+        var result = await _roleService.GetRolePermissionsAsync(id, cancellationToken);
         return OkResponse(result);
     }
 
-    /// <summary>
-    /// Remove permissions from a role
-    /// </summary>
-    /// <param name="id">ID of the role</param>
-    /// <param name="permissionIds">List of permission IDs to remove</param>
-    [HttpDelete("{id}/permissions")]
-    [ProducesResponseType(typeof(ApiResponse<RemovePermissionsFromRoleResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<RemovePermissionsFromRoleResult>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RemovePermissionsFromRoleResult>> RemovePermissions(Guid id,
-        [FromBody] List<Guid> permissionIds)
+    /// <summary>Create a new role</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new RemovePermissionsFromRoleCommand(id, permissionIds));
-        if (!result.Success)
-        {
-            return BadRequestResponse<RemovePermissionsFromRoleResult>(result.Error);
-        }
+        var result = await _roleService.CreateRoleAsync(
+            request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions, cancellationToken);
+        return CreatedResponse(result);
+    }
 
+    /// <summary>Update an existing role</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _roleService.UpdateRoleAsync(
+            id, request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions, cancellationToken);
+        return OkResponse(result);
+    }
+
+    /// <summary>Delete a role</summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteRole(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _roleService.DeleteRoleAsync(id, cancellationToken);
+        return OkResponse(result);
+    }
+
+    /// <summary>Assign permissions to a role</summary>
+    [HttpPost("{id:guid}/permissions")]
+    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AddPermissions(Guid id, [FromBody] List<Guid> permissionIds, CancellationToken cancellationToken)
+    {
+        var result = await _roleService.AddPermissionsToRoleAsync(id, permissionIds, cancellationToken);
+        return OkResponse(result);
+    }
+
+    /// <summary>Remove permissions from a role</summary>
+    [HttpDelete("{id:guid}/permissions")]
+    [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RemovePermissions(Guid id, [FromBody] List<Guid> permissionIds, CancellationToken cancellationToken)
+    {
+        var result = await _roleService.RemovePermissionsFromRoleAsync(id, permissionIds, cancellationToken);
         return OkResponse(result);
     }
 }

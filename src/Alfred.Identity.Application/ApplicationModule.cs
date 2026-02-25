@@ -1,5 +1,9 @@
+using Alfred.Identity.Application.Applications;
 using Alfred.Identity.Application.Common.Behaviors;
+using Alfred.Identity.Application.Permissions;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
+using Alfred.Identity.Application.Roles;
+using Alfred.Identity.Application.Users;
 
 using FluentValidation;
 
@@ -14,7 +18,7 @@ public static class ApplicationModule
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Register MediatR
+        // Register MediatR (still used by Auth/Account/Connect/ExternalAuth/Keys controllers)
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(ApplicationModule).Assembly);
@@ -26,6 +30,12 @@ public static class ApplicationModule
 
         // Register querying services
         services.AddScoped<IFilterParser, PrattFilterParser>();
+
+        // Register domain services
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IApplicationService, ApplicationService>();
+        services.AddScoped<IPermissionService, PermissionService>();
 
         return services;
     }

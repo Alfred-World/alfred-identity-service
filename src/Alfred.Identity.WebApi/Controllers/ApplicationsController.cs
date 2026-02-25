@@ -1,33 +1,23 @@
-using Alfred.Identity.Application.Applications.Commands.Delete;
-using Alfred.Identity.Application.Applications.Commands.RegenerateSecret;
-using Alfred.Identity.Application.Applications.Commands.UpdateStatus;
+using Alfred.Identity.Application.Applications;
 using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Applications.Queries.GetApplicationById;
-using Alfred.Identity.Application.Applications.Queries.GetApplications;
-using Alfred.Identity.Application.Applications.Queries.GetMetadata;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Contracts.Common;
-
-using MediatR;
 
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
 [Route("identity/applications")]
-// [Authorize(Roles = "Admin")] // Uncomment when roles are set up
 public class ApplicationsController : BaseApiController
 {
-    private readonly IMediator _mediator;
+    private readonly IApplicationService _applicationService;
 
-    public ApplicationsController(IMediator mediator)
+    public ApplicationsController(IApplicationService applicationService)
     {
-        _mediator = mediator;
+        _applicationService = applicationService;
     }
 
-    /// <summary>
-    /// Get paginated list of applications
-    /// </summary>
+    /// <summary>Get paginated list of applications</summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiPagedResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -35,45 +25,35 @@ public class ApplicationsController : BaseApiController
         [FromQuery] PaginationQueryParameters queryRequest,
         CancellationToken cancellationToken)
     {
-        var query = new GetApplicationsQuery(queryRequest.ToQueryRequest());
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await _applicationService.GetAllApplicationsAsync(queryRequest.ToQueryRequest(), cancellationToken);
         return OkPaginatedResponse(result);
     }
 
-    /// <summary>
-    /// Get application metadata (types, permissions)
-    /// </summary>
+    /// <summary>Get application metadata (types, permissions)</summary>
     [HttpGet("metadata")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationMetadataDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMetadata(CancellationToken cancellationToken)
     {
-        var query = new GetApplicationMetadataQuery();
-        var result = await _mediator.Send(query, cancellationToken);
-        return OkResponse(result.Value);
+        var result = await _applicationService.GetMetadataAsync(cancellationToken);
+        return OkResponse(result);
     }
 
-    /// <summary>
-    /// Get application by ID
-    /// </summary>
+    /// <summary>Get application by ID</summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var query = new GetApplicationByIdQuery(id);
-        var result = await _mediator.Send(query, cancellationToken);
-
-        if (result.IsFailure)
+        var result = await _applicationService.GetApplicationByIdAsync(id, cancellationToken);
+        if (result == null)
         {
-            return NotFoundResponse(result.Error ?? "Application not found");
+            return NotFoundResponse("Application not found");
         }
 
-        return OkResponse(result.Value);
+        return OkResponse(result);
     }
 
-    /// <summary>
-    /// Create a new OAuth2 client application
-    /// </summary>
+    /// <summary>Create a new OAuth2 client application</summary>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -81,72 +61,47 @@ public class ApplicationsController : BaseApiController
         [FromBody] CreateApplicationRequest request,
         CancellationToken cancellationToken)
     {
-        var command = request.ToCreateCommand();
-        var createResult = await _mediator.Send(command, cancellationToken);
-        var id = createResult.Id;
-
-        // Get the created application to return as DTO
-        var getQuery = new GetApplicationByIdQuery(id);
-        var queryResult = await _mediator.Send(getQuery, cancellationToken);
-
-        var appDto = queryResult.Value!;
-
-        // Enrich DTO with the secret if available
-        if (!string.IsNullOrEmpty(createResult.Secret))
-        {
-            appDto = appDto with { ClientSecret = createResult.Secret };
-        }
-
-        return CreatedResponse(appDto);
+        var result = await _applicationService.CreateApplicationAsync(
+            request.ClientId,
+            request.DisplayName,
+            request.RedirectUris,
+            request.PostLogoutRedirectUris ?? string.Empty,
+            request.Permissions ?? string.Empty,
+            request.Type,
+            cancellationToken);
+        return CreatedResponse(result);
     }
 
-    /// <summary>
-    /// Update an existing application
-    /// </summary>
+    /// <summary>Update an existing application</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateApplicationRequest request,
         CancellationToken cancellationToken)
     {
-        var command = request.ToUpdateCommand(id);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (result.IsFailure)
-        {
-            return result.Error!.Contains("not found")
-                ? NotFoundResponse(result.Error)
-                : BadRequestResponse(result.Error ?? "Failed to update application");
-        }
-
-        return OkResponse(result.Value, "Application updated successfully");
+        var result = await _applicationService.UpdateApplicationAsync(
+            id,
+            request.DisplayName,
+            request.RedirectUris,
+            request.PostLogoutRedirectUris,
+            request.Permissions,
+            cancellationToken);
+        return OkResponse(result, "Application updated successfully");
     }
 
-    /// <summary>
-    /// Delete an application
-    /// </summary>
+    /// <summary>Delete an application</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var command = new DeleteApplicationCommand(id);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (result.IsFailure)
-        {
-            return NotFoundResponse(result.Error ?? "Application not found");
-        }
-
+        await _applicationService.DeleteApplicationAsync(id, cancellationToken);
         return OkResponse(true, "Application deleted successfully");
     }
 
-    /// <summary>
-    /// Update application status (activate/deactivate)
-    /// </summary>
+    /// <summary>Update application status (activate/deactivate)</summary>
     [HttpPatch("{id:guid}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -155,10 +110,8 @@ public class ApplicationsController : BaseApiController
         [FromBody] UpdateApplicationStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateApplicationStatusCommand(id, request.IsActive);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (!result)
+        var updated = await _applicationService.UpdateStatusAsync(id, request.IsActive, cancellationToken);
+        if (!updated)
         {
             return NotFoundResponse("Application not found");
         }
@@ -166,22 +119,13 @@ public class ApplicationsController : BaseApiController
         return OkResponse(true, "Application status updated successfully");
     }
 
-    /// <summary>
-    /// Regenerate client secret (returns the new raw secret)
-    /// </summary>
+    /// <summary>Regenerate client secret</summary>
     [HttpPost("{id:guid}/secret/regenerate")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegenerateSecret(Guid id, CancellationToken cancellationToken)
     {
-        var command = new RegenerateClientSecretCommand(id);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (result == null)
-        {
-            return NotFoundResponse("Application not found");
-        }
-
-        return OkResponse(result, "Client secret regenerated successfully. Please save it immediately.");
+        var rawSecret = await _applicationService.RegenerateClientSecretAsync(id, cancellationToken);
+        return OkResponse(rawSecret, "Client secret regenerated successfully. Please save it immediately.");
     }
 }

@@ -1,8 +1,6 @@
+using Alfred.Identity.Application.Permissions;
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Permissions.Queries.GetPermissions;
 using Alfred.Identity.WebApi.Contracts.Common;
-
-using MediatR;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,19 +9,14 @@ namespace Alfred.Identity.WebApi.Controllers;
 [Route("identity/permissions")]
 public class PermissionsController : BaseApiController
 {
-    private readonly IMediator _mediator;
+    private readonly IPermissionService _permissionService;
 
-    public PermissionsController(IMediator mediator)
+    public PermissionsController(IPermissionService permissionService)
     {
-        _mediator = mediator;
+        _permissionService = permissionService;
     }
 
-    /// <summary>
-    /// Get paginated list of permissions
-    /// </summary>
-    /// <remarks>
-    /// Supports filtering, sorting, and pagination via query parameters.
-    /// </remarks>
+    /// <summary>Get paginated list of permissions</summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiPagedResponse<PermissionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -31,8 +24,7 @@ public class PermissionsController : BaseApiController
         [FromQuery] PaginationQueryParameters queryRequest,
         CancellationToken cancellationToken)
     {
-        var query = new GetPermissionsQuery(queryRequest.ToQueryRequest());
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await _permissionService.GetAllPermissionsAsync(queryRequest.ToQueryRequest(), cancellationToken);
         return OkPaginatedResponse(result);
     }
 }

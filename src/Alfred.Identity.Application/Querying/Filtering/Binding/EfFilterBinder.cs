@@ -142,10 +142,15 @@ public static class EfFilterBinder<T>
         // Handle null strings
         var nullCheck = Expression.NotEqual(target, Expression.Constant(null, target.Type));
 
-        var method = typeof(string).GetMethod(methodName, new[] { typeof(string) })
+        var method = typeof(string).GetMethod(methodName, [typeof(string)])
                      ?? throw new InvalidOperationException($"Method {methodName} not found on string");
 
-        var call = Expression.Call(target, method, ConvertIfNeeded(arg, typeof(string)));
+        // Apply ToLower() to both sides for case-insensitive comparison on PostgreSQL
+        var toLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+        var lowerTarget = Expression.Call(target, toLowerMethod);
+        var lowerArg = Expression.Call(ConvertIfNeeded(arg, typeof(string)), toLowerMethod);
+
+        var call = Expression.Call(lowerTarget, method, lowerArg);
 
         return Expression.AndAlso(nullCheck, call);
     }
