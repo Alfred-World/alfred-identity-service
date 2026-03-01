@@ -6,12 +6,15 @@ namespace Alfred.Identity.Application.Applications;
 public interface IApplicationService
 {
     #region Query
+
     Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query, CancellationToken ct = default);
     Task<ApplicationDto?> GetApplicationByIdAsync(Guid id, CancellationToken ct = default);
     Task<ApplicationMetadataDto> GetMetadataAsync(CancellationToken ct = default);
+
     #endregion
 
     #region Commands
+
     Task<ApplicationDto> CreateApplicationAsync(
         string clientId,
         string displayName,
@@ -32,5 +35,6 @@ public interface IApplicationService
     Task DeleteApplicationAsync(Guid id, CancellationToken ct = default);
     Task<bool> UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default);
     Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default);
+
     #endregion
 }

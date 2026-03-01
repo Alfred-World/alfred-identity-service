@@ -1,7 +1,6 @@
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Users;
 using Alfred.Identity.Application.Users.Common;
-
 using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Users;
 
@@ -51,7 +50,8 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds, CancellationToken cancellationToken)
+    public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds,
+        CancellationToken cancellationToken)
     {
         await _userService.AssignRolesAsync(userId, roleIds, cancellationToken);
         return OkResponse(true);
@@ -62,7 +62,8 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds, CancellationToken cancellationToken)
+    public async Task<IActionResult> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds,
+        CancellationToken cancellationToken)
     {
         await _userService.RevokeRolesAsync(userId, roleIds, cancellationToken);
         return OkResponse(true);
@@ -73,7 +74,8 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request,
+        CancellationToken cancellationToken)
     {
         await _userService.BanUserAsync(userId, request.Reason, request.ExpiresAt, cancellationToken);
         return OkResponse(true);
@@ -109,6 +111,7 @@ public class UsersController : BaseApiController
         CancellationToken cancellationToken = default)
     {
         var result = await _userService.GetActivityLogsAsync(userId, page, pageSize, cancellationToken);
-        return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize, result.TotalCount));
+        return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize,
+            result.TotalCount));
     }
 }

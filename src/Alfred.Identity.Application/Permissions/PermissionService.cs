@@ -16,7 +16,8 @@ public sealed class PermissionService : BaseEntityService, IPermissionService
         _permissionRepository = permissionRepository;
     }
 
-    public async Task<PageResult<PermissionDto>> GetAllPermissionsAsync(QueryRequest query, CancellationToken ct = default)
+    public async Task<PageResult<PermissionDto>> GetAllPermissionsAsync(QueryRequest query,
+        CancellationToken ct = default)
     {
         return await GetPagedAsync(_permissionRepository, query, PermissionFieldMap.Instance,
             p => PermissionDto.FromEntity(p), ct);

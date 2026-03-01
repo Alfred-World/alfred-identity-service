@@ -2,7 +2,6 @@ using Alfred.Identity.Application.Common;
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Users.Common;
-
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
@@ -48,7 +47,7 @@ public sealed class UserService : BaseEntityService, IUserService
     {
         var user = await _userRepository.GetQueryable()
             .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
+            .ThenInclude(ur => ur.Role)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
@@ -62,12 +61,12 @@ public sealed class UserService : BaseEntityService, IUserService
     public async Task AssignRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdWithRolesAsync(userId, ct)
-            ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+                   ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
         {
             var role = await _roleRepository.GetByIdAsync(roleId, ct)
-                ?? throw new KeyNotFoundException($"Role with ID {roleId} not found");
+                       ?? throw new KeyNotFoundException($"Role with ID {roleId} not found");
             _ = role; // validate exists
             user.AddRole(roleId, _currentUser.UserId);
         }
@@ -79,7 +78,7 @@ public sealed class UserService : BaseEntityService, IUserService
     public async Task RevokeRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdWithRolesAsync(userId, ct)
-            ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+                   ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
         {
@@ -97,7 +96,7 @@ public sealed class UserService : BaseEntityService, IUserService
     public async Task BanUserAsync(Guid userId, string reason, DateTime? expiresAt, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, ct)
-            ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+                   ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         if (user.IsBanned)
         {
@@ -116,7 +115,7 @@ public sealed class UserService : BaseEntityService, IUserService
     public async Task UnbanUserAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, ct)
-            ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+                   ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         if (!user.IsBanned)
         {
@@ -142,7 +141,8 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Activity
 
-    public async Task<ActivityLogPageResult> GetActivityLogsAsync(Guid userId, int page, int pageSize, CancellationToken ct = default)
+    public async Task<ActivityLogPageResult> GetActivityLogsAsync(Guid userId, int page, int pageSize,
+        CancellationToken ct = default)
     {
         var (items, totalCount) = await _activityLogRepository.GetPagedAsync(userId, page, pageSize, ct);
         var dtos = items.Select(l => ActivityLogDto.FromEntity(l)).ToList();

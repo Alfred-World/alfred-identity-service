@@ -25,7 +25,8 @@ public class ApplicationsController : BaseApiController
         [FromQuery] PaginationQueryParameters queryRequest,
         CancellationToken cancellationToken)
     {
-        var result = await _applicationService.GetAllApplicationsAsync(queryRequest.ToQueryRequest(), cancellationToken);
+        var result =
+            await _applicationService.GetAllApplicationsAsync(queryRequest.ToQueryRequest(), cancellationToken);
         return OkPaginatedResponse(result);
     }
 

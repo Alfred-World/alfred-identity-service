@@ -59,7 +59,8 @@ public class RolesController : BaseApiController
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request,
+        CancellationToken cancellationToken)
     {
         var result = await _roleService.CreateRoleAsync(
             request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions, cancellationToken);
@@ -71,10 +72,12 @@ public class RolesController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleRequest request,
+        CancellationToken cancellationToken)
     {
         var result = await _roleService.UpdateRoleAsync(
-            id, request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions, cancellationToken);
+            id, request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions,
+            cancellationToken);
         return OkResponse(result);
     }
 
@@ -92,7 +95,8 @@ public class RolesController : BaseApiController
     [HttpPost("{id:guid}/permissions")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AddPermissions(Guid id, [FromBody] List<Guid> permissionIds, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddPermissions(Guid id, [FromBody] List<Guid> permissionIds,
+        CancellationToken cancellationToken)
     {
         var result = await _roleService.AddPermissionsToRoleAsync(id, permissionIds, cancellationToken);
         return OkResponse(result);
@@ -102,7 +106,8 @@ public class RolesController : BaseApiController
     [HttpDelete("{id:guid}/permissions")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RemovePermissions(Guid id, [FromBody] List<Guid> permissionIds, CancellationToken cancellationToken)
+    public async Task<IActionResult> RemovePermissions(Guid id, [FromBody] List<Guid> permissionIds,
+        CancellationToken cancellationToken)
     {
         var result = await _roleService.RemovePermissionsFromRoleAsync(id, permissionIds, cancellationToken);
         return OkResponse(result);

@@ -35,7 +35,8 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     #region Query
 
-    public async Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query, CancellationToken ct = default)
+    public async Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query,
+        CancellationToken ct = default)
     {
         return await GetPagedAsync(_applicationRepository, query, ApplicationFieldMap.Instance,
             a => ApplicationDto.FromEntity(a), ct);
@@ -131,7 +132,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         CancellationToken ct = default)
     {
         var app = await _applicationRepository.GetByIdAsync(id, ct)
-            ?? throw new KeyNotFoundException($"Application with ID {id} not found");
+                  ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         app.Update(
             displayName,
@@ -151,7 +152,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     public async Task DeleteApplicationAsync(Guid id, CancellationToken ct = default)
     {
         var app = await _applicationRepository.GetByIdAsync(id, ct)
-            ?? throw new KeyNotFoundException($"Application with ID {id} not found");
+                  ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         _applicationRepository.Delete(app);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -173,7 +174,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     public async Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default)
     {
         var app = await _applicationRepository.GetByIdAsync(id, ct)
-            ?? throw new KeyNotFoundException($"Application with ID {id} not found");
+                  ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         var secretBytes = RandomNumberGenerator.GetBytes(32);
         var rawSecret = Convert.ToBase64String(secretBytes);
