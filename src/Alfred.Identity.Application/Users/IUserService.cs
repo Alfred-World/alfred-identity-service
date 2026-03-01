@@ -33,4 +33,11 @@ public interface IUserService
         CancellationToken ct = default);
 
     #endregion
+
+    #region Admin Password Management
+
+    /// <summary>Admin resets a user's password directly without requiring their old password.</summary>
+    Task AdminResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default);
+
+    #endregion
 }

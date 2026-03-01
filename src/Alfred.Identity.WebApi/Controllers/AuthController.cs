@@ -325,7 +325,8 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var command = new ForgotPasswordCommand(request.Email);
+        var resetBaseUrl = _configuration["Urls:IdentityWeb"] ?? "https://identity.app";
+        var command = new ForgotPasswordCommand(request.Email, resetBaseUrl);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)

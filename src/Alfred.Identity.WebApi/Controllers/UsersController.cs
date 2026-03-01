@@ -4,11 +4,13 @@ using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Users;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("identity/users")]
+[Authorize]
+[Route("identity/mgmt/users")]
 public class UsersController : BaseApiController
 {
     private readonly IUserService _userService;
@@ -113,5 +115,19 @@ public class UsersController : BaseApiController
         var result = await _userService.GetActivityLogsAsync(userId, page, pageSize, cancellationToken);
         return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize,
             result.TotalCount));
+    }
+
+    /// <summary>Admin force-reset a user's password (no old password required)</summary>
+    [HttpPost("{userId:guid}/reset-password")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AdminResetPassword(
+        Guid userId,
+        [FromBody] AdminResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _userService.AdminResetPasswordAsync(userId, request.NewPassword, cancellationToken);
+        return OkResponse("Password has been reset successfully.");
     }
 }

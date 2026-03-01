@@ -8,7 +8,9 @@ using Alfred.Identity.Infrastructure.Common.Identity;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Providers.Cache;
+using Alfred.Identity.Infrastructure.Providers.Cache.HealthChecks;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
+using Alfred.Identity.Infrastructure.Providers.SqlServer.HealthChecks;
 using Alfred.Identity.Infrastructure.Repositories;
 using Alfred.Identity.Infrastructure.Services;
 using Alfred.Identity.Infrastructure.Services.Security;
@@ -86,6 +88,10 @@ public static class ServiceCollectionExtensions
 
         // Other Services
         services.AddScoped<IAuthorizationCodeService, AuthorizationCodeService>();
+
+        // Health Checks — registered before the orchestrator so it can enumerate them
+        services.AddScoped<IHealthCheck, DatabaseHealthCheck>();
+        services.AddScoped<IHealthCheck, RedisHealthCheck>();
 
         // Orchestrators
         services.AddScoped<HealthCheckOrchestrator>();

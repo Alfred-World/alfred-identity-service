@@ -4,6 +4,7 @@ using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Security;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,7 @@ public sealed class UserService : BaseEntityService, IUserService
     private readonly IUserActivityLogRepository _activityLogRepository;
     private readonly IUserActivityLogger _activityLogger;
     private readonly ICurrentUser _currentUser;
+    private readonly IPasswordHasher _passwordHasher;
 
     public UserService(
         IUserRepository userRepository,
@@ -25,7 +27,8 @@ public sealed class UserService : BaseEntityService, IUserService
         IUserActivityLogRepository activityLogRepository,
         IUserActivityLogger activityLogger,
         ICurrentUser currentUser,
-        IFilterParser filterParser) : base(filterParser)
+        IFilterParser filterParser,
+        IPasswordHasher passwordHasher) : base(filterParser)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
@@ -33,6 +36,7 @@ public sealed class UserService : BaseEntityService, IUserService
         _activityLogRepository = activityLogRepository;
         _activityLogger = activityLogger;
         _currentUser = currentUser;
+        _passwordHasher = passwordHasher;
     }
 
     #region Users
@@ -147,6 +151,25 @@ public sealed class UserService : BaseEntityService, IUserService
         var (items, totalCount) = await _activityLogRepository.GetPagedAsync(userId, page, pageSize, ct);
         var dtos = items.Select(l => ActivityLogDto.FromEntity(l)).ToList();
         return new ActivityLogPageResult(dtos, totalCount, page, pageSize);
+    }
+
+    #endregion
+
+    #region Admin Password Management
+
+    public async Task AdminResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, ct)
+                   ?? throw new KeyNotFoundException($"User with ID {userId} not found");
+
+        var hash = _passwordHasher.HashPassword(newPassword);
+        user.SetPassword(hash);
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync(ct);
+
+        await _activityLogger.LogAsync(userId, "AdminResetPassword",
+            $"Password reset by admin {_currentUser.Username}", ct);
     }
 
     #endregion
