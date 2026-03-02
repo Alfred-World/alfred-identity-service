@@ -4,12 +4,10 @@ using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Users;
 
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Authorize]
 [Route("identity/mgmt/users")]
 public class UsersController : BaseApiController
 {

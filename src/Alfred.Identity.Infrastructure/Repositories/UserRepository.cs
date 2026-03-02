@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
@@ -57,5 +59,30 @@ public class UserRepository : BaseRepository<User>, IUserRepository
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Build a paged query for users - filtering, sorting, pagination at DB level.
+    /// Handler applies projection to the returned IQueryable.
+    /// EF Core translates nav-collection selects (UserRoles -> Role) as correlated
+    /// subqueries automatically; no explicit Include needed for DB-level projection.
+    /// </summary>
+    public new async Task<(IQueryable<User> Query, long Total)> BuildPagedQueryAsync(
+        Expression<Func<User, bool>>? filter,
+        string? sort,
+        int page,
+        int pageSize,
+        Expression<Func<User, object>>[]? includes,
+        Func<string, (Expression<Func<User, object>>? Expression, bool CanSort)>? fieldSelector,
+        CancellationToken cancellationToken = default)
+    {
+        return await base.BuildPagedQueryAsync(
+            filter,
+            sort,
+            page,
+            pageSize,
+            includes,
+            fieldSelector,
+            cancellationToken);
     }
 }
