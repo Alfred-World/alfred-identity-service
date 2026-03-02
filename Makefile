@@ -6,7 +6,7 @@ STARTUP=src/Alfred.Identity.WebApi
 CLI_PROJECT=src/Alfred.Identity.Cli
 OUTPUT_DIR=Migrations
 
-DOCKER_IMAGE=alfred-identity-api
+DOCKER_IMAGE=alfred-identity
 DOCKER_TAG=latest
 ENV_FILE=.env.production
 
@@ -22,9 +22,9 @@ endif
 # Default DATA_PATH if not set in .env
 DATA_PATH ?= ./data
 
-.PHONY: help add remove update list seed seed-force seed-new seed-resync docker-clean
+.PHONY: help add remove update list seed seed-force seed-new seed-resync docker-clean docker-build docker-build-nc
 .PHONY: prod-deploy prod-start prod-stop prod-restart prod-logs prod-status prod-health prod-seed prod-db-shell
-.PHONY: prod-backup prod-restore
+.PHONY: prod-backup prod-restore build run watch test setup clean
 
 help:
 	@echo "======================================"
@@ -46,9 +46,12 @@ help:
 	@echo "🏗️  Build & Run:"
 	@echo "  make build             Build solution"
 	@echo "  make run               Run WebApi"
+	@echo "  make watch             Run WebApi with hot reload"
 	@echo "  make test              Run tests"
 	@echo ""
-	@echo "🧹 Docker:"
+	@echo "🐳 Docker:"
+	@echo "  make docker-build      Build Docker image"
+	@echo "  make docker-build-nc   Build Docker image (no cache)"
 	@echo "  make docker-clean      Remove old images"
 	@echo ""
 	@echo "🚀 Production:"
@@ -161,61 +164,52 @@ docker-clean:
 # Production Deployment
 # ============================================
 
-prod-deploy:
-	@echo "🚀 [1/4] Creating data directories at $(DATA_PATH)..."
-	@mkdir -p $(DATA_PATH)/postgres $(DATA_PATH)/minio $(DATA_PATH)/seq $(DATA_PATH)/redis
-	
-	@echo "🚀 [2/4] Building Docker image..."
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) build --build-arg CACHEBUST=$(NOW)
-	
-	@echo "🚀 [3/4] Stopping API and starting services..."
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) stop alfred-identity-api 2>/dev/null || true
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) rm -f alfred-identity-api 2>/dev/null || true
-	@docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) up -d
-	
-	@echo "🚀 [4/4] Cleaning unused images..."
-	@docker image prune -f
-	@echo "✅ Deploy complete!"
-	@sleep 2
-	@make prod-health
+docker-build:
+	@echo "🐳 Building Docker image: $(DOCKER_IMAGE):$(DOCKER_TAG)..."
+	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@echo "✅ Docker image built: $(DOCKER_IMAGE):$(DOCKER_TAG)"
+
+docker-build-nc:
+	@echo "🐳 Building Docker image (no cache): $(DOCKER_IMAGE):$(DOCKER_TAG)..."
+	docker build --no-cache -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@echo "✅ Docker image built: $(DOCKER_IMAGE):$(DOCKER_TAG)"
+
+prod-deploy: docker-build-nc
+	@echo "🚀 Docker image built. To deploy, run:"
+	@echo "  cd ../alfred-infra && make prod-deploy"
+	@echo "✅ Image ready for deployment!"
 
 prod-start:
-	@echo "▶️  Starting services..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) start
-	@echo "✅ Services started!"
+	@echo "▶️  Use 'cd ../alfred-infra && make prod-start' to manage production services."
 
 prod-stop:
-	@echo "⏹️  Stopping services..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) stop
-	@echo "✅ Services stopped!"
+	@echo "⏹️  Use 'cd ../alfred-infra && make prod-stop' to manage production services."
 
 prod-restart:
-	@echo "🔄 Restarting services..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) restart
-	@echo "✅ Services restarted!"
+	@echo "🔄 Use 'cd ../alfred-infra && make prod-restart' to manage production services."
 
 prod-logs:
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) logs -f
+	@echo "📋 Use 'cd ../alfred-infra && make prod-logs' to view production logs."
 
 prod-status:
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) ps
+	@echo "📊 Use 'cd ../alfred-infra && make ps' to check production status."
 
 prod-health:
-	@echo "🏥 Checking health..."
-	@if curl -sf http://localhost:8000/health > /dev/null 2>&1; then \
-		echo "  ✅ API is healthy"; \
+	@echo "🏥 Checking health via gateway..."
+	@if curl -sf http://localhost:8000/health/identity > /dev/null 2>&1; then \
+		echo "  ✅ Identity API is healthy"; \
 	else \
-		echo "  ⏳ API still starting..."; \
+		echo "  ⏳ Identity API still starting..."; \
 	fi
 
 prod-seed:
 	@echo "🌱 Seeding production database..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec -T alfred-identity-api dotnet Alfred.Identity.Cli.dll seed
+	docker exec alfred-identity-prod dotnet Alfred.Identity.Cli.dll seed
 	@echo "✅ Seed complete!"
 
 prod-db-shell:
 	@echo "🗄️  Connecting to PostgreSQL..."
-	docker compose -f docker-compose.prod.yml --env-file $(ENV_FILE) exec postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-alfred_identity}
+	docker exec alfred-postgres-prod psql -U $${DB_USER:-alfred} -d $${DB_NAME:-alfred_identity}
 
 # ============================================
 # Data Backup & Restore
@@ -228,16 +222,16 @@ prod-backup:
 
 prod-restore:
 	@echo "📋 Available backups:"
-	@ls -lh backups/hse-backup-*.tar.gz 2>/dev/null || echo "  No backups found"
+	@ls -lh backups/alfred-backup-*.tar.gz 2>/dev/null || echo "  No backups found"
 	@echo ""
-	@echo "To restore: tar -xzf backups/hse-backup-YYYYMMDD_HHMMSS.tar.gz"
+	@echo "To restore: tar -xzf backups/alfred-backup-YYYYMMDD_HHMMSS.tar.gz"
 
 # ============================================
 # Quick Setup (Development)
 # ============================================
 
 setup:
-	@echo "⏳ Waiting for SQL Server to be ready..."
+	@echo "⏳ Waiting for PostgreSQL to be ready..."
 	@sleep 5
 	@echo "🔨 Building solution..."
 	@dotnet build
