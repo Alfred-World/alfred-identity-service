@@ -11,23 +11,15 @@ COPY ["src/Alfred.Identity.Infrastructure/Alfred.Identity.Infrastructure.csproj"
 COPY ["src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj", "src/Alfred.Identity.WebApi/"]
 COPY ["src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj", "src/Alfred.Identity.Cli/"]
 
-# Restore dependencies for each project (skip test projects)
-RUN dotnet restore "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj"
-RUN dotnet restore "src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj"
+# Restore all dependencies in one layer (cache invalidated only when .csproj files change)
+RUN dotnet restore "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj" && \
+    dotnet restore "src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj"
 
 # Copy toàn bộ source code (excluding tests via .dockerignore)
 COPY . .
 
-# Build ứng dụng
-WORKDIR "/src/src/Alfred.Identity.WebApi"
-RUN dotnet build "Alfred.Identity.WebApi.csproj" -c Release -o /app/build
-
-# Build CLI tool
-WORKDIR "/src/src/Alfred.Identity.Cli"
-RUN dotnet build "Alfred.Identity.Cli.csproj" -c Release -o /app/cli
-
 # ============================================
-# Publish Stage - Tạo artifact để deploy
+# Publish Stage - Build + Publish in one step (dotnet publish compiles implicitly)
 # ============================================
 FROM build AS publish
 WORKDIR "/src/src/Alfred.Identity.WebApi"

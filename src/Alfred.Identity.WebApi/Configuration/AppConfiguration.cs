@@ -24,6 +24,19 @@ public class AppConfiguration
     // CORS Settings
     public string[] CorsAllowedOrigins { get; }
 
+    // URL Settings (Required — no silent defaults)
+    /// <summary>Gateway public URL, e.g. https://gateway.lucasvu.io.vn</summary>
+    public string GatewayUrl { get; }
+
+    /// <summary>SSO/Identity Web URL, e.g. https://sso.lucasvu.io.vn</summary>
+    public string SsoWebUrl { get; }
+
+    /// <summary>Core/App Web URL, e.g. https://app.lucasvu.io.vn</summary>
+    public string CoreWebUrl { get; }
+
+    /// <summary>Identity Web URL (for password reset links), e.g. https://sso.lucasvu.io.vn</summary>
+    public string IdentityWebUrl { get; }
+
     // Environment
     public string Environment { get; }
     public bool IsDevelopment => Environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
@@ -60,6 +73,12 @@ public class AppConfiguration
         CorsAllowedOrigins = string.IsNullOrWhiteSpace(corsOrigins)
             ? Array.Empty<string>()
             : corsOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // URL Settings (Required — fail fast if missing)
+        GatewayUrl = GetRequiredUrl("URLS_GATEWAY");
+        SsoWebUrl = GetRequiredUrl("URLS_SSO_WEB");
+        CoreWebUrl = GetRequiredUrl("URLS_CORE_WEB");
+        IdentityWebUrl = GetRequiredUrl("URLS_IDENTITY_WEB");
     }
 
     private string BuildSqlServerConnectionString()
@@ -120,5 +139,58 @@ public class AppConfiguration
             throw new InvalidOperationException(
                 $"Invalid {portName} '{port}'. Port must be between 1 and 65535.");
         }
+    }
+
+    /// <summary>
+    /// Reads a required URL env var while accepting the legacy "Urls__*" format from
+    /// docker-compose (which maps to IConfiguration key "Urls:*") as well as the flat
+    /// SCREAMING_SNAKE format. Order: URLS_GATEWAY > Urls__Gateway.
+    /// </summary>
+    private static string GetRequiredUrl(string key)
+    {
+        // Primary: URLS_GATEWAY
+        var value = System.Environment.GetEnvironmentVariable(key);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            // Fallback: docker-compose "Urls__Gateway" format → IConfiguration reads as Urls:Gateway
+            // but we need the env var name with double underscores
+            var legacyKey = ConvertToDoubleUnderscoreFormat(key); // URLS_GATEWAY → Urls__Gateway
+            value = System.Environment.GetEnvironmentVariable(legacyKey);
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException(
+                $"❌ Required URL environment variable '{key}' is not set. " +
+                $"Set it in your .env file or docker-compose environment.");
+        }
+
+        // Strip trailing slash to prevent double-slash bugs  
+        return value.TrimEnd('/');
+    }
+
+    /// <summary>
+    /// URLS_GATEWAY → Urls__Gateway,  URLS_SSO_WEB → Urls__SsoWeb, etc.
+    /// </summary>
+    private static string ConvertToDoubleUnderscoreFormat(string key)
+    {
+        // URLS_GATEWAY     → ["URLS", "GATEWAY"]
+        // URLS_SSO_WEB     → ["URLS", "SSO", "WEB"]
+        // URLS_CORE_WEB    → ["URLS", "CORE", "WEB"]
+        // URLS_IDENTITY_WEB → ["URLS", "IDENTITY", "WEB"]
+        var parts = key.Split('_');
+        if (parts.Length < 2) return key;
+
+        var prefix = ToPascalCase(parts[0]); // "Urls"
+        var rest = string.Join("", parts.Skip(1).Select(ToPascalCase)); // "Gateway", "SsoWeb" etc.
+
+        return $"{prefix}__{rest}";
+    }
+
+    private static string ToPascalCase(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        return char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
     }
 }

@@ -7,6 +7,8 @@ using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Connect;
 
+using Alfred.Identity.WebApi.Configuration;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Authentication;
@@ -25,20 +27,20 @@ public class ConnectController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ICurrentUser _currentUser;
-    private readonly IConfiguration _configuration;
+    private readonly AppConfiguration _appConfig;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUserRepository _userRepository;
 
     public ConnectController(
         IMediator mediator,
         ICurrentUser currentUser,
-        IConfiguration configuration,
+        AppConfiguration appConfig,
         IApplicationRepository applicationRepository,
         IUserRepository userRepository)
     {
         _mediator = mediator;
         _currentUser = currentUser;
-        _configuration = configuration;
+        _appConfig = appConfig;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
     }
@@ -60,13 +62,14 @@ public class ConnectController : ControllerBase
                 return BadRequest(new { error = "login_required" });
             }
 
-            var gatewayUrl = _configuration["Urls:Gateway"] ?? "https://gateway.test";
+            var gatewayUrl = _appConfig.GatewayUrl;
             var forwardedHost = Request.Headers["X-Forwarded-Host"].FirstOrDefault();
             var forwardedProto = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
 
             string returnUrl;
             if (!string.IsNullOrEmpty(forwardedHost))
             {
+                // Use the forwarded host (actual domain the user hit, e.g. gateway.lucasvu.io.vn)
                 returnUrl = $"{forwardedProto}://{forwardedHost}{Request.Path}{Request.QueryString}";
             }
             else
@@ -74,7 +77,7 @@ public class ConnectController : ControllerBase
                 returnUrl = $"{gatewayUrl}{Request.Path}{Request.QueryString}";
             }
 
-            var ssoUrl = _configuration["Urls:SsoWeb"] ?? "https://sso.test";
+            var ssoUrl = _appConfig.SsoWebUrl;
             var loginUrl = $"{ssoUrl}/login?returnUrl={Uri.EscapeDataString(returnUrl)}";
 
             return Redirect(loginUrl);
@@ -237,7 +240,7 @@ public class ConnectController : ControllerBase
         }
 
         // Default redirect to SSO login
-        var ssoUrl = _configuration["Urls:SsoWeb"] ?? "https://sso.test";
+        var ssoUrl = _appConfig.SsoWebUrl;
         return Redirect($"{ssoUrl}/login?logout=true");
     }
 

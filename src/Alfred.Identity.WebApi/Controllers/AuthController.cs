@@ -10,6 +10,7 @@ using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Configuration;
 
 using MediatR;
 
@@ -33,7 +34,7 @@ public class AuthController : BaseApiController
     private readonly IAuthTokenService _authTokenService;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IConfiguration _configuration;
+    private readonly AppConfiguration _appConfig;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ITokenRepository _tokenRepository;
 
@@ -43,7 +44,7 @@ public class AuthController : BaseApiController
         IAuthTokenService authTokenService,
         IApplicationRepository applicationRepository,
         IUserRepository userRepository,
-        IConfiguration configuration,
+        AppConfiguration appConfig,
         IJwtTokenService jwtTokenService,
         ITokenRepository tokenRepository)
     {
@@ -52,7 +53,7 @@ public class AuthController : BaseApiController
         _authTokenService = authTokenService;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
-        _configuration = configuration;
+        _appConfig = appConfig;
         _jwtTokenService = jwtTokenService;
         _tokenRepository = tokenRepository;
     }
@@ -102,7 +103,7 @@ public class AuthController : BaseApiController
         });
 
         // 3. Build Exchange URL
-        var gatewayUrlConfig = _configuration["Urls:Gateway"] ?? "https://gateway.test";
+        var gatewayUrlConfig = _appConfig.GatewayUrl;
         var forwardedHost = HttpContext.Request.Headers["X-Forwarded-Host"].FirstOrDefault();
         var scheme = HttpContext.Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
 
@@ -325,7 +326,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var resetBaseUrl = _configuration["Urls:IdentityWeb"] ?? "https://identity.app";
+        var resetBaseUrl = _appConfig.IdentityWebUrl;
         var command = new ForgotPasswordCommand(request.Email, resetBaseUrl);
         var result = await _mediator.Send(command);
 
