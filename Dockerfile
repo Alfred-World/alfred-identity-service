@@ -1,65 +1,50 @@
 # ============================================
-# Build Stage - Compile ứng dụng
+# Build Stage
 # ============================================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
-# Copy csproj files and restore dependencies (tận dụng Docker layer caching)
+# Copy csproj files first for layer caching
 COPY ["src/Alfred.Identity.Domain/Alfred.Identity.Domain.csproj", "src/Alfred.Identity.Domain/"]
 COPY ["src/Alfred.Identity.Application/Alfred.Identity.Application.csproj", "src/Alfred.Identity.Application/"]
 COPY ["src/Alfred.Identity.Infrastructure/Alfred.Identity.Infrastructure.csproj", "src/Alfred.Identity.Infrastructure/"]
 COPY ["src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj", "src/Alfred.Identity.WebApi/"]
 COPY ["src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj", "src/Alfred.Identity.Cli/"]
 
-# Restore all dependencies in one layer (cache invalidated only when .csproj files change)
-RUN dotnet restore "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj" && \
+# Restore with NuGet cache mount
+RUN --mount=type=cache,id=nuget-identity,target=/root/.nuget/packages \
+    dotnet restore "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj" && \
     dotnet restore "src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj"
 
-# Copy toàn bộ source code (excluding tests via .dockerignore)
+# Copy source code (tests excluded via .dockerignore)
 COPY . .
 
 # ============================================
-# Publish Stage - Build + Publish in one step (dotnet publish compiles implicitly)
+# Publish Stage (single RUN = 1 layer, uses cache mount)
 # ============================================
 FROM build AS publish
-WORKDIR "/src/src/Alfred.Identity.WebApi"
-RUN dotnet publish "Alfred.Identity.WebApi.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-WORKDIR "/src/src/Alfred.Identity.Cli"
-RUN dotnet publish "Alfred.Identity.Cli.csproj" -c Release -o /app/publish/cli /p:UseAppHost=false
+RUN --mount=type=cache,id=nuget-identity,target=/root/.nuget/packages \
+    dotnet publish "src/Alfred.Identity.WebApi/Alfred.Identity.WebApi.csproj" -c Release -o /app/publish /p:UseAppHost=false && \
+    dotnet publish "src/Alfred.Identity.Cli/Alfred.Identity.Cli.csproj" -c Release -o /app/publish/cli /p:UseAppHost=false
 
 # ============================================
-# Final Stage - Image runtime siêu nhẹ
+# Final Stage (Alpine = ~100MB smaller than Debian)
 # ============================================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-# Install runtime dependencies + tools for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgssapi-krb5-2 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk --no-cache add curl libgcc libstdc++ icu-libs
 
-# Tạo non-root user để bảo mật
-RUN groupadd --system --gid 1001 alfred && \
-    useradd --system --uid 1001 --gid alfred --no-create-home alfred
+RUN addgroup -S -g 1001 alfred && adduser -S -u 1001 -G alfred -H alfred
 
-# Copy artifact từ publish stage
-COPY --from=publish /app/publish .
-COPY --from=publish /app/publish/cli ./cli
+COPY --from=publish --chown=alfred:alfred /app/publish .
+COPY --from=publish --chown=alfred:alfred /app/publish/cli ./cli
 
-# Đổi ownership cho user alfred
-RUN chown -R alfred:alfred /app
-
-# Switch sang user alfred (không dùng root)
 USER alfred
 
-# Expose port
 EXPOSE 8100
 
-# Health check using wget (available by default in aspnet image)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8100/health || exit 1
 
-# Entry point
 ENTRYPOINT ["dotnet", "Alfred.Identity.WebApi.dll"]
