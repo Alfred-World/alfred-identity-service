@@ -54,6 +54,16 @@ public static class DotEnvLoader
             {
                 value = value[1..^1];
             }
+            else
+            {
+                // Strip inline comments for unquoted values:
+                // KEY=value  # this is a comment  →  value
+                var commentIndex = value.IndexOf(" #", StringComparison.Ordinal);
+                if (commentIndex >= 0)
+                {
+                    value = value[..commentIndex].TrimEnd();
+                }
+            }
 
             // Only set if not already set (system env vars take precedence)
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))

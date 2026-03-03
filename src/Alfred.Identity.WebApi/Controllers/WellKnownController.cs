@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Infrastructure.Common.Options;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,12 @@ namespace Alfred.Identity.WebApi.Controllers;
 public class WellKnownController : ControllerBase
 {
     private readonly IJwksService _jwksService;
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
 
-    public WellKnownController(IJwksService jwksService, IConfiguration configuration)
+    public WellKnownController(IJwksService jwksService, JwtSettings jwtSettings)
     {
         _jwksService = jwksService;
-        _configuration = configuration;
+        _jwtSettings = jwtSettings;
     }
 
     /// <summary>
@@ -39,7 +40,7 @@ public class WellKnownController : ControllerBase
     [HttpGet("openid-configuration")]
     public IActionResult OpenIdConfiguration()
     {
-        var issuer = _configuration["Jwt:Issuer"] ?? $"{Request.Scheme}://{Request.Host}";
+        var issuer = _jwtSettings.Issuer;
 
         return Ok(new
         {

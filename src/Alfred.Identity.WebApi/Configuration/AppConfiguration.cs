@@ -37,6 +37,19 @@ public class AppConfiguration
     /// <summary>Identity Web URL (for password reset links), e.g. https://sso.lucasvu.io.vn</summary>
     public string IdentityWebUrl { get; }
 
+    // JWT Settings (consolidated — no more IConfiguration["Jwt:*"])
+    /// <summary>Token issuer — MUST match AUTH_VALID_ISSUER on the gateway</summary>
+    public string JwtIssuer { get; }
+
+    /// <summary>Token audience — MUST match AUTH_AUDIENCE on the gateway</summary>
+    public string JwtAudience { get; }
+
+    /// <summary>Access token lifetime in seconds (default 900 = 15 min)</summary>
+    public int JwtAccessTokenLifetimeSeconds { get; }
+
+    /// <summary>Refresh token lifetime in seconds (default 604800 = 7 days)</summary>
+    public int JwtRefreshTokenLifetimeSeconds { get; }
+
     // Environment
     public string Environment { get; }
     public bool IsDevelopment => Environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
@@ -79,6 +92,12 @@ public class AppConfiguration
         SsoWebUrl = GetRequiredUrl("URLS_SSO_WEB");
         CoreWebUrl = GetRequiredUrl("URLS_CORE_WEB");
         IdentityWebUrl = GetRequiredUrl("URLS_IDENTITY_WEB");
+
+        // JWT Settings (Required issuer/audience, optional lifetimes with sensible defaults)
+        JwtIssuer = GetRequired("JWT_ISSUER");
+        JwtAudience = GetRequired("JWT_AUDIENCE");
+        JwtAccessTokenLifetimeSeconds = GetInt("JWT__ACCESSTOKENLIFETIMESECONDS", 900);
+        JwtRefreshTokenLifetimeSeconds = GetInt("JWT__REFRESHTOKENLIFETIMESECONDS", 604800);
     }
 
     private string BuildSqlServerConnectionString()

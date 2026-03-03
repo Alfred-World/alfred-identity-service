@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 using Alfred.Identity.Application;
 using Alfred.Identity.Infrastructure;
+using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Extensions;
 using Alfred.Identity.WebApi.Middleware;
@@ -26,6 +27,15 @@ builder.ConfigureKestrelWithMtls(appConfig, mtlsConfig);
 // Register configurations as singletons
 builder.Services.AddSingleton(appConfig);
 builder.Services.AddSingleton(mtlsConfig);
+
+// Register JwtSettings — consolidated from AppConfiguration, used by JwtTokenService + WellKnownController
+builder.Services.AddSingleton(new JwtSettings
+{
+    Issuer = appConfig.JwtIssuer,
+    Audience = appConfig.JwtAudience,
+    AccessTokenLifetimeSeconds = appConfig.JwtAccessTokenLifetimeSeconds,
+    RefreshTokenLifetimeSeconds = appConfig.JwtRefreshTokenLifetimeSeconds
+});
 
 // Add Controllers with JSON options
 builder.Services.AddControllers()

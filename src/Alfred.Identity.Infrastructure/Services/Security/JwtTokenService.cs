@@ -7,8 +7,8 @@ using System.Text.Json;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Options;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 using TokenValidationResult = Alfred.Identity.Domain.Abstractions.Security.TokenValidationResult;
@@ -22,7 +22,6 @@ namespace Alfred.Identity.Infrastructure.Services.Security;
 /// </summary>
 public class JwtTokenService : IJwtTokenService
 {
-    private readonly IConfiguration _configuration;
     private readonly ISigningKeyRepository _keyRepository;
     private readonly string _issuer;
     private readonly string _audience;
@@ -30,16 +29,14 @@ public class JwtTokenService : IJwtTokenService
     public int AccessTokenLifetimeSeconds { get; }
     public int RefreshTokenLifetimeSeconds { get; }
 
-    public JwtTokenService(IConfiguration configuration, ISigningKeyRepository keyRepository)
+    public JwtTokenService(JwtSettings jwtSettings, ISigningKeyRepository keyRepository)
     {
-        _configuration = configuration;
         _keyRepository = keyRepository;
-        _issuer = configuration["Jwt:Issuer"] ?? "alfred-identity";
-        _audience = configuration["Jwt:Audience"] ?? "alfred-ecosystem";
 
-        // Read lifetimes from config with defaults (15 min for AT, 7 days for RT)
-        AccessTokenLifetimeSeconds = int.Parse(configuration["Jwt:AccessTokenLifetimeSeconds"] ?? "900");
-        RefreshTokenLifetimeSeconds = int.Parse(configuration["Jwt:RefreshTokenLifetimeSeconds"] ?? "604800");
+        _issuer = jwtSettings.Issuer;
+        _audience = jwtSettings.Audience;
+        AccessTokenLifetimeSeconds = jwtSettings.AccessTokenLifetimeSeconds;
+        RefreshTokenLifetimeSeconds = jwtSettings.RefreshTokenLifetimeSeconds;
     }
 
     /// <inheritdoc />

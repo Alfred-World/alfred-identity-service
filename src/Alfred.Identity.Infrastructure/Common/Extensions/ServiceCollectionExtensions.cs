@@ -143,8 +143,22 @@ public static class ServiceCollectionExtensions
                 throw new InvalidOperationException($"Unsupported database provider: {provider}");
         }
 
+        // EF Core diagnostics — read from environment (default: off for production safety)
+        var enableDetailedErrors = string.Equals(
+            Environment.GetEnvironmentVariable("ENABLE_DETAILED_ERRORS"), "true",
+            StringComparison.OrdinalIgnoreCase);
+        var enableSensitiveDataLogging = string.Equals(
+            Environment.GetEnvironmentVariable("ENABLE_SENSITIVE_DATA_LOGGING"), "true",
+            StringComparison.OrdinalIgnoreCase);
+
         // Register PostgreSQL database provider
-        services.AddPostgreSQL(connectionString);
+        var pgOptions = new PostgreSqlOptions
+        {
+            ConnectionString = connectionString,
+            EnableDetailedErrors = enableDetailedErrors,
+            EnableSensitiveDataLogging = enableSensitiveDataLogging
+        };
+        services.AddPostgreSQL(pgOptions);
 
         // Register IDbContext alias to the provider
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<PostgreSqlDbContext>());
