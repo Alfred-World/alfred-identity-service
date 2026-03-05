@@ -3,11 +3,11 @@ using System.Text.Json;
 
 using Alfred.Identity.Application.Auth.Commands.Authorize;
 using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
+using Alfred.Identity.Application.Auth.Common;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
-using Alfred.Identity.WebApi.Contracts.Connect;
-
 using Alfred.Identity.WebApi.Configuration;
+using Alfred.Identity.WebApi.Contracts.Connect;
 
 using MediatR;
 
@@ -91,6 +91,9 @@ public class ConnectController : ControllerBase
             return BadRequest(new { error = "invalid_user" });
         }
 
+        var ipAddress = GetClientIpAddress();
+        var device = TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
+
         var command = new AuthorizeCommand(
             request.client_id,
             request.redirect_uri,
@@ -100,14 +103,22 @@ public class ConnectController : ControllerBase
             request.code_challenge,
             request.code_challenge_method,
             request.prompt,
-            userId
+            userId,
+            ipAddress,
+            device
         );
 
         var result = await _mediator.Send(command);
 
         if (!result.Success)
         {
-            return BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
+            // Per RFC 6749 §4.1.2.1: if redirect_uri is invalid, do NOT redirect to it.
+            // Instead redirect to SSO login page with error details for user-friendly display.
+            var ssoUrl = _appConfig.SsoWebUrl;
+            var errorParams = $"error={Uri.EscapeDataString(result.Error ?? "server_error")}" +
+                              $"&error_description={Uri.EscapeDataString(result.ErrorDescription ?? "Authorization failed")}";
+
+            return Redirect($"{ssoUrl}/login?{errorParams}");
         }
 
         return Redirect(result.RedirectLocation!);
@@ -118,8 +129,13 @@ public class ConnectController : ControllerBase
     /// </summary>
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Token([FromForm] ExchangeCodeRequest request)
     {
+        var ipAddress = GetClientIpAddress();
+        var device = TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
+
         var command = new ExchangeCodeCommand(
             request.grant_type,
             request.client_id,
@@ -127,7 +143,9 @@ public class ConnectController : ControllerBase
             request.code,
             request.redirect_uri,
             request.code_verifier,
-            request.refresh_token
+            request.refresh_token,
+            ipAddress,
+            device
         );
 
         var result = await _mediator.Send(command);
@@ -137,13 +155,13 @@ public class ConnectController : ControllerBase
             return BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
         }
 
-        return Ok(new
+        return Ok(new TokenResponseDto
         {
-            access_token = result.AccessToken,
-            refresh_token = result.RefreshToken,
-            id_token = result.IdToken,
-            token_type = result.TokenType,
-            expires_in = result.ExpiresIn
+            AccessToken = result.AccessToken,
+            RefreshToken = result.RefreshToken,
+            IdToken = result.IdToken,
+            TokenType = result.TokenType ?? "Bearer",
+            ExpiresIn = result.ExpiresIn
         });
     }
 
@@ -245,6 +263,46 @@ public class ConnectController : ControllerBase
     }
 
     #region Private Methods
+
+    /// <summary>
+    /// Extract the real client IP address, respecting proxy/CDN headers.
+    /// </summary>
+    private string GetClientIpAddress()
+    {
+        var cfIp = Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(cfIp))
+        {
+            return cfIp;
+        }
+
+        var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            var first = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+            if (!string.IsNullOrEmpty(first))
+            {
+                return first;
+            }
+        }
+
+        var realIp = Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp;
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    /// <summary>
+    /// Truncate User-Agent string to the column max length (256).
+    /// </summary>
+    private static string? TruncateDevice(string? userAgent)
+    {
+        return string.IsNullOrEmpty(userAgent) ? null
+            : userAgent.Length <= 256 ? userAgent
+            : userAgent[..256];
+    }
 
     /// <summary>
     /// Validate post_logout_redirect_uri against registered PostLogoutRedirectUris for the client

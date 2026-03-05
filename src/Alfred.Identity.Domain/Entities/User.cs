@@ -196,4 +196,17 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         TwoFactorSecret = null; // Clear secret on disable? Or keep it? Usually clear to force reset.
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void UpdateProfile(string fullName, string? phoneNumber)
+    {
+        FullName = fullName;
+        PhoneNumber = phoneNumber;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateAvatar(string? avatar)
+    {
+        Avatar = avatar;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

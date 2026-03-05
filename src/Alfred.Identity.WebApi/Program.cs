@@ -72,8 +72,8 @@ builder.Services.AddHttpContextAccessor();
 // Add Infrastructure layer (Database)
 builder.Services.AddInfrastructure();
 
-// Add Cookie Authentication for SSO
-builder.Services.AddCookieAuthentication();
+// Add Cookie + JWT Bearer Authentication
+builder.Services.AddAuthenticationSchemes(appConfig);
 
 // Add Health Checks
 builder.Services.AddHealthChecks();

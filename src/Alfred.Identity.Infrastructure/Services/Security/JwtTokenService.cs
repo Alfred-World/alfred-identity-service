@@ -41,14 +41,11 @@ public class JwtTokenService : IJwtTokenService
 
     /// <inheritdoc />
     public async Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName,
-        Guid? applicationId = null)
+        Guid? applicationId = null, Guid? authorizationId = null)
     {
         var activeKey = await _keyRepository.GetActiveKeyAsync();
         if (activeKey == null)
         {
-            // Should prompt initialization or throw. 
-            // The JwksService auto-generates on call. Maybe calling JwksService here?
-            // Or just throw for now, expecting JwksService initialization to have happened or seeding.
             throw new InvalidOperationException("No active signing key found. Ensure keys are initialized.");
         }
 
@@ -72,6 +69,15 @@ public class JwtTokenService : IJwtTokenService
         if (applicationId.HasValue)
         {
             claims.Add(new Claim("client_id", applicationId.Value.ToString()));
+        }
+
+        // Include authorization_id so the Gateway can perform session-level revocation checks.
+        // When a session is revoked, the Gateway looks up revoked:session:{authorizationId} in Redis
+        // and rejects any AT that still carries the old authorizationId — providing immediate revocation
+        // without waiting for the AT to expire naturally.
+        if (authorizationId.HasValue)
+        {
+            claims.Add(new Claim("authorization_id", authorizationId.Value.ToString()));
         }
 
         var token = new JwtSecurityToken(

@@ -8,9 +8,9 @@ using Alfred.Identity.Application.Auth.Commands.ResetPassword;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
-using Alfred.Identity.WebApi.Configuration;
 
 using MediatR;
 
@@ -79,7 +79,8 @@ public class AuthController : BaseApiController
             request.Password,
             request.RememberMe,
             GetClientIpAddress(),
-            GetUserAgent()
+            GetUserAgent(),
+            true // Skip orphaned token creation — OIDC flow issues its own tokens via /connect/token
         );
 
         var result = await _mediator.Send(command);
@@ -361,8 +362,9 @@ public class AuthController : BaseApiController
     #region Private Methods
 
     /// <summary>
-    /// Validates the redirect URL against registered applications in DB.
-    /// Only allows URLs that match RedirectUris of registered applications.
+    /// Validates the redirect URL against known app origins and registered applications.
+    /// Allows: local URLs, OIDC authorize paths, known app origins (SSO/Core/Identity),
+    /// and registered application RedirectUris.
     /// </summary>
     private async Task<string> ValidateAndGetRedirectUrlAsync(string? returnUrl)
     {
@@ -396,10 +398,30 @@ public class AuthController : BaseApiController
             return returnUrl;
         }
 
-        // For other URLs, check if they match any registered application's RedirectUris
+        // Allow URLs whose origin matches a known application URL from config
+        // This covers exchange-token → returnUrl redirects back to SSO/Core frontends
         if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri))
         {
-            // Get all active applications and check their RedirectUris
+            var knownOrigins = new[]
+            {
+                _appConfig.SsoWebUrl,
+                _appConfig.CoreWebUrl,
+                _appConfig.IdentityWebUrl,
+                _appConfig.GatewayUrl
+            };
+
+            foreach (var origin in knownOrigins)
+            {
+                if (!string.IsNullOrEmpty(origin) &&
+                    Uri.TryCreate(origin, UriKind.Absolute, out var knownUri) &&
+                    string.Equals(uri.Host, knownUri.Host, StringComparison.OrdinalIgnoreCase) &&
+                    uri.Port == knownUri.Port)
+                {
+                    return returnUrl;
+                }
+            }
+
+            // Fallback: check against registered application RedirectUris
             var isAllowed = await IsRedirectUriAllowedAsync(uri.ToString());
             if (isAllowed)
             {
@@ -407,8 +429,10 @@ public class AuthController : BaseApiController
             }
         }
 
-        // Not allowed - redirect to safe default
-        return "/";
+        // Not allowed - redirect to SSO login with error instead of silent gateway root
+        var ssoUrl = _appConfig.SsoWebUrl;
+        return
+            $"{ssoUrl}/login?error=invalid_redirect&error_description={Uri.EscapeDataString($"Redirect URL not allowed: {returnUrl}")}";
     }
 
     /// <summary>

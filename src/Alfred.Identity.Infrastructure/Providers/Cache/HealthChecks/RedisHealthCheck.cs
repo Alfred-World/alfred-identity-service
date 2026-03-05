@@ -32,7 +32,7 @@ public class RedisHealthCheck : IHealthCheck
                 ConnectTimeout = 5_000,
                 SyncTimeout = 5_000,
                 ReconnectRetryPolicy = new LinearRetry(0),
-                ConnectRetry = 1,
+                ConnectRetry = 1
             };
 
             if (!string.IsNullOrEmpty(password))

@@ -199,7 +199,10 @@ public class AppConfiguration
         // URLS_CORE_WEB    → ["URLS", "CORE", "WEB"]
         // URLS_IDENTITY_WEB → ["URLS", "IDENTITY", "WEB"]
         var parts = key.Split('_');
-        if (parts.Length < 2) return key;
+        if (parts.Length < 2)
+        {
+            return key;
+        }
 
         var prefix = ToPascalCase(parts[0]); // "Urls"
         var rest = string.Join("", parts.Skip(1).Select(ToPascalCase)); // "Gateway", "SsoWeb" etc.
@@ -209,7 +212,11 @@ public class AppConfiguration
 
     private static string ToPascalCase(string s)
     {
-        if (string.IsNullOrEmpty(s)) return s;
+        if (string.IsNullOrEmpty(s))
+        {
+            return s;
+        }
+
         return char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
     }
 }

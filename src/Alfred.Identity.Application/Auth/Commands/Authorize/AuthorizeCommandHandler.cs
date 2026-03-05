@@ -149,7 +149,9 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
             DateTime.UtcNow.AddMinutes(5), // Short lived
             authTokenHash,
             authorization.Id,
-            payload
+            payload,
+            ipAddress: request.IpAddress,
+            device: request.Device
         );
 
         await _tokenRepository.AddAsync(codeToken, cancellationToken);

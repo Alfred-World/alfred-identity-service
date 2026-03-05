@@ -18,7 +18,8 @@ public interface IJwtTokenService
     /// <summary>
     /// Generate an access token for a user (async for RSA key retrieval)
     /// </summary>
-    Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName, Guid? applicationId = null);
+    Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName, Guid? applicationId = null,
+        Guid? authorizationId = null);
 
     /// <summary>
     /// Generate a refresh token

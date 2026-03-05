@@ -1,3 +1,4 @@
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
@@ -18,6 +19,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly ITokenRepository _tokenRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ILocationService _locationService;
+    private readonly ICacheProvider _cacheProvider;
 
     private const int RefreshTokenLifetimeSeconds = 604800; // 7 days
 
@@ -25,12 +27,14 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         IUserRepository userRepository,
         ITokenRepository tokenRepository,
         IJwtTokenService jwtTokenService,
-        ILocationService locationService)
+        ILocationService locationService,
+        ICacheProvider cacheProvider)
     {
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
         _jwtTokenService = jwtTokenService;
         _locationService = locationService;
+        _cacheProvider = cacheProvider;
     }
 
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -65,6 +69,19 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return new RefreshTokenResult(false, Error: "Refresh token is invalid or expired");
         }
 
+        // Check if session was explicitly revoked via Redis (immediate effect from session management)
+        if (await _cacheProvider.ExistsAsync($"session:revoked:{storedToken.Id}", cancellationToken))
+        {
+            return new RefreshTokenResult(false, Error: "Session has been revoked");
+        }
+
+        // Also check session-level revocation (set by RevokeSessionCommandHandler)
+        if (storedToken.AuthorizationId.HasValue &&
+            await _cacheProvider.ExistsAsync($"revoked:session:{storedToken.AuthorizationId.Value}", cancellationToken))
+        {
+            return new RefreshTokenResult(false, Error: "Session has been revoked");
+        }
+
         // Get user
         if (!storedToken.UserId.HasValue)
         {
@@ -77,14 +94,15 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return new RefreshTokenResult(false, Error: "User account is not active");
         }
 
-        // Mark old token as used (token rotation)
-        storedToken.Redeem();
-        _tokenRepository.Update(storedToken);
+        // Mark old token as used via direct SQL UPDATE (bypasses change tracking).
+        // RedeemByIdAsync uses ExecuteUpdateAsync with WHERE status=Valid, so it is
+        // idempotent: 0 rows if already redeemed/deleted by a concurrent request — no exception.
+        await _tokenRepository.RedeemByIdAsync(storedToken.Id, cancellationToken);
 
         // Generate new tokens
         var accessToken =
             await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName,
-                storedToken.ApplicationId);
+                storedToken.ApplicationId, storedToken.AuthorizationId);
         var newRefreshTokenValue = _jwtTokenService.GenerateRefreshToken();
         var jwtId = _jwtTokenService.GetJwtIdFromToken(accessToken);
 
@@ -116,7 +134,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         );
 
         await _tokenRepository.AddAsync(newRefreshToken, cancellationToken);
+
+        // SaveChangesAsync now only handles the new RT INSERT.
+        // RedeemByIdAsync above used ExecuteUpdateAsync which auto-commits independently.
         await _tokenRepository.SaveChangesAsync(cancellationToken);
+
+        // Cleanup expired/redeemed/revoked tokens for this user (fire-and-forget)
+        _ = _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(user.Id, CancellationToken.None);
 
         return new RefreshTokenResult(
             true,

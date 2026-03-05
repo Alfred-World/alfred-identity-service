@@ -1,5 +1,7 @@
 using Alfred.Identity.Application.Auth.Commands.ChangePassword;
+using Alfred.Identity.Application.Auth.Commands.RevokeSession;
 using Alfred.Identity.Application.Auth.Commands.TwoFactor;
+using Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Account;
@@ -21,12 +23,166 @@ public class AccountController : BaseApiController
     private readonly IMediator _mediator;
     private readonly ICurrentUser _currentUser;
     private readonly IBackupCodeRepository _backupCodeRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly ITokenRepository _tokenRepository;
 
-    public AccountController(IMediator mediator, ICurrentUser currentUser, IBackupCodeRepository backupCodeRepository)
+    public AccountController(
+        IMediator mediator,
+        ICurrentUser currentUser,
+        IBackupCodeRepository backupCodeRepository,
+        IUserRepository userRepository,
+        ITokenRepository tokenRepository)
     {
         _mediator = mediator;
         _currentUser = currentUser;
         _backupCodeRepository = backupCodeRepository;
+        _userRepository = userRepository;
+        _tokenRepository = tokenRepository;
+    }
+
+    /// <summary>
+    /// [TEST] Always returns 401 — used to verify FE redirect behavior.
+    /// Remove this endpoint after testing.
+    /// </summary>
+    [HttpGet("test-401")]
+    [AllowAnonymous]
+    public IActionResult Test401()
+    {
+        return Unauthorized(new
+        { success = false, errors = new[] { new { message = "Test 401", code = "TEST_UNAUTHORIZED" } } });
+    }
+
+    /// <summary>
+    /// Get current user's profile
+    /// </summary>
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(ApiResponse<ProfileResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
+
+        var user = await _userRepository.GetByIdAsync(_currentUser.UserId.Value, cancellationToken);
+        if (user == null)
+        {
+            return NotFoundResponse("User not found");
+        }
+
+        return OkResponse(new ProfileResponse
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            UserName = user.UserName,
+            PhoneNumber = user.PhoneNumber,
+            Avatar = user.Avatar,
+            TwoFactorEnabled = user.TwoFactorEnabled,
+            EmailConfirmed = user.EmailConfirmed
+        });
+    }
+
+    /// <summary>
+    /// Update current user's profile (full name, phone number, avatar)
+    /// </summary>
+    [HttpPut("profile")]
+    [ProducesResponseType(typeof(ApiResponse<ProfileResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
+
+        var command = new UpdateProfileCommand(
+            _currentUser.UserId.Value,
+            request.FullName,
+            request.PhoneNumber,
+            request.Avatar
+        );
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return BadRequestResponse(result.Error);
+        }
+
+        var updated = result.Value!;
+
+        return OkResponse(new ProfileResponse
+        {
+            Id = updated.Id,
+            FullName = updated.FullName,
+            Email = updated.Email,
+            UserName = updated.UserName,
+            PhoneNumber = updated.PhoneNumber,
+            Avatar = updated.Avatar,
+            TwoFactorEnabled = false,
+            EmailConfirmed = false
+        });
+    }
+
+    /// <summary>
+    /// Get all active sessions (devices) for the current user
+    /// </summary>
+    [HttpGet("sessions")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SessionDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetSessions(CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
+
+        var tokens = await _tokenRepository.GetActiveSessionsByUserIdAsync(
+            _currentUser.UserId.Value, cancellationToken);
+
+        var currentUserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+        var sessions = tokens.Select(t => new SessionDto
+        {
+            Id = t.Id,
+            Device = t.Device ?? "Unknown Device",
+            IpAddress = t.IpAddress,
+            Location = t.Location,
+            CreatedAt = t.CreationDate,
+            ExpiresAt = t.ExpirationDate,
+            IsCurrentSession = false // Frontend can mark current session by comparing with stored token
+        });
+
+        return OkResponse(sessions);
+    }
+
+    /// <summary>
+    /// Revoke a specific session (device) — takes immediate effect via Redis
+    /// </summary>
+    [HttpDelete("sessions/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RevokeSession([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId == null)
+        {
+            return UnauthorizedResponse("User not identified");
+        }
+
+        var command = new RevokeSessionCommand(_currentUser.UserId.Value, id);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return BadRequestResponse(result.Error);
+        }
+
+        return OkResponse("Session revoked successfully");
     }
 
     /// <summary>
@@ -69,19 +225,7 @@ public class AccountController : BaseApiController
             return UnauthorizedResponse("User not identified");
         }
 
-        // Need email for QR Code
-        // Assuming current user context has email, or need to fetch it? 
-        // ICurrentUser interface check... 
-        // If ICurrentUser doesn't have Email, I might need to Command to fetch User first.
-        // But let's assume ICurrentUser or Command handles it.
-        // Wait, InitiateEnableTwoFactorCommand expects Email.
-        // I should fetch user info or pass Email if I have it in claims.
-        // Let's check ICurrentUser.
-
         var command = new InitiateEnableTwoFactorCommand(_currentUser.UserId.Value, _currentUser.Email ?? "");
-        // If Email is missing in claims, the handler *could* look it up by ID if we modify Command to be ID only, 
-        // or we just trust Claims have it. My CurrentUserService implementation usually puts Email in claims.
-
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -186,4 +330,3 @@ public class AccountController : BaseApiController
         return OkResponse(result.Value!);
     }
 }
-

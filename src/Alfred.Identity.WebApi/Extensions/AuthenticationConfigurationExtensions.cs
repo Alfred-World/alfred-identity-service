@@ -1,4 +1,9 @@
+using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.WebApi.Configuration;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Alfred.Identity.WebApi.Extensions;
 
@@ -7,33 +12,75 @@ namespace Alfred.Identity.WebApi.Extensions;
 /// </summary>
 public static class AuthenticationConfigurationExtensions
 {
+    // ── JWKS cache (same pattern as Gateway) ───────────────────────────────
+    private static IList<JsonWebKey>? _cachedKeys;
+    private static DateTime _keysLastFetched = DateTime.MinValue;
+    private static readonly TimeSpan KeysCacheDuration = TimeSpan.FromHours(1);
+
     /// <summary>
-    /// Add Cookie Authentication for SSO
+    /// Add Cookie + JWT Bearer dual authentication for the Identity Service.
+    /// <para>
+    ///   • Cookie auth is used by the SSO login flow (browser-based).
+    ///   • JWT Bearer auth is used by API clients coming through the Gateway
+    ///     (the Gateway already validates the JWT but the downstream service
+    ///     still needs to parse the token to populate <c>HttpContext.User</c>
+    ///     so that <c>ICurrentUser</c> works correctly).
+    /// </para>
     /// </summary>
-    public static IServiceCollection AddCookieAuthentication(this IServiceCollection services)
+    public static IServiceCollection AddAuthenticationSchemes(
+        this IServiceCollection services,
+        AppConfiguration config)
     {
-        var authBuilder = services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options =>
+        services.AddAuthentication(options =>
+            {
+                // Use a policy scheme that picks the right handler per request
+                options.DefaultScheme = "SmartScheme";
+                options.DefaultChallengeScheme = "SmartScheme";
+            })
+            // ── Cookie scheme (SSO browser flow) ───────────────────────────
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
             {
                 options.Cookie.Name = "AlfredSession";
-                // Cookie domain is NOT set explicitly because:
-                // 1. Request comes to localhost (via YARP reverse proxy)
-                // 2. ASP.NET refuses to set cookie for different domain than request host
-                // Instead, we rely on ForwardedHeaders middleware to detect the correct host
-                // and the cookie will be set for that host (gateway.test when behind YARP)
-                // 
-                // For cross-subdomain sharing in production (e.g., *.alfred.com),
-                // configure ForwardedHeaders properly and consider using cookie path/domain options
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.None; // Allow cross-origin cookie setting
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Required for SameSite=None
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.ExpireTimeSpan = TimeSpan.FromDays(14);
                 options.SlidingExpiration = true;
-                // For API-based auth, return 401 instead of redirect
                 options.Events.OnRedirectToLogin = context =>
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return Task.CompletedTask;
+                };
+            })
+            // ── JWT Bearer scheme (API calls via Gateway) ──────────────────
+            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.Authority = null;
+                options.RequireHttpsMetadata = false;
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = config.JwtIssuer,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ClockSkew = TimeSpan.Zero,
+
+                    // Resolve signing keys from our own DB (via ISigningKeyRepository)
+                    IssuerSigningKeyResolver = (_, _, _, _) => GetSigningKeys(services)
+                };
+            })
+            // ── Policy scheme that auto-selects Cookie vs Bearer ───────────
+            .AddPolicyScheme("SmartScheme", "Cookie or JWT", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                {
+                    var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+
+                    return authHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
+                        ? JwtBearerDefaults.AuthenticationScheme
+                        : CookieAuthenticationDefaults.AuthenticationScheme;
                 };
             });
 
@@ -43,14 +90,61 @@ public static class AuthenticationConfigurationExtensions
 
         if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
         {
-            authBuilder.AddGoogle(options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.SaveTokens = true;
-            });
+            // Need to get the auth builder again to chain Google
+            services.AddAuthentication()
+                .AddGoogle(options =>
+                {
+                    options.ClientId = googleClientId;
+                    options.ClientSecret = googleClientSecret;
+                    options.SaveTokens = true;
+                });
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// Load signing keys from database via <see cref="ISigningKeyRepository"/>.
+    /// Keys are cached for 1 hour (same pattern as Gateway JWKS fetch).
+    /// </summary>
+    private static IEnumerable<SecurityKey> GetSigningKeys(IServiceCollection services)
+    {
+        if (_cachedKeys != null && DateTime.UtcNow - _keysLastFetched < KeysCacheDuration)
+        {
+            return _cachedKeys;
+        }
+
+        try
+        {
+            using var sp = services.BuildServiceProvider();
+            var keyRepo = sp.GetRequiredService<ISigningKeyRepository>();
+
+            var keys = keyRepo.GetValidKeysAsync(CancellationToken.None)
+                .GetAwaiter().GetResult();
+
+            var jwkList = new List<JsonWebKey>();
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    var jwk = new JsonWebKey(key.PublicKey);
+                    jwkList.Add(jwk);
+                }
+                catch
+                {
+                    // Skip malformed keys
+                }
+            }
+
+            _cachedKeys = jwkList;
+            _keysLastFetched = DateTime.UtcNow;
+
+            return _cachedKeys;
+        }
+        catch
+        {
+            return _cachedKeys ?? Enumerable.Empty<SecurityKey>();
+        }
     }
 }

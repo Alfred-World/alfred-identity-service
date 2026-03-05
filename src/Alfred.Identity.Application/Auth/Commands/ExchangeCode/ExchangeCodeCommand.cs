@@ -12,7 +12,9 @@ public record ExchangeCodeCommand(
     string? Code,
     string? RedirectUri,
     string? CodeVerifier,
-    string? RefreshToken // For refresh_token grant type
+    string? RefreshToken, // For refresh_token grant type
+    string? IpAddress = null,
+    string? Device = null
 ) : IRequest<ExchangeCodeResult>;
 
 /// <summary>

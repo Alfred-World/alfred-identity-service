@@ -12,7 +12,12 @@ public record LoginCommand(
     string Password,
     bool RememberMe = false,
     string? IpAddress = null,
-    string? DeviceName = null
+    string? DeviceName = null,
+    /// <summary>
+    /// When true (SSO web flow), skip direct refresh-token creation.
+    /// The OIDC flow issues its own tokens via /connect/token — creating tokens here would only add orphaned rows.
+    /// </summary>
+    bool IsSsoFlow = false
 ) : IRequest<Result<LoginData>>;
 
 /// <summary>

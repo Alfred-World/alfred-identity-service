@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
@@ -174,7 +176,7 @@ public class ApplicationSeeder : BaseDataSeeder
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        return System.Text.Json.JsonSerializer.Serialize(unique);
+        return JsonSerializer.Serialize(unique);
     }
 
     /// <summary>

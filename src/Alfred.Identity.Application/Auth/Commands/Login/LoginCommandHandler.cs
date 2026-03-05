@@ -56,40 +56,55 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             return Result<LoginData>.Failure("Invalid credentials");
         }
 
-        // Generate tokens
-        var accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName);
-        var refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
-
         // Get location from IP
         var location = request.IpAddress != null
             ? await _locationService.GetLocationFromIpAsync(request.IpAddress)
             : null;
 
-        // Create and store new refresh token as a Token entity
-        var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenValue);
+        string accessToken;
+        string refreshTokenValue;
 
-        // Properties JSON (simplified for now)
-        var properties = location != null
-            ? $"{{\"location\": \"{location}\", \"device\": \"{request.DeviceName ?? "Unknown"}\", \"ip\": \"{request.IpAddress}\"}}"
-            : null;
+        if (request.IsSsoFlow)
+        {
+            // SSO web flow: credentials are validated here only.
+            // The OIDC /connect/token endpoint issues tokens after code exchange.
+            // Creating tokens here produces orphaned rows (ApplicationId=NULL, never delivered to any client).
+            // Clean up stale tokens left over from previous SSO attempts for this user instead.
+            await _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(user.Id, cancellationToken);
+            await _tokenRepository.SaveChangesAsync(cancellationToken);
+            accessToken = string.Empty;
+            refreshTokenValue = string.Empty;
+        }
+        else
+        {
+            // Direct API login (non-OIDC clients): generate and persist tokens.
+            accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName);
+            refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
 
-        var refreshToken = Token.Create(
-            OAuthConstants.TokenTypes.RefreshToken,
-            null,
-            user.Id.ToString(),
-            user.Id,
-            DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
-            refreshTokenHash,
-            null,
-            null,
-            properties,
-            request.IpAddress,
-            location,
-            request.DeviceName
-        );
+            var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenValue);
+            var ip = request.IpAddress ?? "Unknown";
+            var device = request.DeviceName ?? "Unknown";
+            var loc = location ?? "Unknown";
+            var properties = "{" + $"\"ip\": \"{ip}\", \"device\": \"{device}\", \"location\": \"{loc}\"" + "}";
 
-        await _tokenRepository.AddAsync(refreshToken, cancellationToken);
-        await _tokenRepository.SaveChangesAsync(cancellationToken);
+            var refreshToken = Token.Create(
+                OAuthConstants.TokenTypes.RefreshToken,
+                null,
+                user.Id.ToString(),
+                user.Id,
+                DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
+                refreshTokenHash,
+                null,
+                null,
+                properties,
+                request.IpAddress,
+                location,
+                request.DeviceName
+            );
+
+            await _tokenRepository.AddAsync(refreshToken, cancellationToken);
+            await _tokenRepository.SaveChangesAsync(cancellationToken);
+        }
 
         // Return login data with user info
         var loginData = new LoginData

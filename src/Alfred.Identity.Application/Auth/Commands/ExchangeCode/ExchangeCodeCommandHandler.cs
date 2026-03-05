@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
@@ -15,22 +16,25 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 {
     private readonly ITokenRepository _tokenRepository;
     private readonly IApplicationRepository _applicationRepository;
-    private readonly IUserRepository _userRepository; // Added
+    private readonly IUserRepository _userRepository;
     private readonly IAuthorizationCodeService _authCodeService;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly ICacheProvider _cacheProvider;
 
     public ExchangeCodeCommandHandler(
         ITokenRepository tokenRepository,
         IApplicationRepository applicationRepository,
         IUserRepository userRepository,
         IAuthorizationCodeService authCodeService,
-        IJwtTokenService jwtTokenService)
+        IJwtTokenService jwtTokenService,
+        ICacheProvider cacheProvider)
     {
         _tokenRepository = tokenRepository;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
         _authCodeService = authCodeService;
         _jwtTokenService = jwtTokenService;
+        _cacheProvider = cacheProvider;
     }
 
     // ... (Handle method remains)
@@ -130,7 +134,8 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         var accessToken =
-            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id);
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id,
+                authCodeToken.AuthorizationId);
         var refreshTokenStr = _jwtTokenService.GenerateRefreshToken();
         var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenStr);
 
@@ -147,7 +152,9 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             DateTime.UtcNow.AddDays(14),
             refreshTokenHash,
             authCodeToken.AuthorizationId,
-            null
+            null,
+            ipAddress: request.IpAddress,
+            device: request.Device
         );
 
         await _tokenRepository.AddAsync(refreshToken, cancellationToken);
@@ -197,23 +204,28 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         // 4. Validate Token Usage
+        // Track grace-period reuse to skip calling Redeem() again on an already-Redeemed token.
+        // Calling Redeem() resets RedemptionDate to "now", which would shift the createdAfter
+        // window and cause subsequent parallel requests to miss the new RT (invalid_grant).
+        var isGracePeriodReuse = false;
         if (tokenEntity.Status != TokenStatus.Valid)
         {
-            // Allow temporary reuse (Grace Period) for concurrent requests (e.g. NextAuth race condition)
-            // If token was redeemed recently (e.g., < 60 seconds ago), allow it to be used again
-            // NOTE: Ideally we should return the SAME new token that was issued when it was first redeemed,
-            // but for simplicity here we might just issue another new one or error out if we can't find the new one.
-            // Actually, issuing another new one is safer than causing a loop.
-            // If we strictly follow rotation, we should return the ALREADY GENERATED new token, but we don't track the "next" token link easily here.
-
-            // Simplified Grace Period: If Redeemed recently, proceed as if valid (it will be redeemed again, updating timestamp)
+            // Grace Period: if token was just redeemed (< 60s ago) a concurrent request already rotated it.
+            // Instead of issuing yet another new token (which causes DB bloat), find the one that was
+            // already created for this AuthorizationId and return it. This prevents the race condition
+            // where NextAuth fires multiple parallel refresh requests at startup.
             var gracePeriodSeconds = 60;
             if (tokenEntity.Status == TokenStatus.Redeemed &&
                 tokenEntity.RedemptionDate.HasValue &&
-                tokenEntity.RedemptionDate.Value > DateTime.UtcNow.AddSeconds(-gracePeriodSeconds))
+                tokenEntity.RedemptionDate.Value > DateTime.UtcNow.AddSeconds(-gracePeriodSeconds) &&
+                tokenEntity.AuthorizationId.HasValue)
             {
-                // Continue execution - this will trigger another rotation, which is fine (just another new token)
-                // The client will just use the latest one it receives.
+                // Parallel request race: RT was already redeemed by a concurrent request.
+                // Do NOT query/revoke the new RT that was issued by request A — if we revoke it
+                // and request A's cookie arrives after ours, the cookie has a Revoked RT → invalid_grant.
+                // Instead let both new RTs briefly coexist. Whichever the cookie ends up with is valid.
+                // Orphaned Valid RTs expire naturally (14 days) and are cleaned up by DeleteExpiredAndRedeemed.
+                isGracePeriodReuse = true;
             }
             else
             {
@@ -226,10 +238,22 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             return Error("invalid_grant", "Refresh token expired");
         }
 
+        // Check if session was explicitly revoked via Redis (immediate revoke from session management)
+        if (await _cacheProvider.ExistsAsync($"session:revoked:{tokenEntity.Id}", cancellationToken))
+        {
+            return Error(OAuthConstants.Errors.InvalidGrant, "Session has been revoked");
+        }
+
         // 5. Rotate Refresh Token
-        // Revoke current token
-        tokenEntity.Redeem();
-        _tokenRepository.Update(tokenEntity);
+        // Use RedeemByIdAsync (ExecuteUpdateAsync) instead of change-tracking Update().
+        // This is a direct SQL UPDATE that never causes DbUpdateConcurrencyException:
+        //   - If concurrent request already redeemed this token: 0 rows, no exception.
+        //   - If cleanup deleted the row: 0 rows, no exception.
+        //   - Normal case: 1 row updated, RedemptionDate set.
+        if (!isGracePeriodReuse)
+        {
+            await _tokenRepository.RedeemByIdAsync(tokenEntity.Id, cancellationToken);
+        }
 
         // 6. Generate New Tokens
         var userId = tokenEntity.UserId ?? Guid.Empty;
@@ -240,7 +264,8 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         var newAccessToken =
-            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id);
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id,
+                tokenEntity.AuthorizationId);
 
         // Generate new Refresh Token (Rotation)
         var newRefreshTokenStr = _jwtTokenService.GenerateRefreshToken();
@@ -258,13 +283,19 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             DateTime.UtcNow.AddDays(14), // Extend session
             newRefreshTokenHash,
             tokenEntity.AuthorizationId,
-            null
+            null,
+            ipAddress: request.IpAddress,
+            device: request.Device
         );
 
         await _tokenRepository.AddAsync(newRefreshTokenEntity, cancellationToken);
 
-        // Atomic transaction
+        // SaveChangesAsync now only handles the new RT INSERT (no change-tracked updates).
+        // RedeemByIdAsync above used ExecuteUpdateAsync which auto-commits independently.
         await _tokenRepository.SaveChangesAsync(cancellationToken);
+
+        // Clean up expired/redeemed/revoked tokens for this user (fire-and-forget).
+        _ = _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(userId, CancellationToken.None);
 
         return new ExchangeCodeResult(
             true,
