@@ -41,18 +41,6 @@ public class AccountController : BaseApiController
     }
 
     /// <summary>
-    /// [TEST] Always returns 401 — used to verify FE redirect behavior.
-    /// Remove this endpoint after testing.
-    /// </summary>
-    [HttpGet("test-401")]
-    [AllowAnonymous]
-    public IActionResult Test401()
-    {
-        return Unauthorized(new
-        { success = false, errors = new[] { new { message = "Test 401", code = "TEST_UNAUTHORIZED" } } });
-    }
-
-    /// <summary>
     /// Get current user's profile
     /// </summary>
     [HttpGet("me")]
