@@ -261,14 +261,3 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
 
     #endregion
 }
-
-/// <summary>
-/// Generic repository implementation for entities with Guid Id
-/// </summary>
-public abstract class BaseRepository<TEntity> : BaseRepository<TEntity, Guid>, IRepository<TEntity>
-    where TEntity : BaseEntity
-{
-    protected BaseRepository(IDbContext context) : base(context)
-    {
-    }
-}

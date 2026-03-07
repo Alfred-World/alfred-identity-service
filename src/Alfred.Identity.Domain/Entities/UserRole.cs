@@ -8,8 +8,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// </summary>
 public sealed class UserRole : IHasCreationTime, IHasCreator
 {
-    public Guid UserId { get; private set; }
-    public Guid RoleId { get; private set; }
+    public UserId UserId { get; private set; }
+    public RoleId RoleId { get; private set; }
 
     public User User { get; private set; } = null!;
     public Role Role { get; private set; } = null!;
@@ -21,7 +21,7 @@ public sealed class UserRole : IHasCreationTime, IHasCreator
     {
     }
 
-    public static UserRole Create(Guid userId, Guid roleId, Guid? createdById = null)
+    public static UserRole Create(UserId userId, RoleId roleId, Guid? createdById = null)
     {
         return new UserRole
         {

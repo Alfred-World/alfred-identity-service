@@ -27,7 +27,7 @@ public class UserDto
     {
         return new UserDto
         {
-            Id = user.Id,
+            Id = user.Id.Value,
             UserName = user.UserName,
             Email = user.Email,
             FullName = user.FullName,

@@ -27,7 +27,7 @@ public sealed record ApplicationDto
     {
         return new ApplicationDto
         {
-            Id = app.Id,
+            Id = app.Id.Value,
             ClientId = app.ClientId,
             DisplayName = app.DisplayName,
             RedirectUris = ParseJsonList(app.RedirectUris),

@@ -2,6 +2,7 @@ using System.Reflection;
 
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
+using Alfred.Identity.Infrastructure.Common.Converters;
 using Alfred.Identity.Infrastructure.Common.Options;
 
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,22 @@ public class PostgreSqlDbContext : DbContext, IDbContext
     public DbSet<UserRole> UserRoles { get; set; } = null!;
     public DbSet<Permission> Permissions { get; set; } = null!;
     public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<UserId>().HaveConversion<UserIdConverter>();
+        configurationBuilder.Properties<RoleId>().HaveConversion<RoleIdConverter>();
+        configurationBuilder.Properties<PermissionId>().HaveConversion<PermissionIdConverter>();
+        configurationBuilder.Properties<TokenId>().HaveConversion<TokenIdConverter>();
+        configurationBuilder.Properties<ApplicationId>().HaveConversion<ApplicationIdConverter>();
+        configurationBuilder.Properties<AuthorizationId>().HaveConversion<AuthorizationIdConverter>();
+        configurationBuilder.Properties<ScopeId>().HaveConversion<ScopeIdConverter>();
+        configurationBuilder.Properties<SigningKeyId>().HaveConversion<SigningKeyIdConverter>();
+        configurationBuilder.Properties<UserBanId>().HaveConversion<UserBanIdConverter>();
+        configurationBuilder.Properties<UserActivityLogId>().HaveConversion<UserActivityLogIdConverter>();
+        configurationBuilder.Properties<UserLoginId>().HaveConversion<UserLoginIdConverter>();
+        configurationBuilder.Properties<BackupCodeId>().HaveConversion<BackupCodeIdConverter>();
+    }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

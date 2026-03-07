@@ -2,9 +2,9 @@ using Alfred.Identity.Domain.Common.Base;
 
 namespace Alfred.Identity.Domain.Entities;
 
-public sealed class UserActivityLog : BaseEntity
+public sealed class UserActivityLog : BaseEntity<UserActivityLogId>
 {
-    public Guid UserId { get; private set; }
+    public UserId UserId { get; private set; }
     public string Action { get; private set; } = null!;
     public string? Description { get; private set; }
     public string? IpAddress { get; private set; }
@@ -16,10 +16,11 @@ public sealed class UserActivityLog : BaseEntity
 
     private UserActivityLog()
     {
+        Id = UserActivityLogId.New();
     }
 
     public static UserActivityLog Create(
-        Guid userId,
+        UserId userId,
         string action,
         string? description = null,
         string? ipAddress = null,

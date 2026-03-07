@@ -104,15 +104,16 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
 
         // 5. Create or Get Authorization (Consent)
         // Simplified: assuming implicit consent for now if no "prompt=consent"
+        var typedUserId = new UserId(request.UserId.Value);
         var authorization =
-            await _authorizationRepository.GetValidAsync(client.Id, request.UserId.Value, request.Scope,
+            await _authorizationRepository.GetValidAsync(client.Id, typedUserId, request.Scope,
                 cancellationToken);
 
         if (authorization == null)
         {
             authorization = Authorization.Create(
                 client.Id,
-                request.UserId.Value,
+                typedUserId,
                 request.Scope,
                 "Permanent"
             );
@@ -145,7 +146,7 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
             OAuthConstants.TokenTypes.AuthorizationCode,
             client.Id,
             request.UserId.Value.ToString(),
-            request.UserId.Value,
+            typedUserId,
             DateTime.UtcNow.AddMinutes(5), // Short lived
             authTokenHash,
             authorization.Id,

@@ -53,7 +53,7 @@ public class AccountController : BaseApiController
             return UnauthorizedResponse("User not identified");
         }
 
-        var user = await _userRepository.GetByIdAsync(_currentUser.UserId.Value, cancellationToken);
+        var user = await _userRepository.GetByIdAsync(_currentUser.UserId!.Value, cancellationToken);
         if (user == null)
         {
             return NotFoundResponse("User not found");
@@ -61,7 +61,7 @@ public class AccountController : BaseApiController
 
         return OkResponse(new ProfileResponse
         {
-            Id = user.Id,
+            Id = user.Id.Value,
             FullName = user.FullName,
             Email = user.Email,
             UserName = user.UserName,
@@ -136,7 +136,7 @@ public class AccountController : BaseApiController
 
         var sessions = tokens.Select(t => new SessionDto
         {
-            Id = t.Id,
+            Id = t.Id.Value,
             Device = t.Device ?? "Unknown Device",
             IpAddress = t.IpAddress,
             Location = t.Location,
@@ -287,7 +287,8 @@ public class AccountController : BaseApiController
             return UnauthorizedResponse("User not identified");
         }
 
-        var codes = await _backupCodeRepository.GetByUserIdAsync(_currentUser.UserId.Value, cancellationToken);
+        var codes = await _backupCodeRepository.GetByUserIdAsync(_currentUser.UserId.Value,
+            cancellationToken);
         var remaining = codes.Count(c => c.IsValid());
 
         return OkResponse(new RecoveryCodeStatusResponse(remaining, codes.Count));

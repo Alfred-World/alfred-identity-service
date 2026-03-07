@@ -7,17 +7,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class UserBanRepository : BaseRepository<UserBan>, IUserBanRepository
+public class UserBanRepository : BaseRepository<UserBan, UserBanId>, IUserBanRepository
 {
     private readonly IDbContext _context;
 
     public UserBanRepository(IDbContext context) : base(context)
-
     {
         _context = context;
     }
 
-    public async Task<List<UserBan>> GetHistoryByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<List<UserBan>> GetHistoryByUserIdAsync(UserId userId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Set<UserBan>()
             .Where(b => b.UserId == userId)

@@ -7,10 +7,15 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a user identity, aligned with AspNetUsers schema
 /// </summary>
-public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier,
+public sealed class User : BaseEntity<UserId>, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier,
     IHasDeletionTime,
     IHasDeleter
 {
+    private User()
+    {
+        Id = UserId.New();
+    }
+
     public string UserName { get; private set; } = null!;
     public string NormalizedUserName { get; private set; } = null!;
     public string Email { get; private set; } = null!;
@@ -61,7 +66,7 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         UserLogins.Add(UserLogin.Create(loginProvider, providerKey, displayName, Id));
     }
 
-    public void AddRole(Guid roleId, Guid? creatorId = null)
+    public void AddRole(RoleId roleId, Guid? creatorId = null)
     {
         if (UserRoles.Any(ur => ur.RoleId == roleId))
         {
@@ -71,7 +76,7 @@ public sealed class User : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         UserRoles.Add(UserRole.Create(Id, roleId, creatorId));
     }
 
-    public void RemoveRole(Guid roleId)
+    public void RemoveRole(RoleId roleId)
     {
         var role = UserRoles.FirstOrDefault(ur => ur.RoleId == roleId);
         if (role != null)

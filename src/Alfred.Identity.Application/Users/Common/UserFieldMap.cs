@@ -39,7 +39,7 @@ public class UserFieldMap : BaseFieldMap<User>
         // no explicit Include() needed when using DB-level projection.
         .Add("roles", u => u.UserRoles.Select(ur => new RoleDto
         {
-            Id = ur.Role.Id,
+            Id = ur.Role.Id.Value,
             Name = ur.Role.Name,
             Icon = ur.Role.Icon
         })).AllowAll()
@@ -47,7 +47,7 @@ public class UserFieldMap : BaseFieldMap<User>
         // Lightweight role projection — only id and name (for summary views)
         .Add("rolesSummary", u => u.UserRoles.Select(ur => new RoleDto
         {
-            Id = ur.Role.Id,
+            Id = ur.Role.Id.Value,
             Name = ur.Role.Name
         })).Selectable();
 

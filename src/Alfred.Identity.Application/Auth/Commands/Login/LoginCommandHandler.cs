@@ -78,7 +78,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
         else
         {
             // Direct API login (non-OIDC clients): generate and persist tokens.
-            accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName);
+            accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName);
             refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
 
             var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenValue);
@@ -115,7 +115,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             TokenType = "Bearer",
             User = new UserInfo
             {
-                Id = user.Id,
+                Id = user.Id.Value,
                 Email = user.Email,
                 UserName = user.UserName,
                 FullName = user.FullName

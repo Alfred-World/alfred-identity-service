@@ -7,24 +7,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class BackupCodeRepository : BaseRepository<BackupCode>, IBackupCodeRepository
+public class BackupCodeRepository : BaseRepository<BackupCode, BackupCodeId>, IBackupCodeRepository
 {
     public BackupCodeRepository(IDbContext dbContext) : base(dbContext)
     {
     }
 
-    public async Task<List<BackupCode>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<List<BackupCode>> GetByUserIdAsync(UserId userId, CancellationToken cancellationToken = default)
     {
         return await DbSet.Where(x => x.UserId == userId).ToListAsync(cancellationToken);
     }
 
-    public async Task DeleteByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task DeleteByUserIdAsync(UserId userId, CancellationToken cancellationToken = default)
     {
         var codes = await DbSet.Where(x => x.UserId == userId).ToListAsync(cancellationToken);
         DbSet.RemoveRange(codes);
     }
 
-    public async Task<BackupCode?> GetByCodeHashAsync(Guid userId, string codeHash,
+    public async Task<BackupCode?> GetByCodeHashAsync(UserId userId, string codeHash,
         CancellationToken cancellationToken = default)
     {
         return await DbSet.FirstOrDefaultAsync(x => x.UserId == userId && x.CodeHash == codeHash, cancellationToken);

@@ -126,7 +126,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         _tokenRepository.Update(authCodeToken);
 
         // 7. Generate Tokens
-        var userId = authCodeToken.UserId ?? Guid.Empty;
+        var userId = authCodeToken.UserId ?? UserId.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {
@@ -134,14 +134,15 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         var accessToken =
-            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id,
-                authCodeToken.AuthorizationId);
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName, client.Id.Value,
+                authCodeToken.AuthorizationId?.Value);
         var refreshTokenStr = _jwtTokenService.GenerateRefreshToken();
         var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenStr);
 
         var nonce = payload.TryGetProperty("nonce", out var n) ? n.GetString() : null;
         var idToken =
-            await _jwtTokenService.GenerateIdTokenAsync(user.Id, user.Email, user.FullName, request.ClientId, nonce);
+            await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName, request.ClientId,
+                nonce);
 
         // 8. Store Refresh Token
         var refreshToken = Token.Create(
@@ -256,7 +257,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         // 6. Generate New Tokens
-        var userId = tokenEntity.UserId ?? Guid.Empty;
+        var userId = tokenEntity.UserId ?? UserId.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {
@@ -264,8 +265,8 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         }
 
         var newAccessToken =
-            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName, client.Id,
-                tokenEntity.AuthorizationId);
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName, client.Id.Value,
+                tokenEntity.AuthorizationId?.Value);
 
         // Generate new Refresh Token (Rotation)
         var newRefreshTokenStr = _jwtTokenService.GenerateRefreshToken();
@@ -273,7 +274,7 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 
         // ID Token (optional for refresh flow, but good for updating claims)
         var newIdToken =
-            await _jwtTokenService.GenerateIdTokenAsync(user.Id, user.Email, user.FullName, client.ClientId);
+            await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName, client.ClientId);
 
         var newRefreshTokenEntity = Token.Create(
             OAuthConstants.TokenTypes.RefreshToken,

@@ -20,7 +20,7 @@ public record PermissionDto(
     public static PermissionDto FromEntity(Permission permission)
     {
         return new PermissionDto(
-            permission.Id,
+            permission.Id.Value,
             permission.Code,
             permission.Name,
             permission.Description,

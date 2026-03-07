@@ -34,7 +34,7 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
         await _userRepository.SaveChangesAsync(cancellationToken);
 
         return Result<UpdateProfileResult>.Success(new UpdateProfileResult(
-            user.Id,
+            user.Id.Value,
             user.FullName,
             user.PhoneNumber,
             user.Avatar,

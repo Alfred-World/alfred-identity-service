@@ -2,7 +2,7 @@ using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Domain.Abstractions.Repositories;
 
-public interface IUserLoginRepository : IRepository<UserLogin>
+public interface IUserLoginRepository : IRepository<UserLogin, UserLoginId>
 {
     Task<UserLogin?> GetByProviderAndKeyAsync(string provider, string key,
         CancellationToken cancellationToken = default);

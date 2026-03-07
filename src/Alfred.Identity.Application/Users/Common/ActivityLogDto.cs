@@ -13,7 +13,7 @@ public record ActivityLogDto(
     public static ActivityLogDto FromEntity(UserActivityLog log)
     {
         return new ActivityLogDto(
-            log.UserId,
+            log.UserId.Value,
             log.Action,
             log.Description,
             log.IpAddress,

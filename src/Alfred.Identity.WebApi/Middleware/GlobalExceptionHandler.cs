@@ -18,10 +18,12 @@ namespace Alfred.Identity.WebApi.Middleware;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IWebHostEnvironment environment)
     {
         _logger = logger;
+        _environment = environment;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -42,12 +44,19 @@ public class GlobalExceptionHandler : IExceptionHandler
             _ => HandleGenericException(exception)
         };
 
-        // Only log server errors (5xx), not client errors (4xx)
+        // Log errors based on environment
         if (statusCode >= 500)
         {
             _logger.LogError(exception,
                 "Server error: {ExceptionType} - {ExceptionMessage}",
                 exception.GetType().Name, exception.Message);
+        }
+        else if (_environment.IsDevelopment())
+        {
+            // In development, log client errors too for debugging
+            _logger.LogWarning(exception,
+                "Client error ({StatusCode}): {ExceptionType} - {ExceptionMessage}",
+                statusCode, exception.GetType().Name, exception.Message);
         }
         // Don't log FilterValidationException - it's just user input validation error
 
@@ -99,17 +108,38 @@ public class GlobalExceptionHandler : IExceptionHandler
             ApiErrorResponse.NotFound(ex.Message, "NOT_FOUND"));
     }
 
-    private static (int statusCode, ApiErrorResponse response) HandleInvalidOperationException(
+    private (int statusCode, ApiErrorResponse response) HandleInvalidOperationException(
         InvalidOperationException ex)
     {
+        var message = ex.Message;
+
+        // In development, include inner exception details
+        if (_environment.IsDevelopment() && ex.InnerException != null)
+        {
+            message += $" → {ex.InnerException.Message}";
+        }
+
         return (StatusCodes.Status400BadRequest,
-            ApiErrorResponse.BadRequest(ex.Message, "INVALID_OPERATION"));
+            ApiErrorResponse.BadRequest(message, "INVALID_OPERATION"));
     }
 
-    private static (int statusCode, ApiErrorResponse response) HandleArgumentException(ArgumentException ex)
+    private (int statusCode, ApiErrorResponse response) HandleArgumentException(ArgumentException ex)
     {
+        var message = ex.Message;
+
+        // In development, include parameter name and inner exception details
+        if (_environment.IsDevelopment() && !string.IsNullOrEmpty(ex.ParamName))
+        {
+            message = $"[{ex.ParamName}] {message}";
+
+            if (ex.InnerException != null)
+            {
+                message += $" → {ex.InnerException.Message}";
+            }
+        }
+
         return (StatusCodes.Status400BadRequest,
-            ApiErrorResponse.BadRequest(ex.Message, "INVALID_ARGUMENT"));
+            ApiErrorResponse.BadRequest(message, "INVALID_ARGUMENT"));
     }
 
     private static (int statusCode, ApiErrorResponse response) HandleGenericException(Exception ex)

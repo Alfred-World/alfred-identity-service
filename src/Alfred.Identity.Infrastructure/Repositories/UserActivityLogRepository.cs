@@ -7,18 +7,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class UserActivityLogRepository : BaseRepository<UserActivityLog>, IUserActivityLogRepository
+public class UserActivityLogRepository : BaseRepository<UserActivityLog, UserActivityLogId>, IUserActivityLogRepository
 {
     private readonly IDbContext _context;
 
     public UserActivityLogRepository(IDbContext context) : base(context)
-
     {
         _context = context;
     }
 
     public async Task<(List<UserActivityLog> Items, int TotalCount)> GetPagedAsync(
-        Guid userId,
+        UserId userId,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)

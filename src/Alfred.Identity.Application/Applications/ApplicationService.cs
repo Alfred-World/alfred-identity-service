@@ -44,7 +44,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task<ApplicationDto?> GetApplicationByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(id, ct);
+        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct);
         return app == null ? null : ApplicationDto.FromEntity(app);
     }
 
@@ -131,7 +131,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         string? permissions,
         CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(id, ct)
+        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         app.Update(
@@ -151,7 +151,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task DeleteApplicationAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(id, ct)
+        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         _applicationRepository.Delete(app);
@@ -160,7 +160,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task<bool> UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(id, ct);
+        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct);
         if (app == null)
         {
             return false;
@@ -173,7 +173,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(id, ct)
+        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         var secretBytes = RandomNumberGenerator.GetBytes(32);

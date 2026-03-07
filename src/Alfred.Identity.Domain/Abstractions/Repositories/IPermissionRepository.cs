@@ -5,7 +5,7 @@ namespace Alfred.Identity.Domain.Abstractions.Repositories;
 /// <summary>
 /// Repository interface for Permission entity
 /// </summary>
-public interface IPermissionRepository : IRepository<Permission>
+public interface IPermissionRepository : IRepository<Permission, PermissionId>
 {
     /// <summary>
     /// Get permission by its unique code

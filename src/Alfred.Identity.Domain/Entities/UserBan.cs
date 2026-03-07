@@ -3,9 +3,9 @@ using Alfred.Identity.Domain.Common.Interfaces;
 
 namespace Alfred.Identity.Domain.Entities;
 
-public sealed class UserBan : BaseEntity, IHasCreationTime, IHasCreator
+public sealed class UserBan : BaseEntity<UserBanId>, IHasCreationTime, IHasCreator
 {
-    public Guid UserId { get; private set; }
+    public UserId UserId { get; private set; }
     public string Reason { get; private set; } = null!;
     public DateTime BannedAt { get; private set; }
     public Guid? BannedById { get; private set; }
@@ -26,10 +26,11 @@ public sealed class UserBan : BaseEntity, IHasCreationTime, IHasCreator
 
     private UserBan()
     {
+        Id = UserBanId.New();
     }
 
     public static UserBan Create(
-        Guid userId,
+        UserId userId,
         string reason,
         Guid? bannedById,
         DateTime? expiresAt = null)

@@ -15,7 +15,7 @@ public record BanDto(
     public static BanDto FromEntity(UserBan ban)
     {
         return new BanDto(
-            ban.UserId,
+            ban.UserId.Value,
             ban.Reason,
             ban.BannedAt,
             ban.BannedById,

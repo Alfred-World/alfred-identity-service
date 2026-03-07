@@ -12,7 +12,7 @@ namespace Alfred.Identity.Infrastructure.Repositories;
 /// <summary>
 /// User repository implementation - inherits base repository functionality
 /// </summary>
-public class UserRepository : BaseRepository<User>, IUserRepository
+public class UserRepository : BaseRepository<User, UserId>, IUserRepository
 {
     public UserRepository(IDbContext context) : base(context)
     {
@@ -53,7 +53,7 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         return await GetByUsernameAsync(normalizedIdentity, cancellationToken);
     }
 
-    public async Task<User?> GetByIdWithRolesAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<User?> GetByIdWithRolesAsync(UserId id, CancellationToken cancellationToken = default)
     {
         return await DbSet
             .Include(u => u.UserRoles)

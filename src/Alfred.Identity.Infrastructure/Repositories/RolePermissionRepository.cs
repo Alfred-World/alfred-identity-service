@@ -18,7 +18,7 @@ public class RolePermissionRepository : IRolePermissionRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(Guid roleId,
+    public async Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(RoleId roleId,
         CancellationToken cancellationToken = default)
     {
         return await _context.Set<RolePermission>()
@@ -42,7 +42,7 @@ public class RolePermissionRepository : IRolePermissionRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(Guid permissionId,
+    public async Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(PermissionId permissionId,
         CancellationToken cancellationToken = default)
     {
         return await _context.Set<RolePermission>()
@@ -62,13 +62,14 @@ public class RolePermissionRepository : IRolePermissionRepository
         _context.Set<RolePermission>().Remove(rolePermission);
     }
 
-    public async Task<bool> ExistsAsync(Guid roleId, Guid permissionId, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(RoleId roleId, PermissionId permissionId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Set<RolePermission>()
             .AnyAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, cancellationToken);
     }
 
-    public async Task<RolePermission?> GetAsync(Guid roleId, Guid permissionId,
+    public async Task<RolePermission?> GetAsync(RoleId roleId, PermissionId permissionId,
         CancellationToken cancellationToken = default)
     {
         return await _context.Set<RolePermission>()

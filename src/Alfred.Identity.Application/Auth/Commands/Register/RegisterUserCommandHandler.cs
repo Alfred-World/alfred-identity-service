@@ -40,6 +40,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        return new RegisterUserResult(true, user.Id);
+        return new RegisterUserResult(true, user.Id.Value);
     }
 }

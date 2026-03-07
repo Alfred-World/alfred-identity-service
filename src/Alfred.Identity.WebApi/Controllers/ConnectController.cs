@@ -184,7 +184,7 @@ public class ConnectController : ControllerBase
         }
 
         // Get user from database
-        var user = await _userRepository.GetByIdAsync(_currentUser.UserId.Value);
+        var user = await _userRepository.GetByIdAsync(_currentUser.UserId!.Value, HttpContext.RequestAborted);
         if (user == null)
         {
             return NotFound(new { error = "user_not_found" });

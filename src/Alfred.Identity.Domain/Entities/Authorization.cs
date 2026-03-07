@@ -5,10 +5,10 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents an authorization, aligned with OpenIddictAuthorizations schema
 /// </summary>
-public sealed class Authorization : BaseEntity
+public sealed class Authorization : BaseEntity<AuthorizationId>
 {
-    public Guid ApplicationId { get; private set; }
-    public Guid UserId { get; private set; } // Subject
+    public ApplicationId ApplicationId { get; private set; }
+    public UserId UserId { get; private set; } // Subject
     public string? Subject { get; private set; } // String representation of UserId if needed, or strictly UserId
 
     public string Status { get; private set; } = "Valid"; // Valid/Revoked/Inactive
@@ -24,9 +24,11 @@ public sealed class Authorization : BaseEntity
 
     private Authorization()
     {
+        Id = AuthorizationId.New();
     }
 
-    public static Authorization Create(Guid applicationId, Guid userId, string scopes, string type = "Permanent")
+    public static Authorization Create(ApplicationId applicationId, UserId userId, string scopes,
+        string type = "Permanent")
     {
         return new Authorization
         {

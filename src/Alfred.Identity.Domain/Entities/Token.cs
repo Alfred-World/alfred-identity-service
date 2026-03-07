@@ -6,14 +6,14 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents a token (RefreshToken, AccessToken reference, AuthorizationCode), aligned with OpenIddictTokens schema
 /// </summary>
-public sealed class Token : BaseEntity
+public sealed class Token : BaseEntity<TokenId>
 {
-    public Guid? ApplicationId { get; private set; }
-    public Guid? AuthorizationId { get; private set; }
+    public ApplicationId? ApplicationId { get; private set; }
+    public AuthorizationId? AuthorizationId { get; private set; }
 
     // User/Subject
     public string? Subject { get; private set; }
-    public Guid? UserId { get; private set; }
+    public UserId? UserId { get; private set; }
 
     public string Type { get; private set; } = null!; // access_token, refresh_token, authorization_code
     public string? ReferenceId { get; private set; } // The actual token string/hash/id used for lookup
@@ -38,16 +38,17 @@ public sealed class Token : BaseEntity
 
     private Token()
     {
+        Id = TokenId.New();
     }
 
     public static Token Create(
         string type,
-        Guid? applicationId,
+        ApplicationId? applicationId,
         string subject,
-        Guid? userId,
+        UserId? userId,
         DateTime? expirationDate,
         string? referenceId = null,
-        Guid? authorizationId = null,
+        AuthorizationId? authorizationId = null,
         string? payload = null,
         string? properties = null,
         string? ipAddress = null,

@@ -103,7 +103,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         if (permissions != null)
         {
-            role.SyncPermissions(permissions.ToList(), _currentUser.UserId);
+            role.SyncPermissions(permissions.Select(p => (PermissionId)p), _currentUser.UserId);
         }
 
         await _roleRepository.UpdateAsync(role, cancellationToken);
@@ -154,18 +154,18 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException("Cannot modify immutable role.");
         }
 
-        var uniqueIds = permissionIds.Distinct().ToList();
+        var typedIds = permissionIds.Select(id => (PermissionId)id).Distinct().ToList();
         var valid =
-            await _permissionRepository.FindAsync(p => uniqueIds.Contains(p.Id), cancellationToken);
+            await _permissionRepository.FindAsync(p => typedIds.Contains(p.Id), cancellationToken);
         var validIds = valid.Select(p => p.Id).ToHashSet();
-        var invalid = uniqueIds.Where(id => !validIds.Contains(id)).ToList();
+        var invalid = typedIds.Where(id => !validIds.Contains(id)).ToList();
 
         if (invalid.Count > 0)
         {
             throw new InvalidOperationException($"Permissions not found: {string.Join(", ", invalid)}");
         }
 
-        role.SyncPermissions(uniqueIds, _currentUser.UserId);
+        role.SyncPermissions(typedIds, _currentUser.UserId);
 
         await _roleRepository.UpdateAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
@@ -188,9 +188,10 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException("Cannot modify immutable role.");
         }
 
+        var removeIds = permissionIds.Select(id => (PermissionId)id).ToHashSet();
         var keepIds = role.RolePermissions
             .Select(rp => rp.PermissionId)
-            .Except(permissionIds)
+            .Where(id => !removeIds.Contains(id))
             .ToList();
 
         role.SyncPermissions(keepIds, _currentUser.UserId);

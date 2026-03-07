@@ -2,9 +2,9 @@ using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Domain.Abstractions.Repositories;
 
-public interface IBackupCodeRepository : IRepository<BackupCode>
+public interface IBackupCodeRepository : IRepository<BackupCode, BackupCodeId>
 {
-    Task<List<BackupCode>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task DeleteByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task<BackupCode?> GetByCodeHashAsync(Guid userId, string codeHash, CancellationToken cancellationToken = default);
+    Task<List<BackupCode>> GetByUserIdAsync(UserId userId, CancellationToken cancellationToken = default);
+    Task DeleteByUserIdAsync(UserId userId, CancellationToken cancellationToken = default);
+    Task<BackupCode?> GetByCodeHashAsync(UserId userId, string codeHash, CancellationToken cancellationToken = default);
 }

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
+public sealed class TokenRepository : BaseRepository<Token, TokenId>, ITokenRepository
 {
     public TokenRepository(IDbContext context) : base(context)
     {
@@ -21,7 +21,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
             .FirstOrDefaultAsync(t => t.ReferenceId == referenceId, cancellationToken);
     }
 
-    public async Task<Token?> GetByAuthorizationIdAsync(Guid authorizationId, string type,
+    public async Task<Token?> GetByAuthorizationIdAsync(AuthorizationId authorizationId, string type,
         CancellationToken cancellationToken = default)
     {
         return await DbSet.AsNoTracking()
@@ -29,14 +29,14 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
                 cancellationToken);
     }
 
-    public async Task RevokeAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task RevokeAllByUserIdAsync(UserId userId, CancellationToken cancellationToken = default)
     {
         await DbSet
             .Where(t => t.UserId == userId && t.Status == TokenStatus.Valid)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, TokenStatus.Revoked), cancellationToken);
     }
 
-    public async Task RevokeAllByAuthorizationIdAsync(Guid authorizationId,
+    public async Task RevokeAllByAuthorizationIdAsync(AuthorizationId authorizationId,
         CancellationToken cancellationToken = default)
     {
         await DbSet
@@ -52,7 +52,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
     ///   - Expired tokens (ExpirationDate in the past)
     ///   - Orphaned SSO tokens (ApplicationId=NULL) that are no longer valid
     /// </summary>
-    public async Task DeleteExpiredAndRedeemedByUserAsync(Guid userId,
+    public async Task DeleteExpiredAndRedeemedByUserAsync(UserId userId,
         CancellationToken cancellationToken = default)
     {
         var cutoff = DateTime.UtcNow;
@@ -64,7 +64,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
             .ExecuteDeleteAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Token>> GetActiveSessionsByUserIdAsync(Guid userId,
+    public async Task<IReadOnlyList<Token>> GetActiveSessionsByUserIdAsync(UserId userId,
         CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
@@ -79,7 +79,8 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Token>> GetAllValidRefreshTokensByAuthorizationIdAsync(Guid authorizationId,
+    public async Task<IReadOnlyList<Token>> GetAllValidRefreshTokensByAuthorizationIdAsync(
+        AuthorizationId authorizationId,
         CancellationToken cancellationToken = default)
     {
         return await DbSet
@@ -90,7 +91,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
     }
 
     /// <inheritdoc />
-    public async Task<Token?> GetLatestValidRefreshTokenByAuthorizationIdAsync(Guid authorizationId,
+    public async Task<Token?> GetLatestValidRefreshTokenByAuthorizationIdAsync(AuthorizationId authorizationId,
         DateTime createdAfter,
         CancellationToken cancellationToken = default)
     {
@@ -104,7 +105,7 @@ public sealed class TokenRepository : BaseRepository<Token>, ITokenRepository
     }
 
     /// <inheritdoc />
-    public async Task<int> RedeemByIdAsync(Guid tokenId, CancellationToken cancellationToken = default)
+    public async Task<int> RedeemByIdAsync(TokenId tokenId, CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         return await DbSet

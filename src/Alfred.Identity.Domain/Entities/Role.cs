@@ -8,7 +8,7 @@ namespace Alfred.Identity.Domain.Entities;
 /// Protection is based on Owner ID hardcode + IsImmutable flag.
 /// Owner role is marked as IsImmutable=true and cannot be modified/assigned.
 /// </summary>
-public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier,
+public sealed class Role : BaseEntity<RoleId>, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier,
     IHasDeletionTime,
     IHasDeleter
 {
@@ -53,7 +53,7 @@ public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void AddPermission(Guid permissionId, Guid? creatorId = null)
+    public void AddPermission(PermissionId permissionId, Guid? creatorId = null)
     {
         if (RolePermissions.Any(rp => rp.PermissionId == permissionId))
         {
@@ -63,7 +63,7 @@ public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         RolePermissions.Add(RolePermission.Create(Id, permissionId, creatorId));
     }
 
-    public void RemovePermission(Guid permissionId)
+    public void RemovePermission(PermissionId permissionId)
     {
         var permission = RolePermissions.FirstOrDefault(rp => rp.PermissionId == permissionId);
         if (permission != null)
@@ -72,10 +72,10 @@ public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
         }
     }
 
-    public void SyncPermissions(IEnumerable<Guid> permissionIds, Guid? creatorId = null)
+    public void SyncPermissions(IEnumerable<PermissionId> permissionIds, Guid? creatorId = null)
     {
-        var desiredIds = new HashSet<Guid>(permissionIds);
-        var currentIds = new HashSet<Guid>(RolePermissions.Select(rp => rp.PermissionId));
+        var desiredIds = new HashSet<PermissionId>(permissionIds);
+        var currentIds = new HashSet<PermissionId>(RolePermissions.Select(rp => rp.PermissionId));
 
         // Identify permissions to add
         var toAdd = desiredIds.Except(currentIds);
@@ -94,6 +94,7 @@ public sealed class Role : BaseEntity, IHasCreationTime, IHasCreator, IHasModifi
 
     private Role()
     {
+        Id = RoleId.New();
     }
 
     public static Role Create(string name, string? icon = null, bool isImmutable = false, bool isSystem = false,

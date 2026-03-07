@@ -31,7 +31,7 @@ public class RoleDto
     {
         return new RoleDto
         {
-            Id = role.Id,
+            Id = role.Id.Value,
             Name = role.Name,
             NormalizedName = role.NormalizedName,
             IsImmutable = role.IsImmutable,

@@ -8,8 +8,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// </summary>
 public sealed class RolePermission : IHasCreationTime, IHasCreator
 {
-    public Guid RoleId { get; private set; }
-    public Guid PermissionId { get; private set; }
+    public RoleId RoleId { get; private set; }
+    public PermissionId PermissionId { get; private set; }
 
     /// <summary>
     /// Navigation property to the Role
@@ -31,7 +31,7 @@ public sealed class RolePermission : IHasCreationTime, IHasCreator
     /// <summary>
     /// Creates a new role-permission mapping
     /// </summary>
-    public static RolePermission Create(Guid roleId, Guid permissionId, Guid? createdById = null)
+    public static RolePermission Create(RoleId roleId, PermissionId permissionId, Guid? createdById = null)
     {
         return new RolePermission
         {

@@ -53,7 +53,7 @@ public sealed class UserService : BaseEntityService, IUserService
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == id, ct);
+            .FirstOrDefaultAsync(u => u.Id == (UserId)id, ct);
 
         return user == null ? null : UserDto.FromEntity(user);
     }
@@ -64,7 +64,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     public async Task AssignRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByIdWithRolesAsync(userId, ct)
+        var user = await _userRepository.GetByIdWithRolesAsync(_currentUser.UserId!.Value, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
@@ -81,7 +81,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     public async Task RevokeRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByIdWithRolesAsync(userId, ct)
+        var user = await _userRepository.GetByIdWithRolesAsync(_currentUser.UserId!.Value, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)

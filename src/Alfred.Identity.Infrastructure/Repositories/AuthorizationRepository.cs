@@ -7,16 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class AuthorizationRepository : BaseRepository<Authorization>, IAuthorizationRepository
+public class AuthorizationRepository : BaseRepository<Authorization, AuthorizationId>, IAuthorizationRepository
 {
     public AuthorizationRepository(IDbContext context) : base(context)
     {
     }
 
-    public async Task<Authorization?> GetValidAsync(Guid applicationId, Guid userId, string scopes,
+    public async Task<Authorization?> GetValidAsync(ApplicationId applicationId, UserId userId, string scopes,
         CancellationToken cancellationToken = default)
     {
-        // Simple exact match or subset logic? For now assume exact string match or simplified
         return await DbSet
             .FirstOrDefaultAsync(a =>
                     a.ApplicationId == applicationId &&

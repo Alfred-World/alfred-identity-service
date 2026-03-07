@@ -9,13 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class RoleRepository : BaseRepository<Role>, IRoleRepository
+public class RoleRepository : BaseRepository<Role, RoleId>, IRoleRepository
 {
     public RoleRepository(IDbContext context) : base(context)
     {
     }
 
-    public override async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public override async Task<Role?> GetByIdAsync(RoleId id, CancellationToken cancellationToken = default)
     {
         return await DbSet
             .Include(r => r.RolePermissions)

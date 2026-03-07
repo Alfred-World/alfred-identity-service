@@ -26,7 +26,7 @@ public class RevokeSessionCommandHandler : IRequestHandler<RevokeSessionCommand,
 
     public async Task<Result<object>> Handle(RevokeSessionCommand request, CancellationToken cancellationToken)
     {
-        var token = await _tokenRepository.GetByIdAsync(request.TokenId, cancellationToken);
+        var token = await _tokenRepository.GetByIdAsync(new TokenId(request.TokenId), cancellationToken);
 
         if (token == null)
         {
@@ -34,7 +34,7 @@ public class RevokeSessionCommandHandler : IRequestHandler<RevokeSessionCommand,
         }
 
         // Ensure the token belongs to this user
-        if (token.UserId != request.UserId)
+        if (token.UserId != new UserId(request.UserId))
         {
             return Result<object>.Failure("SessionNotFound");
         }

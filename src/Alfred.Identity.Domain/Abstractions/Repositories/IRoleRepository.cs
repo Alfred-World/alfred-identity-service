@@ -4,7 +4,7 @@ using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Domain.Abstractions.Repositories;
 
-public interface IRoleRepository : IRepository<Role>
+public interface IRoleRepository : IRepository<Role, RoleId>
 {
     Task<Role?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
     Task UpdateAsync(Role role, CancellationToken cancellationToken = default);

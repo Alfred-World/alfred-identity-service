@@ -101,8 +101,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         // Generate new tokens
         var accessToken =
-            await _jwtTokenService.GenerateAccessTokenAsync(user.Id, user.Email, user.FullName,
-                storedToken.ApplicationId, storedToken.AuthorizationId);
+            await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName,
+                storedToken.ApplicationId?.Value, storedToken.AuthorizationId?.Value);
         var newRefreshTokenValue = _jwtTokenService.GenerateRefreshToken();
         var jwtId = _jwtTokenService.GetJwtIdFromToken(accessToken);
 

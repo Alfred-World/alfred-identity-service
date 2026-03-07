@@ -10,7 +10,7 @@ namespace Alfred.Identity.Infrastructure.Repositories;
 /// <summary>
 /// Permission repository implementation
 /// </summary>
-public class PermissionRepository : BaseRepository<Permission>, IPermissionRepository
+public class PermissionRepository : BaseRepository<Permission, PermissionId>, IPermissionRepository
 {
     public PermissionRepository(IDbContext context) : base(context)
     {

@@ -6,7 +6,8 @@ namespace Alfred.Identity.Domain.Entities;
 /// <summary>
 /// Represents an OAuth2 application, aligned with OpenIddictApplications schema
 /// </summary>
-public sealed class Application : BaseEntity, IHasCreationTime, IHasCreator, IHasModificationTime, IHasModifier
+public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, IHasCreator, IHasModificationTime,
+    IHasModifier
 {
     public string ClientId { get; private set; } = null!;
     public string? ClientSecret { get; private set; } // Hashed
@@ -34,6 +35,7 @@ public sealed class Application : BaseEntity, IHasCreationTime, IHasCreator, IHa
 
     private Application()
     {
+        Id = ApplicationId.New();
     }
 
     public static Application Create(

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-public class UserLoginRepository : BaseRepository<UserLogin>, IUserLoginRepository
+public class UserLoginRepository : BaseRepository<UserLogin, UserLoginId>, IUserLoginRepository
 {
     public UserLoginRepository(IDbContext context) : base(context)
     {
