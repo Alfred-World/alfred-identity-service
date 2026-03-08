@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using System.Web;
 
 using Alfred.Identity.Application.Auth.Commands.ForgotPassword;
@@ -11,6 +10,7 @@ using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Extensions;
 
 using MediatR;
 
@@ -389,17 +389,14 @@ public class AuthController : BaseApiController
                 var app = await _applicationRepository.GetByClientIdAsync(clientId);
                 if (app is { IsActive: true })
                 {
-                    // Client is registered and active, allow the redirect
                     return returnUrl;
                 }
             }
 
-            // If can't validate client, still allow /connect/authorize (it will fail there if invalid)
             return returnUrl;
         }
 
         // Allow URLs whose origin matches a known application URL from config
-        // This covers exchange-token → returnUrl redirects back to SSO/Core frontends
         if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri))
         {
             var knownOrigins = new[]
@@ -429,25 +426,19 @@ public class AuthController : BaseApiController
             }
         }
 
-        // Not allowed - redirect to SSO login with error instead of silent gateway root
         var ssoUrl = _appConfig.SsoWebUrl;
         return
             $"{ssoUrl}/login?error=invalid_redirect&error_description={Uri.EscapeDataString($"Redirect URL not allowed: {returnUrl}")}";
     }
 
-    /// <summary>
-    /// Check if the redirect URI is allowed based on registered applications
-    /// </summary>
     private async Task<bool> IsRedirectUriAllowedAsync(string redirectUri)
     {
-        // Query applications to find one that allows this redirect URI
-        // This is a simplified check - in production you might want to cache this
         var applications = await _applicationRepository.GetAllAsync();
 
         foreach (var app in applications.Where(a => a.IsActive))
         {
-            var allowedUris = ParseUriList(app.RedirectUris);
-            if (allowedUris.Any(allowed => UriMatches(redirectUri, allowed)))
+            var allowedUris = UriHelper.ParseUriList(app.RedirectUris);
+            if (allowedUris.Any(allowed => UriHelper.UriMatches(redirectUri, allowed)))
             {
                 return true;
             }
@@ -456,57 +447,6 @@ public class AuthController : BaseApiController
         return false;
     }
 
-    /// <summary>
-    /// Parse URI list from JSON array or space-delimited string
-    /// </summary>
-    private static List<string> ParseUriList(string? uriString)
-    {
-        if (string.IsNullOrEmpty(uriString))
-        {
-            return new List<string>();
-        }
-
-        // Try JSON array first
-        if (uriString.TrimStart().StartsWith("["))
-        {
-            try
-            {
-                return JsonSerializer.Deserialize<List<string>>(uriString) ?? new List<string>();
-            }
-            catch
-            {
-                // Fall through to space-delimited
-            }
-        }
-
-        // Space-delimited
-        return uriString.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
-    }
-
-    /// <summary>
-    /// Check if a URI matches an allowed pattern
-    /// </summary>
-    private static bool UriMatches(string uri, string allowedPattern)
-    {
-        // Exact match
-        if (string.Equals(uri, allowedPattern, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        // Check if URIs have the same host
-        if (Uri.TryCreate(uri, UriKind.Absolute, out var uriParsed) &&
-            Uri.TryCreate(allowedPattern, UriKind.Absolute, out var allowedParsed))
-        {
-            return string.Equals(uriParsed.Host, allowedParsed.Host, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Extract client_id from a URL query string
-    /// </summary>
     private static string? ExtractClientIdFromUrl(string url)
     {
         try

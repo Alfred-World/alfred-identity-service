@@ -19,7 +19,8 @@ public sealed class RoleService : BaseEntityService, IRoleService
         IRoleRepository roleRepository,
         IPermissionRepository permissionRepository,
         ICurrentUser currentUser,
-        IFilterParser filterParser) : base(filterParser)
+        IFilterParser filterParser,
+        IAsyncQueryExecutor executor) : base(filterParser, executor)
     {
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
@@ -106,7 +107,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
             role.SyncPermissions(permissions.Select(p => (PermissionId)p), _currentUser.UserId);
         }
 
-        await _roleRepository.UpdateAsync(role, cancellationToken);
+        _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
@@ -134,7 +135,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         var dto = RoleDto.FromEntity(role);
         role.DeletedById = _currentUser.UserId;
 
-        await _roleRepository.DeleteAsync(role, cancellationToken);
+        _roleRepository.Delete(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
         return dto;
@@ -167,7 +168,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         role.SyncPermissions(typedIds, _currentUser.UserId);
 
-        await _roleRepository.UpdateAsync(role, cancellationToken);
+        _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
@@ -196,7 +197,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         role.SyncPermissions(keepIds, _currentUser.UserId);
 
-        await _roleRepository.UpdateAsync(role, cancellationToken);
+        _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);

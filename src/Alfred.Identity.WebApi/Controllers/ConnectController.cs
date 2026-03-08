@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 
 using Alfred.Identity.Application.Auth.Commands.Authorize;
 using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
@@ -8,6 +7,7 @@ using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Connect;
+using Alfred.Identity.WebApi.Extensions;
 
 using MediatR;
 
@@ -23,7 +23,7 @@ namespace Alfred.Identity.WebApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("connect")]
-public class ConnectController : ControllerBase
+public class ConnectController : BaseApiController
 {
     private readonly IMediator _mediator;
     private readonly ICurrentUser _currentUser;
@@ -92,7 +92,7 @@ public class ConnectController : ControllerBase
         }
 
         var ipAddress = GetClientIpAddress();
-        var device = TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
+        var device = UriHelper.TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
 
         var command = new AuthorizeCommand(
             request.client_id,
@@ -134,7 +134,7 @@ public class ConnectController : ControllerBase
     public async Task<IActionResult> Token([FromForm] ExchangeCodeRequest request)
     {
         var ipAddress = GetClientIpAddress();
-        var device = TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
+        var device = UriHelper.TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
 
         var command = new ExchangeCodeCommand(
             request.grant_type,
@@ -264,61 +264,15 @@ public class ConnectController : ControllerBase
 
     #region Private Methods
 
-    /// <summary>
-    /// Extract the real client IP address, respecting proxy/CDN headers.
-    /// </summary>
-    private string GetClientIpAddress()
-    {
-        var cfIp = Request.Headers["CF-Connecting-IP"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(cfIp))
-        {
-            return cfIp;
-        }
-
-        var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            var first = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-            if (!string.IsNullOrEmpty(first))
-            {
-                return first;
-            }
-        }
-
-        var realIp = Request.Headers["X-Real-IP"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(realIp))
-        {
-            return realIp;
-        }
-
-        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-    }
-
-    /// <summary>
-    /// Truncate User-Agent string to the column max length (256).
-    /// </summary>
-    private static string? TruncateDevice(string? userAgent)
-    {
-        return string.IsNullOrEmpty(userAgent) ? null
-            : userAgent.Length <= 256 ? userAgent
-            : userAgent[..256];
-    }
-
-    /// <summary>
-    /// Validate post_logout_redirect_uri against registered PostLogoutRedirectUris for the client
-    /// </summary>
     private async Task<bool> ValidatePostLogoutRedirectUriAsync(string? clientId, string postLogoutRedirectUri)
     {
-        // Strip query params from the URI for matching
-        // This allows /login?logout=true to match the registered /login
         var uriWithoutQuery = postLogoutRedirectUri;
         var queryIndex = postLogoutRedirectUri.IndexOf('?');
         if (queryIndex > 0)
         {
-            uriWithoutQuery = postLogoutRedirectUri.Substring(0, queryIndex);
+            uriWithoutQuery = postLogoutRedirectUri[..queryIndex];
         }
 
-        // If client_id provided, validate against that specific client
         if (!string.IsNullOrEmpty(clientId))
         {
             var app = await _applicationRepository.GetByClientIdAsync(clientId);
@@ -327,17 +281,16 @@ public class ConnectController : ControllerBase
                 return false;
             }
 
-            var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
+            var allowedUris = UriHelper.ParseUriList(app.PostLogoutRedirectUris);
             return allowedUris.Any(uri =>
                 string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(uri, uriWithoutQuery, StringComparison.OrdinalIgnoreCase));
         }
 
-        // If no client_id, check all active applications
         var applications = await _applicationRepository.GetAllAsync();
         foreach (var app in applications.Where(a => a.IsActive))
         {
-            var allowedUris = ParseUriList(app.PostLogoutRedirectUris);
+            var allowedUris = UriHelper.ParseUriList(app.PostLogoutRedirectUris);
             if (allowedUris.Any(uri =>
                     string.Equals(uri, postLogoutRedirectUri, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(uri, uriWithoutQuery, StringComparison.OrdinalIgnoreCase)))
@@ -347,31 +300,6 @@ public class ConnectController : ControllerBase
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Parse URI list from JSON array or space-delimited string
-    /// </summary>
-    private static List<string> ParseUriList(string? uriString)
-    {
-        if (string.IsNullOrEmpty(uriString))
-        {
-            return new List<string>();
-        }
-
-        if (uriString.TrimStart().StartsWith("["))
-        {
-            try
-            {
-                return JsonSerializer.Deserialize<List<string>>(uriString) ?? new List<string>();
-            }
-            catch
-            {
-                // Fall through to space-delimited
-            }
-        }
-
-        return uriString.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
     }
 
     #endregion

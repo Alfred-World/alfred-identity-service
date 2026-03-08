@@ -6,8 +6,6 @@ using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 
-using Microsoft.EntityFrameworkCore;
-
 namespace Alfred.Identity.Application.Users;
 
 public sealed class UserService : BaseEntityService, IUserService
@@ -28,7 +26,8 @@ public sealed class UserService : BaseEntityService, IUserService
         IUserActivityLogger activityLogger,
         ICurrentUser currentUser,
         IFilterParser filterParser,
-        IPasswordHasher passwordHasher) : base(filterParser)
+        IPasswordHasher passwordHasher,
+        IAsyncQueryExecutor executor) : base(filterParser, executor)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
@@ -49,12 +48,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     public async Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetQueryable()
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == (UserId)id, ct);
-
+        var user = await _userRepository.GetByIdWithRolesAsync((UserId)id, ct);
         return user == null ? null : UserDto.FromEntity(user);
     }
 
@@ -64,7 +58,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     public async Task AssignRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByIdWithRolesAsync(_currentUser.UserId!.Value, ct)
+        var user = await _userRepository.GetByIdWithRolesAsync((UserId)userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
@@ -81,7 +75,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     public async Task RevokeRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByIdWithRolesAsync(_currentUser.UserId!.Value, ct)
+        var user = await _userRepository.GetByIdWithRolesAsync((UserId)userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)

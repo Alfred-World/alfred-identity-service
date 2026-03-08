@@ -6,9 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Alfred.Identity.Infrastructure.Repositories;
 
-/// <summary>
-/// RolePermission repository implementation for managing role-permission mappings
-/// </summary>
 public class RolePermissionRepository : IRolePermissionRepository
 {
     private readonly IDbContext _context;
@@ -16,17 +13,6 @@ public class RolePermissionRepository : IRolePermissionRepository
     public RolePermissionRepository(IDbContext context)
     {
         _context = context;
-    }
-
-    public async Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(RoleId roleId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.Set<RolePermission>()
-            .Where(rp => rp.RoleId == roleId)
-            .Include(rp => rp.Permission)
-            .Select(rp => rp.Permission)
-            .Where(p => p.IsActive)
-            .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<Permission>> GetPermissionsByRoleNameAsync(string roleName,
@@ -40,44 +26,5 @@ public class RolePermissionRepository : IRolePermissionRepository
             .Select(rp => rp.Permission)
             .Where(p => p.IsActive)
             .ToListAsync(cancellationToken);
-    }
-
-    public async Task<IEnumerable<Role>> GetRolesByPermissionIdAsync(PermissionId permissionId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.Set<RolePermission>()
-            .Where(rp => rp.PermissionId == permissionId)
-            .Include(rp => rp.Role)
-            .Select(rp => rp.Role)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task AddAsync(RolePermission rolePermission, CancellationToken cancellationToken = default)
-    {
-        await _context.Set<RolePermission>().AddAsync(rolePermission, cancellationToken);
-    }
-
-    public void Remove(RolePermission rolePermission)
-    {
-        _context.Set<RolePermission>().Remove(rolePermission);
-    }
-
-    public async Task<bool> ExistsAsync(RoleId roleId, PermissionId permissionId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.Set<RolePermission>()
-            .AnyAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, cancellationToken);
-    }
-
-    public async Task<RolePermission?> GetAsync(RoleId roleId, PermissionId permissionId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.Set<RolePermission>()
-            .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, cancellationToken);
-    }
-
-    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -7,6 +7,7 @@ using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Identity;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
+using Alfred.Identity.Infrastructure.Persistence;
 using Alfred.Identity.Infrastructure.Providers.Cache;
 using Alfred.Identity.Infrastructure.Providers.Cache.HealthChecks;
 using Alfred.Identity.Infrastructure.Providers.PostgreSQL;
@@ -49,6 +50,9 @@ public static class ServiceCollectionExtensions
     {
         // Current User Service (requires IHttpContextAccessor to be registered in WebApi layer)
         services.AddScoped<ICurrentUser, CurrentUserService>();
+
+        // Query Executor — keeps EF materialisation methods out of the Application layer
+        services.AddScoped<IAsyncQueryExecutor, EfQueryExecutor>();
 
         // Activity Logging
         services.AddScoped<IUserActivityLogger, UserActivityLogger>();

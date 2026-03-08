@@ -9,8 +9,6 @@ using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Common.Base;
 
-using Microsoft.EntityFrameworkCore;
-
 namespace Alfred.Identity.Application.Common;
 
 /// <summary>
@@ -20,10 +18,12 @@ namespace Alfred.Identity.Application.Common;
 public abstract class BaseEntityService
 {
     private readonly IFilterParser _filterParser;
+    protected readonly IAsyncQueryExecutor _executor;
 
-    protected BaseEntityService(IFilterParser filterParser)
+    protected BaseEntityService(IFilterParser filterParser, IAsyncQueryExecutor executor)
     {
         _filterParser = filterParser;
+        _executor = executor;
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public abstract class BaseEntityService
             fieldSelector,
             cancellationToken);
 
-        var entities = await dbQuery.AsNoTracking().ToListAsync(cancellationToken);
+        var entities = await _executor.ToListAsync(_executor.AsNoTracking(dbQuery), cancellationToken);
         var items = entities.Select(mapper).ToList();
 
         return new PageResult<TDto>(items, page, pageSize, total);
@@ -229,14 +229,14 @@ public abstract class BaseEntityService
         if (view != null)
         {
             // DB-level projection — only SELECT the fields defined in the view
-            var projected = ProjectionBinder.ApplyProjection(dbQuery.AsNoTracking(), view, fields);
-            var items = await projected.ToListAsync(cancellationToken);
+            var projected = ProjectionBinder.ApplyProjection(_executor.AsNoTracking(dbQuery), view, fields);
+            var items = await _executor.ToListAsync(projected, cancellationToken);
             return new PageResult<TDto>(items, page, pageSize, total);
         }
         else
         {
             // In-memory mapping — full entity load
-            var entities = await dbQuery.AsNoTracking().ToListAsync(cancellationToken);
+            var entities = await _executor.ToListAsync(_executor.AsNoTracking(dbQuery), cancellationToken);
             var items = entities.Select(fallbackMapper).ToList();
             return new PageResult<TDto>(items, page, pageSize, total);
         }

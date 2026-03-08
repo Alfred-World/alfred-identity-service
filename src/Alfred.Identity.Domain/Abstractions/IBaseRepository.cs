@@ -18,6 +18,15 @@ public interface IReadRepository<T> where T : class
         throw new NotImplementedException(
             "GetQueryable not implemented for this repository. Override in derived class if needed.");
     }
+
+    /// <summary>
+    /// Get IQueryable with eager-loaded navigation properties applied (Include chains are
+    /// handled in the Infrastructure layer so the Application layer stays EF-free).
+    /// </summary>
+    IQueryable<T> GetQueryable(Expression<Func<T, object>>[]? includes)
+    {
+        return GetQueryable();
+    }
 }
 
 /// <summary>

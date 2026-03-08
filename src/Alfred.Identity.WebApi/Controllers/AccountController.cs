@@ -6,6 +6,7 @@ using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Account;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Filters;
 
 using MediatR;
 
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Alfred.Identity.WebApi.Controllers;
 
 [Authorize]
+[RequireAuthenticatedUser]
 [ApiController]
 [Route("identity/account")]
 [Produces("application/json")]
@@ -48,11 +50,6 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
         var user = await _userRepository.GetByIdAsync(_currentUser.UserId!.Value, cancellationToken);
         if (user == null)
         {
@@ -82,13 +79,8 @@ public class AccountController : BaseApiController
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request,
         CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
         var command = new UpdateProfileCommand(
-            _currentUser.UserId.Value,
+            _currentUser.UserId!.Value,
             request.FullName,
             request.PhoneNumber,
             request.Avatar
@@ -124,13 +116,8 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetSessions(CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
         var tokens = await _tokenRepository.GetActiveSessionsByUserIdAsync(
-            _currentUser.UserId.Value, cancellationToken);
+            _currentUser.UserId!.Value, cancellationToken);
 
         var currentUserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 
@@ -157,12 +144,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RevokeSession([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new RevokeSessionCommand(_currentUser.UserId.Value, id);
+        var command = new RevokeSessionCommand(_currentUser.UserId!.Value, id);
         var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailure)
@@ -182,12 +164,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new ChangePasswordCommand(_currentUser.UserId.Value, request.OldPassword, request.NewPassword);
+        var command = new ChangePasswordCommand(_currentUser.UserId!.Value, request.OldPassword, request.NewPassword);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -208,12 +185,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> InitiateEnableTwoFactor()
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new InitiateEnableTwoFactorCommand(_currentUser.UserId.Value, _currentUser.Email ?? "");
+        var command = new InitiateEnableTwoFactorCommand(_currentUser.UserId!.Value, _currentUser.Email ?? "");
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -233,12 +205,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ConfirmEnableTwoFactor([FromBody] ConfirmTwoFactorRequest request)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new ConfirmEnableTwoFactorCommand(_currentUser.UserId.Value, request.Code);
+        var command = new ConfirmEnableTwoFactorCommand(_currentUser.UserId!.Value, request.Code);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -258,12 +225,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DisableTwoFactor()
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new DisableTwoFactorCommand(_currentUser.UserId.Value);
+        var command = new DisableTwoFactorCommand(_currentUser.UserId!.Value);
         var result = await _mediator.Send(command);
 
         if (result.IsFailure)
@@ -282,12 +244,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetRecoveryCodes(CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var codes = await _backupCodeRepository.GetByUserIdAsync(_currentUser.UserId.Value,
+        var codes = await _backupCodeRepository.GetByUserIdAsync(_currentUser.UserId!.Value,
             cancellationToken);
         var remaining = codes.Count(c => c.IsValid());
 
@@ -303,12 +260,7 @@ public class AccountController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RegenerateRecoveryCodes(CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId == null)
-        {
-            return UnauthorizedResponse("User not identified");
-        }
-
-        var command = new RegenerateBackupCodesCommand(_currentUser.UserId.Value);
+        var command = new RegenerateBackupCodesCommand(_currentUser.UserId!.Value);
         var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailure)

@@ -67,6 +67,20 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
         return query;
     }
 
+    public virtual IQueryable<TEntity> GetQueryable(Expression<Func<TEntity, object>>[]? includes)
+    {
+        var query = GetQueryable();
+        if (includes != null)
+        {
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+        }
+
+        return query;
+    }
+
     #endregion
 
     #region IRepository Implementation

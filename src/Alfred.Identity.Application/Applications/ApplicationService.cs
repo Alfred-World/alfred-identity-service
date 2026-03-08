@@ -24,7 +24,8 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         IPasswordHasher passwordHasher,
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
-        IFilterParser filterParser) : base(filterParser)
+        IFilterParser filterParser,
+        IAsyncQueryExecutor executor) : base(filterParser, executor)
     {
         _applicationRepository = applicationRepository;
         _scopeRepository = scopeRepository;
