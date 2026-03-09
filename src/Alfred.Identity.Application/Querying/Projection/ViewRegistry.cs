@@ -130,6 +130,7 @@ public sealed class ViewBuilder<TEntity, TDto>
     private readonly List<string> _fields = new();
     private readonly Dictionary<string, string> _fieldAliases = new();
     private readonly List<Expression<Func<TEntity, object>>> _includes = new();
+    private readonly HashSet<string> _computedFields = new(StringComparer.OrdinalIgnoreCase);
 
     public ViewBuilder(string name)
     {
@@ -160,6 +161,17 @@ public sealed class ViewBuilder<TEntity, TDto>
     }
 
     /// <summary>
+    /// Declare a computed (enriched) field: it appears in the view output but is NOT projected
+    /// from the entity by EF. The service layer is responsible for filling it after the query.
+    /// </summary>
+    public ViewBuilder<TEntity, TDto> SelectComputed(Expression<Func<TDto, object?>> field)
+    {
+        var fieldName = FieldExpressionHelper.GetFieldName(field);
+        _computedFields.Add(fieldName);
+        return this;
+    }
+
+    /// <summary>
     /// Add an include for eager loading navigation properties
     /// </summary>
     public ViewBuilder<TEntity, TDto> Include(Expression<Func<TEntity, object>> include)
@@ -174,6 +186,7 @@ public sealed class ViewBuilder<TEntity, TDto>
             _name,
             _fields.ToArray(),
             _includes.Count > 0 ? _includes.ToArray() : null,
-            _fieldAliases.Count > 0 ? _fieldAliases : null);
+            _fieldAliases.Count > 0 ? _fieldAliases : null,
+            _computedFields.Count > 0 ? _computedFields : null);
     }
 }

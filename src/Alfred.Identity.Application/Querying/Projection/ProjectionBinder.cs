@@ -26,6 +26,7 @@ public static class ProjectionBinder
         return ApplyProjectionInternal<TSource, TDto>(
             query,
             view.Fields,
+            view.ComputedFields,
             fieldMap,
             dtoFieldName => view.GetFieldMapKey(dtoFieldName));
     }
@@ -45,6 +46,7 @@ public static class ProjectionBinder
         return ApplyProjectionInternal<TSource, TDto>(
             query,
             fields,
+            null,
             fieldMap,
             dtoFieldName => dtoFieldName); // No aliasing
     }
@@ -52,6 +54,7 @@ public static class ProjectionBinder
     private static IQueryable<TDto> ApplyProjectionInternal<TSource, TDto>(
         IQueryable<TSource> query,
         string[]? fields,
+        IReadOnlySet<string>? computedFields,
         FieldMap<TSource> fieldMap,
         Func<string, string> getFieldMapKey)
         where TDto : class, new()
@@ -64,9 +67,14 @@ public static class ProjectionBinder
                 "Either specify fields or use manual mapping.");
         }
 
-        // Validate all requested fields exist and are selectable
+        // Validate all requested fields exist and are selectable (skip computed fields)
         foreach (var dtoFieldName in fields)
         {
+            if (computedFields != null && computedFields.Contains(dtoFieldName))
+            {
+                continue;
+            }
+
             var fieldMapKey = getFieldMapKey(dtoFieldName);
             if (!fieldMap.TryGet(fieldMapKey, out _, out _))
             {
@@ -88,6 +96,12 @@ public static class ProjectionBinder
 
         foreach (var dtoFieldName in fields)
         {
+            // Computed fields are skipped — they will be filled in by post-query enrichment
+            if (computedFields != null && computedFields.Contains(dtoFieldName))
+            {
+                continue;
+            }
+
             var fieldMapKey = getFieldMapKey(dtoFieldName);
 
             // Get source expression from field map using the mapped key
@@ -113,7 +127,7 @@ public static class ProjectionBinder
             // Expression.Convert handles: nullable lift (T→T?), unwrap (T?→T),
             // class hierarchy, and user-defined implicit/explicit operators.
             // All strongly-typed IDs (UserId, RoleId, …) have implicit operator→Guid,
-            // so (Guid)x.Id is EF-Core-translatable via the value converter.
+            // so (long)x.Id is EF-Core-translatable via the value converter.
             if (sourceBody.Type != dtoProperty.PropertyType)
             {
                 try

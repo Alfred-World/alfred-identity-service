@@ -34,16 +34,25 @@ public sealed class ViewDefinition<TEntity, TDto>
     /// </summary>
     public Expression<Func<TEntity, object>>[]? Includes { get; }
 
+    /// <summary>
+    /// Computed (enriched) field names that belong to this view but are NOT projected from
+    /// the entity by EF — they are filled in by post-query processing in the service layer.
+    /// ProjectionBinder skips these fields during validation and expression binding.
+    /// </summary>
+    public IReadOnlySet<string> ComputedFields { get; }
+
     public ViewDefinition(
         string name,
         string[] fields,
         Expression<Func<TEntity, object>>[]? includes = null,
-        Dictionary<string, string>? fieldAliases = null)
+        Dictionary<string, string>? fieldAliases = null,
+        HashSet<string>? computedFields = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Fields = fields ?? throw new ArgumentNullException(nameof(fields));
         Includes = includes;
         FieldAliases = fieldAliases ?? new Dictionary<string, string>();
+        ComputedFields = computedFields ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
