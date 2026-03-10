@@ -16,16 +16,16 @@ namespace Alfred.Identity.Infrastructure.Seeders;
 public class ApplicationSeeder : BaseDataSeeder
 {
     private readonly IDbContext _dbContext;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IClientSecretHasher _clientSecretHasher;
 
     public ApplicationSeeder(
         IDbContext dbContext,
-        IPasswordHasher passwordHasher,
+        IClientSecretHasher clientSecretHasher,
         ILogger<ApplicationSeeder> logger)
         : base(logger)
     {
         _dbContext = dbContext;
-        _passwordHasher = passwordHasher;
+        _clientSecretHasher = clientSecretHasher;
     }
 
     public override string Name => "20260119140004_ApplicationSeeder";
@@ -33,8 +33,8 @@ public class ApplicationSeeder : BaseDataSeeder
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         // Default client secret for development
-        const string defaultClientSecret = "alfred-identity-client-secret-2026";
-        var hashedSecret = _passwordHasher.HashPassword(defaultClientSecret);
+        const string defaultClientSecret = "alfred-client-secret-2026";
+        var hashedSecret = _clientSecretHasher.HashSecret(defaultClientSecret);
 
         // Read URLs from environment (required — no silent defaults)
         var coreWebUrl = GetRequiredEnv("URLS_CORE_WEB", "Urls__CoreWeb");
