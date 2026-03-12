@@ -2,7 +2,6 @@ using Alfred.Identity.Application.Common;
 using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
-using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 
 namespace Alfred.Identity.Application.Permissions;

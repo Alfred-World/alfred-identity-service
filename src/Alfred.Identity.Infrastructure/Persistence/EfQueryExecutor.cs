@@ -11,14 +11,22 @@ namespace Alfred.Identity.Infrastructure.Persistence;
 public sealed class EfQueryExecutor : IAsyncQueryExecutor
 {
     public Task<List<T>> ToListAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
-        => query.ToListAsync(cancellationToken);
+    {
+        return query.ToListAsync(cancellationToken);
+    }
 
     public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
-        => query.FirstOrDefaultAsync(cancellationToken);
+    {
+        return query.FirstOrDefaultAsync(cancellationToken);
+    }
 
     public Task<long> LongCountAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
-        => query.LongCountAsync(cancellationToken);
+    {
+        return query.LongCountAsync(cancellationToken);
+    }
 
     public IQueryable<T> AsNoTracking<T>(IQueryable<T> query) where T : class
-        => query.AsNoTracking();
+    {
+        return query.AsNoTracking();
+    }
 }

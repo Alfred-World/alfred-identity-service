@@ -26,7 +26,10 @@ public sealed class RedirectUriCollection : ValueObject
     }
 
     /// <summary>Returns an empty collection.</summary>
-    public static RedirectUriCollection Empty() => new(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+    public static RedirectUriCollection Empty()
+    {
+        return new RedirectUriCollection(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// Create from an enumerable of URI strings.
@@ -52,7 +55,8 @@ public sealed class RedirectUriCollection : ValueObject
 
             if (trimmed.Length > 2000)
             {
-                throw new DomainException($"Redirect URI exceeds maximum length of 2000 characters: '{trimmed[..50]}...'");
+                throw new DomainException(
+                    $"Redirect URI exceeds maximum length of 2000 characters: '{trimmed[..50]}...'");
             }
 
             if (!Uri.TryCreate(trimmed, UriKind.Absolute, out _))
@@ -100,18 +104,30 @@ public sealed class RedirectUriCollection : ValueObject
     }
 
     /// <summary>True if the collection contains the given URI (case-insensitive).</summary>
-    public bool Contains(string uri) => _uris.Contains(uri.Trim());
+    public bool Contains(string uri)
+    {
+        return _uris.Contains(uri.Trim());
+    }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Json;
     }
 
-    public override string ToString() => Json;
+    public override string ToString()
+    {
+        return Json;
+    }
 
     /// <summary>Implicit conversion → JSON string for transparent EF/string interop.</summary>
-    public static implicit operator string(RedirectUriCollection c) => c.Json;
+    public static implicit operator string(RedirectUriCollection c)
+    {
+        return c.Json;
+    }
 
     /// <summary>Explicit conversion from a JSON or space-delimited string.</summary>
-    public static explicit operator RedirectUriCollection(string? s) => FromJson(s);
+    public static explicit operator RedirectUriCollection(string? s)
+    {
+        return FromJson(s);
+    }
 }

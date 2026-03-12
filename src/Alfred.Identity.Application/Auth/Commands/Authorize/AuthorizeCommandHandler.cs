@@ -59,7 +59,7 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
 
         // 2. Validate Redirect URI
         var isValidRedirectUri = !string.IsNullOrWhiteSpace(request.RedirectUri)
-            && client.RedirectUris.Contains(request.RedirectUri);
+                                 && client.RedirectUris.Contains(request.RedirectUri);
 
         if (!isValidRedirectUri)
         {

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Common;
@@ -6,7 +7,6 @@ using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Security;
-using Alfred.Identity.Domain.ValueObjects;
 
 namespace Alfred.Identity.Application.Applications;
 
@@ -193,8 +193,14 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         var trimmed = input.Trim();
         if (trimmed.StartsWith('['))
         {
-            try { return System.Text.Json.JsonSerializer.Deserialize<List<string>>(trimmed); }
-            catch { /* fall through */ }
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(trimmed);
+            }
+            catch
+            {
+                /* fall through */
+            }
         }
 
         return trimmed.Split([' ', '\n'], StringSplitOptions.RemoveEmptyEntries);
