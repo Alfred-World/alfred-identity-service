@@ -1,6 +1,7 @@
 using System.Text.Json;
 
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Infrastructure.Common.Converters;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -36,8 +37,10 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
         // Schema implies they can be long text.
         builder.Property(x => x.DisplayNames).HasColumnType("jsonb");
         builder.Property(x => x.Permissions).HasColumnType("jsonb").HasConversion(jsonArrayConverter);
-        builder.Property(x => x.RedirectUris).HasColumnType("jsonb").HasConversion(jsonArrayConverter);
-        builder.Property(x => x.PostLogoutRedirectUris).HasColumnType("jsonb").HasConversion(jsonArrayConverter);
+
+        var redirectUriConverter = new RedirectUriCollectionConverter();
+        builder.Property(x => x.RedirectUris).HasColumnType("jsonb").HasConversion(redirectUriConverter);
+        builder.Property(x => x.PostLogoutRedirectUris).HasColumnType("jsonb").HasConversion(redirectUriConverter);
         builder.Property(x => x.Requirements).HasColumnType("jsonb");
         builder.Property(x => x.Settings).HasColumnType("jsonb");
         builder.Property(x => x.JsonWebKeySet).HasColumnType("jsonb");

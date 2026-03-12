@@ -58,21 +58,8 @@ public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, Authori
         }
 
         // 2. Validate Redirect URI
-        // RedirectUris is stored as JSON array: ["url1","url2","url3"]
-        var isValidRedirectUri = false;
-        if (!string.IsNullOrEmpty(client.RedirectUris))
-        {
-            try
-            {
-                var redirectUris = JsonSerializer.Deserialize<string[]>(client.RedirectUris);
-                isValidRedirectUri = redirectUris?.Contains(request.RedirectUri) ?? false;
-            }
-            catch
-            {
-                // Fallback: try space-delimited format
-                isValidRedirectUri = client.RedirectUris.Split(' ').Contains(request.RedirectUri);
-            }
-        }
+        var isValidRedirectUri = !string.IsNullOrWhiteSpace(request.RedirectUri)
+            && client.RedirectUris.Contains(request.RedirectUri);
 
         if (!isValidRedirectUri)
         {

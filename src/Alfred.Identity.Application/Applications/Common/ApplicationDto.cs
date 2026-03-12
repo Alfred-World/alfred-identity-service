@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Alfred.Identity.Application.Applications.Common;
 
 /// <summary>
@@ -30,8 +28,8 @@ public sealed record ApplicationDto
             Id = app.Id.Value,
             ClientId = app.ClientId,
             DisplayName = app.DisplayName,
-            RedirectUris = ParseJsonList(app.RedirectUris),
-            PostLogoutRedirectUris = ParseJsonList(app.PostLogoutRedirectUris),
+            RedirectUris = app.RedirectUris.Uris.Count > 0 ? [.. app.RedirectUris.Uris] : null,
+            PostLogoutRedirectUris = app.PostLogoutRedirectUris.Uris.Count > 0 ? [.. app.PostLogoutRedirectUris.Uris] : null,
             Permissions = ParseJsonList(app.Permissions),
             ApplicationType = app.ApplicationType,
             ClientType = app.ClientType,
@@ -48,14 +46,7 @@ public sealed record ApplicationDto
             return null;
         }
 
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json);
-        }
-        catch
-        {
-            // Fallback for legacy plain text or invalid JSON
-            return new List<string>();
-        }
+        try { return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json); }
+        catch { return []; }
     }
 }

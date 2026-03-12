@@ -5,30 +5,24 @@ using Alfred.Identity.Application.Common;
 using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.ValueObjects;
 
 namespace Alfred.Identity.Application.Applications;
 
 public sealed class ApplicationService : BaseEntityService, IApplicationService
 {
-    private readonly IApplicationRepository _applicationRepository;
-    private readonly IScopeRepository _scopeRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public ApplicationService(
-        IApplicationRepository applicationRepository,
-        IScopeRepository scopeRepository,
         IPasswordHasher passwordHasher,
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         IFilterParser filterParser,
         IAsyncQueryExecutor executor) : base(filterParser, executor)
     {
-        _applicationRepository = applicationRepository;
-        _scopeRepository = scopeRepository;
         _passwordHasher = passwordHasher;
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
@@ -39,13 +33,13 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     public async Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query,
         CancellationToken ct = default)
     {
-        return await GetPagedAsync(_applicationRepository, query, ApplicationFieldMap.Instance,
+        return await GetPagedAsync(_unitOfWork.Applications, query, ApplicationFieldMap.Instance,
             a => ApplicationDto.FromEntity(a), ct);
     }
 
     public async Task<ApplicationDto?> GetApplicationByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct);
+        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct);
         return app == null ? null : ApplicationDto.FromEntity(app);
     }
 
@@ -72,7 +66,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
             "ept:logout"
         };
 
-        var scopes = await _scopeRepository.GetAllActiveAsync(ct);
+        var scopes = await _unitOfWork.Scopes.GetAllActiveAsync(ct);
         var scopeList = scopes.Select(s => $"scp:{s.Name}").OrderBy(s => s).ToList();
 
         return new ApplicationMetadataDto(applicationTypes, clientTypes, grantTypes, scopeList, endpoints);
@@ -91,7 +85,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         string type,
         CancellationToken ct = default)
     {
-        var existing = await _applicationRepository.GetByClientIdAsync(clientId, ct);
+        var existing = await _unitOfWork.Applications.GetByClientIdAsync(clientId, ct);
         if (existing != null)
         {
             throw new InvalidOperationException("Client ID already exists");
@@ -110,14 +104,14 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
             clientId,
             clientSecret: secretHash,
             displayName: displayName,
-            redirectUris: redirectUris,
-            postLogoutRedirectUris: postLogoutRedirectUris,
+            redirectUris: SplitUris(redirectUris),
+            postLogoutRedirectUris: SplitUris(postLogoutRedirectUris),
             permissions: permissions,
             clientType: type,
             createdById: _currentUser.UserId
         );
 
-        await _applicationRepository.AddAsync(app, ct);
+        await _unitOfWork.Applications.AddAsync(app, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
         var dto = ApplicationDto.FromEntity(app);
@@ -132,19 +126,19 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         string? permissions,
         CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         app.Update(
             displayName,
-            redirectUris,
-            postLogoutRedirectUris ?? string.Empty,
+            SplitUris(redirectUris),
+            SplitUris(postLogoutRedirectUris),
             permissions ?? string.Empty,
             app.ClientType,
             _currentUser.UserId
         );
 
-        _applicationRepository.Update(app);
+        _unitOfWork.Applications.Update(app);
         await _unitOfWork.SaveChangesAsync(ct);
 
         return ApplicationDto.FromEntity(app);
@@ -152,16 +146,16 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task DeleteApplicationAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
-        _applicationRepository.Delete(app);
+        _unitOfWork.Applications.Delete(app);
         await _unitOfWork.SaveChangesAsync(ct);
     }
 
     public async Task<bool> UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct);
+        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct);
         if (app == null)
         {
             return false;
@@ -174,7 +168,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default)
     {
-        var app = await _applicationRepository.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         var secretBytes = RandomNumberGenerator.GetBytes(32);
@@ -188,4 +182,21 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     }
 
     #endregion
+
+    private static IEnumerable<string>? SplitUris(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return null;
+        }
+
+        var trimmed = input.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            try { return System.Text.Json.JsonSerializer.Deserialize<List<string>>(trimmed); }
+            catch { /* fall through */ }
+        }
+
+        return trimmed.Split([' ', '\n'], StringSplitOptions.RemoveEmptyEntries);
+    }
 }

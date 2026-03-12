@@ -1,3 +1,5 @@
+using Alfred.Identity.Domain.ValueObjects;
+
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Alfred.Identity.Infrastructure.Common.Converters;
@@ -31,3 +33,8 @@ public sealed class UserLoginIdConverter() : ValueConverter<UserLoginId, Guid>(i
 
 public sealed class BackupCodeIdConverter()
     : ValueConverter<BackupCodeId, Guid>(id => id.Value, g => new BackupCodeId(g));
+
+public sealed class RedirectUriCollectionConverter()
+    : ValueConverter<RedirectUriCollection, string>(
+        c => c.Json,
+        s => RedirectUriCollection.FromJson(s));

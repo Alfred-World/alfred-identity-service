@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
@@ -41,15 +39,15 @@ public class ApplicationSeeder : BaseDataSeeder
         var ssoWebUrl = GetRequiredEnv("URLS_SSO_WEB", "Urls__SsoWeb");
 
         // Build redirect URI lists to include both prod domain and dev defaults
-        var coreRedirectUris = BuildUniqueJsonArray(new[]
+        var coreRedirectUris = new[]
         {
             $"{coreWebUrl}/api/auth/callback/alfred-identity",
             "https://core.test/api/auth/callback/alfred-identity",
             "http://core.test:7200/api/auth/callback/alfred-identity",
             "http://localhost:7200/api/auth/callback/alfred-identity"
-        });
+        };
 
-        var corePostLogoutUris = BuildUniqueJsonArray(new[]
+        var corePostLogoutUris = new[]
         {
             coreWebUrl,
             $"{coreWebUrl}/login",
@@ -68,9 +66,9 @@ public class ApplicationSeeder : BaseDataSeeder
             "http://core.test:7200/login",
             "http://localhost:7200",
             "http://localhost:7200/login"
-        });
+        };
 
-        var ssoRedirectUris = BuildUniqueJsonArray(new[]
+        var ssoRedirectUris = new[]
         {
             $"{ssoWebUrl}/callback",
             $"{ssoWebUrl}/api/auth/callback/sso-oauth",
@@ -80,9 +78,9 @@ public class ApplicationSeeder : BaseDataSeeder
             "http://sso.test:7100/api/auth/callback/sso-oauth",
             "http://localhost:7100/callback",
             "http://localhost:7100/api/auth/callback/sso-oauth"
-        });
+        };
 
-        var ssoPostLogoutUris = BuildUniqueJsonArray(new[]
+        var ssoPostLogoutUris = new[]
         {
             ssoWebUrl,
             $"{ssoWebUrl}/login",
@@ -92,7 +90,7 @@ public class ApplicationSeeder : BaseDataSeeder
             "http://sso.test:7100/login",
             "http://localhost:7100",
             "http://localhost:7100/login"
-        });
+        };
 
         var applications = new[]
         {
@@ -133,8 +131,8 @@ public class ApplicationSeeder : BaseDataSeeder
                 // Update existing app
                 existingApp.Update(
                     app.DisplayName,
-                    app.RedirectUris,
-                    app.PostLogoutRedirectUris,
+                    app.RedirectUris.Uris,
+                    app.PostLogoutRedirectUris.Uris,
                     app.Permissions,
                     app.ClientType
                 );
@@ -164,19 +162,6 @@ public class ApplicationSeeder : BaseDataSeeder
                 ? $"Added {added} apps"
                 : $"Updated {updated} apps";
         LogSuccess(summary);
-    }
-
-    /// <summary>
-    /// Builds a JSON array string from a list of URIs, deduplicating by case-insensitive comparison.
-    /// </summary>
-    private static string BuildUniqueJsonArray(IEnumerable<string> uris)
-    {
-        var unique = uris
-            .Where(u => !string.IsNullOrWhiteSpace(u))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        return JsonSerializer.Serialize(unique);
     }
 
     /// <summary>

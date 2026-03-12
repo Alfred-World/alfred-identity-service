@@ -1,5 +1,6 @@
 using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Interfaces;
+using Alfred.Identity.Domain.ValueObjects;
 
 namespace Alfred.Identity.Domain.Entities;
 
@@ -14,8 +15,8 @@ public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, I
     public string? DisplayName { get; private set; }
     public string? DisplayNames { get; private set; } // JSON
     public string? Permissions { get; private set; } // JSON or space delimited
-    public string? RedirectUris { get; private set; } // JSON array or Space delimited
-    public string? PostLogoutRedirectUris { get; private set; }
+    public RedirectUriCollection RedirectUris { get; private set; } = RedirectUriCollection.Empty();
+    public RedirectUriCollection PostLogoutRedirectUris { get; private set; } = RedirectUriCollection.Empty();
     public string? ApplicationType { get; private set; } = "web"; // web/native/server
     public string? ClientType { get; private set; } = "confidential"; // public/confidential
     public string? ConsentType { get; private set; } = "explicit"; // explicit/implicit/system
@@ -42,8 +43,8 @@ public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, I
         string clientId,
         string displayName,
         string? clientSecret = null,
-        string? redirectUris = null,
-        string? postLogoutRedirectUris = null,
+        IEnumerable<string>? redirectUris = null,
+        IEnumerable<string>? postLogoutRedirectUris = null,
         string? permissions = null,
         string clientType = "confidential",
         string applicationType = "web",
@@ -54,8 +55,8 @@ public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, I
             ClientId = clientId,
             DisplayName = displayName,
             ClientSecret = clientSecret,
-            RedirectUris = redirectUris,
-            PostLogoutRedirectUris = postLogoutRedirectUris,
+            RedirectUris = RedirectUriCollection.Create(redirectUris),
+            PostLogoutRedirectUris = RedirectUriCollection.Create(postLogoutRedirectUris),
             Permissions = permissions,
             ClientType = clientType,
             ApplicationType = applicationType,
@@ -68,15 +69,15 @@ public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, I
 
     public void Update(
         string? displayName,
-        string? redirectUris,
-        string? postLogoutRedirectUris,
+        IEnumerable<string>? redirectUris,
+        IEnumerable<string>? postLogoutRedirectUris,
         string? permissions,
         string? clientType,
         Guid? updatedById = null)
     {
         DisplayName = displayName;
-        RedirectUris = redirectUris;
-        PostLogoutRedirectUris = postLogoutRedirectUris;
+        RedirectUris = RedirectUriCollection.Create(redirectUris);
+        PostLogoutRedirectUris = RedirectUriCollection.Create(postLogoutRedirectUris);
         Permissions = permissions;
         ClientType = clientType;
 
@@ -84,9 +85,9 @@ public sealed class Application : BaseEntity<ApplicationId>, IHasCreationTime, I
         UpdatedById = updatedById;
     }
 
-    public void UpdateRedirectUris(string redirectUris, Guid? updatedById = null)
+    public void UpdateRedirectUris(IEnumerable<string> redirectUris, Guid? updatedById = null)
     {
-        RedirectUris = redirectUris;
+        RedirectUris = RedirectUriCollection.Create(redirectUris);
         UpdatedAt = DateTime.UtcNow;
         UpdatedById = updatedById;
     }
