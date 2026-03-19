@@ -27,7 +27,7 @@ public sealed class ClientSecretHasher : IClientSecretHasher
         if (string.IsNullOrWhiteSpace(key) || key.Length < 32)
         {
             throw new InvalidOperationException(
-                "APP_SECRET_KEY (or NEXTAUTH_SECRET) must be set and at least 32 characters long.");
+                "APP_SECRET_KEY must be set and at least 32 characters long.");
         }
 
         _keyBytes = Encoding.UTF8.GetBytes(key);

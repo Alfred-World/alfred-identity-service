@@ -73,6 +73,13 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SsoLogin([FromBody] SsoLoginRequest request)
     {
+        var requestedReturnUrl = request.ReturnUrl ?? "/";
+        var validatedReturnUrl = await ValidateAndGetRedirectUrlAsync(requestedReturnUrl);
+        if (!string.Equals(validatedReturnUrl, requestedReturnUrl, StringComparison.Ordinal))
+        {
+            return BadRequestResponse("Invalid OAuth return URL or client configuration.", "INVALID_RETURN_URL");
+        }
+
         // 1. Validate credentials via CQRS
         var command = new LoginCommand(
             request.Identity,
@@ -122,9 +129,8 @@ public class AuthController : BaseApiController
                 : $"{scheme}://{gatewayUrlConfig}";
         }
 
-        var returnUrl = request.ReturnUrl ?? "/";
         var exchangeUrl =
-            $"{baseUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+            $"{baseUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(validatedReturnUrl)}";
 
         // 4. Return minimal response
         return OkResponse(new SsoLoginResponse
@@ -152,7 +158,15 @@ public class AuthController : BaseApiController
             return BadRequestResponse("Token is invalid, expired, or has already been used", "INVALID_TOKEN");
         }
 
-        // 2. Create claims for cookie authentication
+        // 2. Validate redirect URL BEFORE issuing SSO cookie.
+        // This prevents creating a valid session for invalid/unregistered clients.
+        var validatedReturnUrl = await ValidateAndGetRedirectUrlAsync(returnUrl);
+        if (!string.Equals(validatedReturnUrl, returnUrl, StringComparison.Ordinal))
+        {
+            return Redirect(validatedReturnUrl);
+        }
+
+        // 3. Create claims for cookie authentication
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, tokenData.UserId.ToString()),
@@ -180,17 +194,14 @@ public class AuthController : BaseApiController
             AllowRefresh = true
         };
 
-        // 3. Sign in and set cookie (first-party context)
+        // 4. Sign in and set cookie (first-party context)
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties
         );
 
-        // 4. Validate redirect URL against registered applications
-        var redirectUrl = await ValidateAndGetRedirectUrlAsync(returnUrl);
-
-        return Redirect(redirectUrl);
+        return Redirect(validatedReturnUrl);
     }
 
     /// <summary>
@@ -244,6 +255,12 @@ public class AuthController : BaseApiController
             return BadRequestResponse("returnUrl is required");
         }
 
+        var validatedReturnUrl = await ValidateAndGetRedirectUrlAsync(returnUrl);
+        if (!string.Equals(validatedReturnUrl, returnUrl, StringComparison.Ordinal))
+        {
+            return Redirect(validatedReturnUrl);
+        }
+
         // Check if user is authenticated via SSO cookie
         if (_currentUser.IsAuthenticated && _currentUser.UserId != null)
         {
@@ -259,14 +276,14 @@ public class AuthController : BaseApiController
             });
 
             // Redirect back to app with token
-            var separator = returnUrl.Contains('?') ? "&" : "?";
-            var redirectUrl = $"{returnUrl}{separator}sso_token={Uri.EscapeDataString(authToken)}";
+            var separator = validatedReturnUrl.Contains('?') ? "&" : "?";
+            var redirectUrl = $"{validatedReturnUrl}{separator}sso_token={Uri.EscapeDataString(authToken)}";
             return Redirect(redirectUrl);
         }
 
         // Not authenticated - redirect back with error
-        var errorSeparator = returnUrl.Contains('?') ? "&" : "?";
-        return Redirect($"{returnUrl}{errorSeparator}sso_error=not_authenticated");
+        var errorSeparator = validatedReturnUrl.Contains('?') ? "&" : "?";
+        return Redirect($"{validatedReturnUrl}{errorSeparator}sso_error=not_authenticated");
     }
 
     /// <summary>
@@ -382,15 +399,35 @@ public class AuthController : BaseApiController
         // Allow OIDC authorize path (standard flow)
         if (returnUrl.Contains("/connect/authorize", StringComparison.OrdinalIgnoreCase))
         {
-            // Extract client_id from returnUrl to validate against registered app
-            var clientId = ExtractClientIdFromUrl(returnUrl);
-            if (!string.IsNullOrEmpty(clientId))
+            if (!Uri.TryCreate(returnUrl, UriKind.Absolute, out var authorizeUri))
             {
-                var app = await _applicationRepository.GetByClientIdAsync(clientId);
-                if (app is { IsActive: true })
-                {
-                    return returnUrl;
-                }
+                return BuildSsoErrorUrl("invalid_request", "Invalid authorize returnUrl format.");
+            }
+
+            var query = HttpUtility.ParseQueryString(authorizeUri.Query);
+            var clientId = query["client_id"];
+            var redirectUri = query["redirect_uri"];
+
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                return BuildSsoErrorUrl("invalid_client", "Missing client_id in authorize request.");
+            }
+
+            var app = await _applicationRepository.GetByClientIdAsync(clientId);
+            if (app is not { IsActive: true })
+            {
+                return BuildSsoErrorUrl("invalid_client", $"Client '{clientId}' is not registered or inactive.");
+            }
+
+            if (string.IsNullOrWhiteSpace(redirectUri))
+            {
+                return BuildSsoErrorUrl("invalid_request", "Missing redirect_uri in authorize request.");
+            }
+
+            var allowedUris = UriHelper.ParseUriList(app.RedirectUris);
+            if (!allowedUris.Any(allowed => UriHelper.UriMatches(redirectUri, allowed)))
+            {
+                return BuildSsoErrorUrl("invalid_request", "redirect_uri is not allowed for this client.");
             }
 
             return returnUrl;
@@ -426,9 +463,13 @@ public class AuthController : BaseApiController
             }
         }
 
+        return BuildSsoErrorUrl("invalid_redirect", $"Redirect URL not allowed: {returnUrl}");
+    }
+
+    private string BuildSsoErrorUrl(string error, string description)
+    {
         var ssoUrl = _appConfig.SsoWebUrl;
-        return
-            $"{ssoUrl}/login?error=invalid_redirect&error_description={Uri.EscapeDataString($"Redirect URL not allowed: {returnUrl}")}";
+        return $"{ssoUrl}/auth/error?error={Uri.EscapeDataString(error)}&error_description={Uri.EscapeDataString(description)}";
     }
 
     private async Task<bool> IsRedirectUriAllowedAsync(string redirectUri)
@@ -445,24 +486,6 @@ public class AuthController : BaseApiController
         }
 
         return false;
-    }
-
-    private static string? ExtractClientIdFromUrl(string url)
-    {
-        try
-        {
-            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                var query = HttpUtility.ParseQueryString(uri.Query);
-                return query["client_id"];
-            }
-        }
-        catch
-        {
-            // Ignore parsing errors
-        }
-
-        return null;
     }
 
     #endregion

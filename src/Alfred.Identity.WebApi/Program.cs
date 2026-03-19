@@ -11,6 +11,8 @@ using FluentValidation;
 
 using Microsoft.AspNetCore.HttpOverrides;
 
+using Serilog;
+
 // Load environment variables from .env file
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 DotEnvLoader.LoadForEnvironment(environment);
@@ -20,6 +22,14 @@ AppConfiguration appConfig = new();
 MtlsConfiguration mtlsConfig = new();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .WriteTo.Console();
+});
 
 // Configure Kestrel with optional mTLS support
 builder.ConfigureKestrelWithMtls(appConfig, mtlsConfig);
@@ -108,6 +118,7 @@ app.UseScalarInDevelopment();
 
 // Add global exception handler (must be early in pipeline)
 app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
 
 app.UseCors("AllowFrontend");
 

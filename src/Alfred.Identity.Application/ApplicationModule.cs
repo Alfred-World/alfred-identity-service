@@ -1,9 +1,11 @@
 using Alfred.Identity.Application.Applications;
 using Alfred.Identity.Application.Common.Behaviors;
+using Alfred.Identity.Application.Common.Events;
 using Alfred.Identity.Application.Permissions;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Roles;
 using Alfred.Identity.Application.Users;
+using Alfred.Identity.Domain.Common.Events;
 
 using FluentValidation;
 
@@ -36,6 +38,9 @@ public static class ApplicationModule
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<IPermissionService, PermissionService>();
+
+        // Domain event dispatcher (Domain port -> Application adapter)
+        services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
 
         return services;
     }

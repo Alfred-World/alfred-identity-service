@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Alfred.Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(PostgreSqlDbContext))]
-    [Migration("20260202092955_Initial")]
+    [Migration("20260319044616_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Alfred.Identity.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -78,9 +78,11 @@ namespace Alfred.Identity.Infrastructure.Migrations
                         .HasColumnType("jsonb");
 
                     b.Property<string>("PostLogoutRedirectUris")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<string>("RedirectUris")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<string>("Requirements")
@@ -636,7 +638,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserActivityLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Action")
@@ -668,7 +669,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
             modelBuilder.Entity("Alfred.Identity.Domain.Entities.UserBan", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("BannedAt")

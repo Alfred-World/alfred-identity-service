@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Common.Base;
+using Alfred.Identity.Domain.Common.Events;
 using Alfred.Identity.Domain.Common.Interfaces;
 using Alfred.Identity.Domain.Enums;
 
@@ -102,6 +103,7 @@ public sealed class User : BaseEntity<UserId>, IHasCreationTime, IHasCreator, IH
 
         // Add ban record
         UserBans.Add(UserBan.Create(Id, reason, bannedById, expiresAt));
+        AddDomainEvent(new UserBannedDomainEvent(Id, expiresAt));
     }
 
     public void Unban(Guid? unbannedById)
@@ -120,6 +122,7 @@ public sealed class User : BaseEntity<UserId>, IHasCreationTime, IHasCreator, IH
         // Deactivate active ban
         var activeBan = UserBans.FirstOrDefault(b => b.IsActive);
         activeBan?.Unban(unbannedById);
+        AddDomainEvent(new UserUnbannedDomainEvent(Id));
     }
 
     public static User Create(string email, string? passwordHash, string fullName, bool emailConfirmed = false,

@@ -1,5 +1,6 @@
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Common.Events;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Repositories;
 
@@ -15,6 +16,7 @@ namespace Alfred.Identity.Infrastructure.Providers.PostgreSQL;
 public class DefaultUnitOfWork : IUnitOfWork
 {
     private readonly IDbContext _context;
+    private readonly IDomainEventDispatcher? _domainEventDispatcher;
 
     // Identity
     private IUserRepository? _users;
@@ -35,9 +37,10 @@ public class DefaultUnitOfWork : IUnitOfWork
     private IScopeRepository? _scopes;
     private ISigningKeyRepository? _signingKeys;
 
-    public DefaultUnitOfWork(IDbContext context)
+    public DefaultUnitOfWork(IDbContext context, IDomainEventDispatcher? domainEventDispatcher = null)
     {
         _context = context;
+        _domainEventDispatcher = domainEventDispatcher;
     }
 
     // Identity
@@ -63,7 +66,29 @@ public class DefaultUnitOfWork : IUnitOfWork
     {
         if (_context is DbContext dbContext)
         {
-            return await dbContext.SaveChangesAsync(cancellationToken);
+            var entitiesWithEvents = dbContext.ChangeTracker
+                .Entries<IHasDomainEvents>()
+                .Where(entry => entry.Entity.DomainEvents.Count > 0)
+                .Select(entry => entry.Entity)
+                .ToList();
+
+            var result = await dbContext.SaveChangesAsync(cancellationToken);
+
+            if (_domainEventDispatcher != null && entitiesWithEvents.Count > 0)
+            {
+                var domainEvents = entitiesWithEvents
+                    .SelectMany(entity => entity.DomainEvents)
+                    .ToList();
+
+                foreach (var entity in entitiesWithEvents)
+                {
+                    entity.ClearDomainEvents();
+                }
+
+                await _domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);
+            }
+
+            return result;
         }
 
         throw new InvalidOperationException("DbContext is not available");

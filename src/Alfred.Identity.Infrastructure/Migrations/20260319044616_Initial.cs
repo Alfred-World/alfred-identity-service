@@ -1,5 +1,4 @@
 ﻿using System;
-
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -12,36 +11,6 @@ namespace Alfred.Identity.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Create UUID v7 generation function for PostgreSQL FIRST
-            // UUID v7 is time-ordered which provides better index performance
-            migrationBuilder.Sql(@"
-                CREATE OR REPLACE FUNCTION generate_uuid_v7()
-                RETURNS uuid
-                AS $$
-                DECLARE
-                    unix_ts_ms bytea;
-                    uuid_bytes bytea;
-                BEGIN
-                    -- Get current Unix timestamp in milliseconds
-                    unix_ts_ms := substring(int8send(floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint) FROM 3 FOR 6);
-                    
-                    -- Generate random bytes for the rest
-                    uuid_bytes := unix_ts_ms || gen_random_bytes(10);
-                    
-                    -- Set version (7) and variant (2) bits
-                    -- Version 7: bits 48-51 should be 0111
-                    uuid_bytes := set_byte(uuid_bytes, 6, (get_byte(uuid_bytes, 6) & 15) | 112);
-                    -- Variant: bits 64-65 should be 10
-                    uuid_bytes := set_byte(uuid_bytes, 8, (get_byte(uuid_bytes, 8) & 63) | 128);
-                    
-                    RETURN encode(uuid_bytes, 'hex')::uuid;
-                END;
-                $$ LANGUAGE plpgsql VOLATILE;
-
-                -- Add a comment to document the function
-                COMMENT ON FUNCTION generate_uuid_v7() IS 'Generates a UUID v7 (time-ordered UUID) for better index performance';
-            ");
-
             migrationBuilder.CreateTable(
                 name: "applications",
                 columns: table => new
@@ -52,8 +21,8 @@ namespace Alfred.Identity.Infrastructure.Migrations
                     DisplayName = table.Column<string>(type: "text", nullable: true),
                     DisplayNames = table.Column<string>(type: "jsonb", nullable: true),
                     Permissions = table.Column<string>(type: "jsonb", nullable: true),
-                    RedirectUris = table.Column<string>(type: "jsonb", nullable: true),
-                    PostLogoutRedirectUris = table.Column<string>(type: "jsonb", nullable: true),
+                    RedirectUris = table.Column<string>(type: "jsonb", nullable: false),
+                    PostLogoutRedirectUris = table.Column<string>(type: "jsonb", nullable: false),
                     ApplicationType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     ClientType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     ConsentType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
