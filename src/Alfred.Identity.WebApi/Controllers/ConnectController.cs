@@ -91,6 +91,15 @@ public class ConnectController : BaseApiController
             return BadRequest(new { error = "invalid_user" });
         }
 
+        var user = await _userRepository.GetByIdAsync((UserId)userId, HttpContext.RequestAborted);
+        if (user == null || !user.CanSsoLogin())
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var ssoUrl = _appConfig.SsoWebUrl;
+            return Redirect($"{ssoUrl}/login?error=account_not_eligible");
+        }
+
         var ipAddress = GetClientIpAddress();
         var device = UriHelper.TruncateDevice(Request.Headers["User-Agent"].FirstOrDefault());
 

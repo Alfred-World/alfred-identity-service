@@ -88,6 +88,7 @@ public static class ServiceCollectionExtensions
 
         // Email Service
         services.AddScoped<IEmailSender, RedisEmailSender>();
+        services.AddScoped<IIdentityUserReplicationEventPublisher, IdentityUserReplicationEventPublisher>();
 
 
         // Other Services

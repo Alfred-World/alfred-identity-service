@@ -1,6 +1,7 @@
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 
 using MediatR;
@@ -12,12 +13,15 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
 {
     private readonly IUserRepository _userRepository;
     private readonly IUserLoginRepository _userLoginRepository;
+    private readonly IIdentityUserReplicationEventPublisher _replicationEventPublisher;
 
     public LoginWithExternalProviderCommandHandler(IUserRepository userRepository,
-        IUserLoginRepository userLoginRepository)
+        IUserLoginRepository userLoginRepository,
+        IIdentityUserReplicationEventPublisher replicationEventPublisher)
     {
         _userRepository = userRepository;
         _userLoginRepository = userLoginRepository;
+        _replicationEventPublisher = replicationEventPublisher;
     }
 
     public async Task<Result<LoginWithExternalProviderResult>> Handle(LoginWithExternalProviderCommand request,
@@ -80,6 +84,20 @@ public class LoginWithExternalProviderCommandHandler : IRequestHandler<LoginWith
         }
 
         await _userRepository.SaveChangesAsync(cancellationToken);
+
+        if (isNewUser)
+        {
+            await _replicationEventPublisher.PublishUserUpsertedAsync(
+                user.Id.Value,
+                user.UserName,
+                user.Email,
+                user.FullName,
+                user.Avatar,
+                user.Status.ToString(),
+                user.IsBanned,
+                user.IsDeleted,
+                cancellationToken);
+        }
 
         // Reload user to get Roles/includes
         user = await _userRepository.GetByIdWithRolesAsync(user.Id, cancellationToken);

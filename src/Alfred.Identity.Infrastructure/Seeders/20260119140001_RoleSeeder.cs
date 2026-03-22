@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Alfred.Identity.Infrastructure.Seeders;
 
 /// <summary>
-/// Seeds initial roles (Admin, User) for Alfred Identity Service
+/// Seeds only Owner role for Alfred Identity Service.
 /// </summary>
 public class RoleSeeder : BaseDataSeeder
 {
@@ -24,25 +24,18 @@ public class RoleSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // Check if roles already exist
-        if (await _dbContext.Set<Role>().AnyAsync(cancellationToken))
+        var ownerRole = await _dbContext.Set<Role>()
+            .FirstOrDefaultAsync(r => r.NormalizedName == "OWNER", cancellationToken);
+
+        if (ownerRole != null)
         {
-            LogSuccess("Skipped (roles exist)");
+            LogSuccess("Skipped (Owner role exists)");
             return;
         }
 
-        var roles = new[]
-        {
-            Role.CreateOwner(), // IsImmutable=true, IsSystem=true
-            Role.CreateAdmin(), // IsImmutable=false, IsSystem=true
-            Role.CreateUser() // IsImmutable=false, IsSystem=true
-        };
-
-        LogDebug($"Creating {roles.Length} roles: Owner, Admin, User");
-
-        await _dbContext.Set<Role>().AddRangeAsync(roles, cancellationToken);
+        await _dbContext.Set<Role>().AddAsync(Role.CreateOwner(), cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogSuccess($"Created {roles.Length} roles");
+        LogSuccess("Created Owner role");
     }
 }

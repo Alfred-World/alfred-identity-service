@@ -9,6 +9,7 @@ public interface IUserService
 
     Task<PageResult<UserDto>> GetAllUsersAsync(QueryRequest query, CancellationToken ct = default);
     Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken ct = default);
+    Task<UserDto> CreateUserAsync(CreateUserInput input, CancellationToken ct = default);
 
     #endregion
 
@@ -38,6 +39,9 @@ public interface IUserService
 
     /// <summary>Admin resets a user's password directly without requiring their old password.</summary>
     Task AdminResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default);
+
+    /// <summary>Admin confirms a user's email without token flow.</summary>
+    Task AdminConfirmEmailAsync(Guid userId, CancellationToken ct = default);
 
     #endregion
 }

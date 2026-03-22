@@ -7,6 +7,7 @@ using Alfred.Identity.Application.Auth.Commands.ResetPassword;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Auth;
 using Alfred.Identity.WebApi.Contracts.Common;
@@ -166,6 +167,12 @@ public class AuthController : BaseApiController
             return Redirect(validatedReturnUrl);
         }
 
+        var eligibleUser = await GetEligibleSsoUserAsync(tokenData.UserId, HttpContext.RequestAborted);
+        if (eligibleUser == null)
+        {
+            return Redirect(BuildSsoErrorUrl("account_not_eligible", "Your account cannot use SSO right now."));
+        }
+
         // 3. Create claims for cookie authentication
         var claims = new List<Claim>
         {
@@ -210,7 +217,7 @@ public class AuthController : BaseApiController
     [HttpGet("session")]
     [ProducesResponseType(typeof(ApiResponse<SsoSessionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
-    public IActionResult GetSession()
+    public async Task<IActionResult> GetSession()
     {
         if (!_currentUser.IsAuthenticated)
         {
@@ -220,6 +227,13 @@ public class AuthController : BaseApiController
         if (_currentUser.UserId == null)
         {
             return UnauthorizedResponse("Invalid session data");
+        }
+
+        var eligibleUser = await GetEligibleSsoUserAsync(_currentUser.UserId.Value, HttpContext.RequestAborted);
+        if (eligibleUser == null)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return UnauthorizedResponse("Account is not eligible for SSO");
         }
 
         return OkResponse(new SsoSessionResponse
@@ -264,13 +278,21 @@ public class AuthController : BaseApiController
         // Check if user is authenticated via SSO cookie
         if (_currentUser.IsAuthenticated && _currentUser.UserId != null)
         {
+            var eligibleUser = await GetEligibleSsoUserAsync(_currentUser.UserId.Value, HttpContext.RequestAborted);
+            if (eligibleUser == null)
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                var blockedSeparator = validatedReturnUrl.Contains('?') ? "&" : "?";
+                return Redirect($"{validatedReturnUrl}{blockedSeparator}sso_error=account_not_eligible");
+            }
+
             // Generate one-time token for the app to exchange
             var authToken = await _authTokenService.GenerateTokenAsync(new AuthTokenData
             {
-                UserId = _currentUser.UserId.Value,
-                Email = _currentUser.Email ?? "",
-                FullName = _currentUser.Principal?.FindFirst(ClaimTypes.Name)?.Value,
-                UserName = _currentUser.Username,
+                UserId = eligibleUser.Id.Value,
+                Email = eligibleUser.Email,
+                FullName = eligibleUser.FullName,
+                UserName = eligibleUser.UserName,
                 RememberMe = true,
                 ExpiresAt = DateTime.UtcNow.AddSeconds(60)
             });
@@ -309,12 +331,18 @@ public class AuthController : BaseApiController
                 return BadRequestResponse<SessionUserInfoDto>("Invalid or expired token");
             }
 
+            var eligibleUser = await GetEligibleSsoUserAsync(tokenData.UserId, HttpContext.RequestAborted);
+            if (eligibleUser == null)
+            {
+                return BadRequestResponse<SessionUserInfoDto>("Account is not eligible for SSO");
+            }
+
             var userInfo = new SessionUserInfoDto
             {
-                Id = tokenData.UserId,
-                Email = tokenData.Email ?? "",
-                FullName = tokenData.FullName,
-                UserName = tokenData.UserName
+                Id = eligibleUser.Id.Value,
+                Email = eligibleUser.Email,
+                FullName = eligibleUser.FullName,
+                UserName = eligibleUser.UserName
             };
 
             return OkResponse(userInfo);
@@ -486,6 +514,17 @@ public class AuthController : BaseApiController
         }
 
         return false;
+    }
+
+    private async Task<User?> GetEligibleSsoUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync((UserId)userId, cancellationToken);
+        if (user == null)
+        {
+            return null;
+        }
+
+        return user.CanSsoLogin() ? user : null;
     }
 
     #endregion

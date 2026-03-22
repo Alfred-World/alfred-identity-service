@@ -1,4 +1,5 @@
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.Common.Ids;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
@@ -9,10 +10,11 @@ using Microsoft.Extensions.Logging;
 namespace Alfred.Identity.Infrastructure.Seeders;
 
 /// <summary>
-/// Seeds initial admin user for Alfred Identity Service
+/// Seeds single owner user for Alfred Identity Service.
 /// </summary>
 public class AdminUserSeeder : BaseDataSeeder
 {
+    private static readonly UserId HardcodedOwnerUserId = new(Guid.Parse("019d046f-2094-7e64-8caa-715ad7272a34"));
     private readonly IDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
 
@@ -30,42 +32,51 @@ public class AdminUserSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // Check if users already exist
-        if (await _dbContext.Set<User>().AnyAsync(cancellationToken))
+        var ownerRole = await _dbContext.Set<Role>()
+            .FirstOrDefaultAsync(r => r.NormalizedName == "OWNER", cancellationToken);
+
+        if (ownerRole == null)
         {
-            LogSuccess("Skipped (users exist)");
+            LogWarning("Owner role not found. Skipping owner user seed.");
             return;
         }
 
-        // Default admin password - should be changed after first login
         var defaultPassword = "Admin@123";
         var hashedPassword = _passwordHasher.HashPassword(defaultPassword);
 
-        var admin = User.Create(
-            "admin@gmail.com",
-            hashedPassword,
-            "System Administrator",
-            true
-        );
+        var owner = await _dbContext.Set<User>()
+            .FirstOrDefaultAsync(u => u.Id == HardcodedOwnerUserId, cancellationToken);
 
-        // Set username to 'admin' instead of email
-        admin.SetUserName("admin");
-
-        await _dbContext.Set<User>().AddAsync(admin, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        // Assign Admin role to the user
-        var adminRole = await _dbContext.Set<Role>()
-            .FirstOrDefaultAsync(r => r.NormalizedName == "ADMIN", cancellationToken);
-
-        if (adminRole != null)
+        if (owner == null)
         {
-            var userRole = UserRole.Create(admin.Id, adminRole.Id);
-            await _dbContext.Set<UserRole>().AddAsync(userRole, cancellationToken);
+            owner = User.CreateWithId(
+                HardcodedOwnerUserId,
+                "owner@gmail.com",
+                "owner",
+                hashedPassword,
+                "System Owner",
+                true);
+
+            await _dbContext.Set<User>().AddAsync(owner, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
-            LogDebug("Assigned Admin role");
+            LogDebug("Created owner user with hardcoded id");
+        }
+        else
+        {
+            LogDebug("Owner user already exists, skipping user creation");
         }
 
-        LogSuccess("Created admin user (admin / Admin@123)");
+        var hasOwnerRole = await _dbContext.Set<UserRole>()
+            .AnyAsync(ur => ur.UserId == HardcodedOwnerUserId && ur.RoleId == ownerRole.Id, cancellationToken);
+
+        if (!hasOwnerRole)
+        {
+            var userRole = UserRole.Create(HardcodedOwnerUserId, ownerRole.Id);
+            await _dbContext.Set<UserRole>().AddAsync(userRole, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            LogDebug("Assigned Owner role");
+        }
+
+        LogSuccess("Ensured owner user (owner / Admin@123) and Owner role assignment");
     }
 }

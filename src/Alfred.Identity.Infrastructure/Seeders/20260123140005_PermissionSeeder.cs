@@ -25,54 +25,71 @@ public class PermissionSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // Check if permissions already exist
-        if (await _dbContext.Set<Permission>().AnyAsync(cancellationToken))
+        var requiredPermissions = new[]
         {
-            LogSuccess("Skipped (permissions exist)");
+            // ===== System Permissions (Owner only) =====
+            (Code: "system:*", Name: "Full System Access",
+                Description: "Complete administrative access to all system functions"),
+            (Code: "system:rotate-keys", Name: "Rotate Signing Keys",
+                Description: "Rotate authentication signing keys manually"),
+
+            // ===== User Management =====
+            (Code: "users:read", Name: "View Users", Description: "View user list and details"),
+            (Code: "users:create", Name: "Create Users", Description: "Create new user accounts"),
+            (Code: "users:update", Name: "Update Users", Description: "Modify existing user accounts"),
+            (Code: "users:delete", Name: "Delete Users", Description: "Remove user accounts"),
+            (Code: "users:ban", Name: "Ban Users", Description: "Ban users from accessing the system"),
+            (Code: "users:unban", Name: "Unban Users", Description: "Restore access for banned users"),
+            (Code: "users:confirm-email", Name: "Confirm User Email",
+                Description: "Allow admins to mark a user email as confirmed without token flow"),
+
+            // ===== Role Management =====
+            (Code: "roles:read", Name: "View Roles", Description: "View role list and details"),
+            (Code: "roles:create", Name: "Create Roles", Description: "Create new roles"),
+            (Code: "roles:update", Name: "Update Roles", Description: "Modify existing roles"),
+            (Code: "roles:delete", Name: "Delete Roles", Description: "Remove roles"),
+
+            // ===== Permission Management =====
+            (Code: "permissions:read", Name: "View Permissions", Description: "View permission list and details"),
+            (Code: "permissions:assign", Name: "Assign Permissions", Description: "Assign permissions to roles"),
+            (Code: "permissions:revoke", Name: "Revoke Permissions", Description: "Revoke permissions from roles"),
+
+            // ===== OAuth2 Application Management =====
+            (Code: "applications:read", Name: "View Applications", Description: "View OAuth2 client applications"),
+            (Code: "applications:create", Name: "Create Applications",
+                Description: "Register new OAuth2 client applications"),
+            (Code: "applications:update", Name: "Update Applications",
+                Description: "Modify existing OAuth2 client applications"),
+            (Code: "applications:delete", Name: "Delete Applications",
+                Description: "Remove OAuth2 client applications"),
+
+            // ===== Audit & Logs =====
+            (Code: "audit:read", Name: "View Audit Logs", Description: "View system audit logs and activity history"),
+
+            // ===== Profile (User-facing) =====
+            (Code: "profile:read", Name: "View Own Profile", Description: "View own user profile"),
+            (Code: "profile:update", Name: "Update Own Profile", Description: "Update own user profile information")
+        };
+
+        var existingCodes = await _dbContext.Set<Permission>()
+            .Select(p => p.Code)
+            .ToListAsync(cancellationToken);
+        var existingCodeSet = existingCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var missingPermissions = requiredPermissions
+            .Where(p => !existingCodeSet.Contains(p.Code))
+            .Select(p => Permission.Create(p.Code, p.Name, p.Description))
+            .ToList();
+
+        if (!missingPermissions.Any())
+        {
+            LogSuccess("Skipped (all permissions exist)");
             return;
         }
 
-        var permissions = new List<Permission>
-        {
-            // ===== System Permissions (Owner only) =====
-            Permission.Create("system:*", "Full System Access",
-                "Complete administrative access to all system functions"),
-
-            // ===== User Management =====
-            Permission.Create("users:read", "View Users", "View user list and details"),
-            Permission.Create("users:create", "Create Users", "Create new user accounts"),
-            Permission.Create("users:update", "Update Users", "Modify existing user accounts"),
-            Permission.Create("users:delete", "Delete Users", "Remove user accounts"),
-
-            // ===== Role Management =====
-            Permission.Create("roles:read", "View Roles", "View role list and details"),
-            Permission.Create("roles:create", "Create Roles", "Create new roles"),
-            Permission.Create("roles:update", "Update Roles", "Modify existing roles"),
-            Permission.Create("roles:delete", "Delete Roles", "Remove roles"),
-
-            // ===== Permission Management =====
-            Permission.Create("permissions:read", "View Permissions", "View permission list and details"),
-            Permission.Create("permissions:assign", "Assign Permissions", "Assign permissions to roles"),
-            Permission.Create("permissions:revoke", "Revoke Permissions", "Revoke permissions from roles"),
-
-            // ===== OAuth2 Application Management =====
-            Permission.Create("applications:read", "View Applications", "View OAuth2 client applications"),
-            Permission.Create("applications:create", "Create Applications", "Register new OAuth2 client applications"),
-            Permission.Create("applications:update", "Update Applications",
-                "Modify existing OAuth2 client applications"),
-            Permission.Create("applications:delete", "Delete Applications", "Remove OAuth2 client applications"),
-
-            // ===== Audit & Logs =====
-            Permission.Create("audit:read", "View Audit Logs", "View system audit logs and activity history"),
-
-            // ===== Profile (User-facing) =====
-            Permission.Create("profile:read", "View Own Profile", "View own user profile"),
-            Permission.Create("profile:update", "Update Own Profile", "Update own user profile information")
-        };
-
-        await _dbContext.Set<Permission>().AddRangeAsync(permissions, cancellationToken);
+        await _dbContext.Set<Permission>().AddRangeAsync(missingPermissions, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogSuccess($"Created {permissions.Count} permissions");
+        LogSuccess($"Created {missingPermissions.Count} missing permissions");
     }
 }

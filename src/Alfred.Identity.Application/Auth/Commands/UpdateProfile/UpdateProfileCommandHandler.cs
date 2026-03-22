@@ -1,5 +1,6 @@
 using Alfred.Identity.Application.Common;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
 
 using MediatR;
 
@@ -8,10 +9,14 @@ namespace Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, Result<UpdateProfileResult>>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IIdentityUserReplicationEventPublisher _replicationEventPublisher;
 
-    public UpdateProfileCommandHandler(IUserRepository userRepository)
+    public UpdateProfileCommandHandler(
+        IUserRepository userRepository,
+        IIdentityUserReplicationEventPublisher replicationEventPublisher)
     {
         _userRepository = userRepository;
+        _replicationEventPublisher = replicationEventPublisher;
     }
 
     public async Task<Result<UpdateProfileResult>> Handle(UpdateProfileCommand request,
@@ -32,6 +37,16 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
 
         _userRepository.Update(user);
         await _userRepository.SaveChangesAsync(cancellationToken);
+        await _replicationEventPublisher.PublishUserUpsertedAsync(
+            user.Id.Value,
+            user.UserName,
+            user.Email,
+            user.FullName,
+            user.Avatar,
+            user.Status.ToString(),
+            user.IsBanned,
+            user.IsDeleted,
+            cancellationToken);
 
         return Result<UpdateProfileResult>.Success(new UpdateProfileResult(
             user.Id.Value,

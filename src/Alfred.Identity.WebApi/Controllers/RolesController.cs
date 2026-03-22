@@ -3,12 +3,16 @@ using Alfred.Identity.Application.Roles;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Roles;
+using Alfred.Identity.WebApi.Filters;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
 [Route("identity/roles")]
+[Authorize]
+[RequireAuthenticatedUser]
 public class RolesController : BaseApiController
 {
     private readonly IRoleService _roleService;
@@ -20,6 +24,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Get paginated list of roles</summary>
     [HttpGet]
+    [RequirePermission("roles:read")]
     [ProducesResponseType(typeof(ApiPagedResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetRoles(
@@ -32,6 +37,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Get role by ID</summary>
     [HttpGet("{id:guid}")]
+    [RequirePermission("roles:read")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRoleById(Guid id, CancellationToken cancellationToken)
@@ -47,6 +53,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Get permissions of a role</summary>
     [HttpGet("{id:guid}/permissions")]
+    [RequirePermission("permissions:read")]
     [ProducesResponseType(typeof(ApiResponse<List<PermissionDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRolePermissions(Guid id, CancellationToken cancellationToken)
@@ -57,6 +64,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Create a new role</summary>
     [HttpPost]
+    [RequirePermission("roles:create")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request,
@@ -69,6 +77,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Update an existing role</summary>
     [HttpPut("{id:guid}")]
+    [RequirePermission("roles:update")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -83,6 +92,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Delete a role</summary>
     [HttpDelete("{id:guid}")]
+    [RequirePermission("roles:delete")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRole(Guid id, CancellationToken cancellationToken)
@@ -93,6 +103,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Assign permissions to a role</summary>
     [HttpPost("{id:guid}/permissions")]
+    [RequirePermission("permissions:assign")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddPermissions(Guid id, [FromBody] List<Guid> permissionIds,
@@ -104,6 +115,7 @@ public class RolesController : BaseApiController
 
     /// <summary>Remove permissions from a role</summary>
     [HttpDelete("{id:guid}/permissions")]
+    [RequirePermission("permissions:revoke")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RemovePermissions(Guid id, [FromBody] List<Guid> permissionIds,

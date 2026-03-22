@@ -2,12 +2,16 @@ using Alfred.Identity.Application.Applications;
 using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Contracts.Common;
+using Alfred.Identity.WebApi.Filters;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
 [Route("identity/applications")]
+[Authorize]
+[RequireAuthenticatedUser]
 public class ApplicationsController : BaseApiController
 {
     private readonly IApplicationService _applicationService;
@@ -19,6 +23,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Get paginated list of applications</summary>
     [HttpGet]
+    [RequirePermission("applications:read")]
     [ProducesResponseType(typeof(ApiPagedResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetApplications(
@@ -32,6 +37,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Get application metadata (types, permissions)</summary>
     [HttpGet("metadata")]
+    [RequirePermission("applications:read")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationMetadataDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMetadata(CancellationToken cancellationToken)
     {
@@ -41,6 +47,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Get application by ID</summary>
     [HttpGet("{id:guid}")]
+    [RequirePermission("applications:read")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -56,6 +63,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Create a new OAuth2 client application</summary>
     [HttpPost]
+    [RequirePermission("applications:create")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -75,6 +83,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Update an existing application</summary>
     [HttpPut("{id:guid}")]
+    [RequirePermission("applications:update")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
@@ -94,6 +103,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Delete an application</summary>
     [HttpDelete("{id:guid}")]
+    [RequirePermission("applications:delete")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
@@ -104,6 +114,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Update application status (activate/deactivate)</summary>
     [HttpPatch("{id:guid}/status")]
+    [RequirePermission("applications:update")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateStatus(
@@ -122,6 +133,7 @@ public class ApplicationsController : BaseApiController
 
     /// <summary>Regenerate client secret</summary>
     [HttpPost("{id:guid}/secret/regenerate")]
+    [RequirePermission("applications:update")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegenerateSecret(Guid id, CancellationToken cancellationToken)

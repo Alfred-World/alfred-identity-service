@@ -8,10 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace Alfred.Identity.Infrastructure.Seeders;
 
 /// <summary>
-/// Seeds role-permission mappings.
+/// Seeds Owner role permission mapping.
 /// - Owner: system:* (full access)
-/// - Admin: all management permissions except system:*
-/// - User: profile permissions only
 /// </summary>
 public class RolePermissionSeeder : BaseDataSeeder
 {
@@ -27,59 +25,34 @@ public class RolePermissionSeeder : BaseDataSeeder
 
     public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // Check if role permissions already exist
-        if (await _dbContext.Set<RolePermission>().AnyAsync(cancellationToken))
+        var ownerRole = await _dbContext.Set<Role>()
+            .FirstOrDefaultAsync(r => r.NormalizedName == "OWNER", cancellationToken);
+        if (ownerRole == null)
         {
-            LogSuccess("Skipped (mappings exist)");
+            LogWarning("Owner role not found. Skipping.");
             return;
         }
 
-        // Get roles
-        var ownerRole = await _dbContext.Set<Role>().FirstOrDefaultAsync(r => r.Name == "Owner", cancellationToken);
-        var adminRole = await _dbContext.Set<Role>().FirstOrDefaultAsync(r => r.Name == "Admin", cancellationToken);
-        var userRole = await _dbContext.Set<Role>().FirstOrDefaultAsync(r => r.Name == "User", cancellationToken);
-
-        if (ownerRole == null || adminRole == null || userRole == null)
+        var systemWildcard = await _dbContext.Set<Permission>()
+            .FirstOrDefaultAsync(p => p.Code == "system:*", cancellationToken);
+        if (systemWildcard == null)
         {
-            LogWarning("Required roles not found. Skipping.");
+            LogWarning("system:* permission not found. Skipping.");
             return;
         }
 
-        // Get all permissions
-        var allPermissions = await _dbContext.Set<Permission>().ToListAsync(cancellationToken);
-        if (!allPermissions.Any())
+        var exists = await _dbContext.Set<RolePermission>()
+            .AnyAsync(rp => rp.RoleId == ownerRole.Id && rp.PermissionId == systemWildcard.Id, cancellationToken);
+        if (exists)
         {
-            LogWarning("No permissions found. Skipping.");
+            LogSuccess("Skipped (Owner -> system:* mapping exists)");
             return;
         }
 
-        var rolePermissions = new List<RolePermission>();
-
-        // ===== Owner Role: Gets system:* only (implies full access) =====
-        var systemWildcard = allPermissions.FirstOrDefault(p => p.Code == "system:*");
-        if (systemWildcard != null)
-        {
-            rolePermissions.Add(RolePermission.Create(ownerRole.Id, systemWildcard.Id));
-        }
-
-        // ===== Admin Role: Gets all permissions EXCEPT system:* =====
-        var adminPermissions = allPermissions.Where(p => p.Code != "system:*");
-        foreach (var permission in adminPermissions)
-        {
-            rolePermissions.Add(RolePermission.Create(adminRole.Id, permission.Id));
-        }
-
-        // ===== User Role: Gets profile permissions only =====
-        var userPermissions = allPermissions.Where(p => p.Resource == "profile");
-        foreach (var permission in userPermissions)
-        {
-            rolePermissions.Add(RolePermission.Create(userRole.Id, permission.Id));
-        }
-
-        await _dbContext.Set<RolePermission>().AddRangeAsync(rolePermissions, cancellationToken);
+        await _dbContext.Set<RolePermission>().AddAsync(RolePermission.Create(ownerRole.Id, systemWildcard.Id),
+            cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        LogSuccess(
-            $"Created {rolePermissions.Count} mappings (Owner:1, Admin:{adminPermissions.Count()}, User:{userPermissions.Count()})");
+        LogSuccess("Created Owner -> system:* mapping");
     }
 }

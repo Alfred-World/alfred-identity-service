@@ -129,8 +129,30 @@ public class PermissionCacheService : IPermissionCacheService
         var permissions = await GetRolePermissionsAsync(roleName, cancellationToken);
         var normalizedCode = permissionCode.ToLowerInvariant();
 
-        // Check for exact match or wildcard (Owner has "*" = all permissions)
-        return permissions.Contains(normalizedCode) || permissions.Contains("*");
+        if (permissions.Contains(normalizedCode) || permissions.Contains("*"))
+        {
+            return true;
+        }
+
+        // Support namespace wildcard, e.g. system:* matches system:read
+        return permissions.Any(permission =>
+        {
+            var normalizedPermission = permission.ToLowerInvariant();
+
+            // system:* is reserved as superuser wildcard for Owner role.
+            if (normalizedPermission == "system:*")
+            {
+                return true;
+            }
+
+            if (!normalizedPermission.EndsWith(":*", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var prefix = normalizedPermission[..^2];
+            return normalizedCode.StartsWith(prefix + ":", StringComparison.Ordinal);
+        });
     }
 
     private async Task SyncPermissionsToCache(string normalizedRoleName, List<string> permissionCodes,

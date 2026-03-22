@@ -131,6 +131,19 @@ public sealed class User : BaseEntity<UserId>, IHasCreationTime, IHasCreator, IH
         return CreateWithUsername(email, email, passwordHash, fullName, emailConfirmed, createdById);
     }
 
+    public static User CreateWithId(UserId id, string email, string userName, string? passwordHash, string fullName,
+        bool emailConfirmed = false, Guid? createdById = null)
+    {
+        if (id == UserId.Empty)
+        {
+            throw new InvalidOperationException("User id must not be empty.");
+        }
+
+        var user = CreateWithUsername(email, userName, passwordHash, fullName, emailConfirmed, createdById);
+        user.Id = id;
+        return user;
+    }
+
     public static User CreateWithUsername(string email, string userName, string? passwordHash, string fullName,
         bool emailConfirmed = false,
         Guid? createdById = null)
@@ -159,6 +172,23 @@ public sealed class User : BaseEntity<UserId>, IHasCreationTime, IHasCreator, IH
     public bool CanLogin()
     {
         return !IsBanned && Status == UserStatus.Active && (!LockoutEnd.HasValue || LockoutEnd < DateTimeOffset.UtcNow);
+    }
+
+    public bool CanSsoLogin()
+    {
+        return CanLogin() && EmailConfirmed;
+    }
+
+    public void ConfirmEmail(Guid? confirmedById = null)
+    {
+        if (EmailConfirmed)
+        {
+            return;
+        }
+
+        EmailConfirmed = true;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedById = confirmedById;
     }
 
 

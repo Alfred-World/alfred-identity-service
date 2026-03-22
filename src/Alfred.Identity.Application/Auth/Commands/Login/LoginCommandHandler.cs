@@ -50,6 +50,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             return Result<LoginData>.Failure("Account is not active");
         }
 
+        // SSO login requires verified email.
+        if (request.IsSsoFlow && !user.EmailConfirmed)
+        {
+            return Result<LoginData>.Failure("Email is not confirmed");
+        }
+
         // Verify password
         if (!user.HasPassword() || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash!))
         {
