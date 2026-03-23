@@ -34,9 +34,6 @@ public class AppConfiguration
     /// <summary>Core/App Web URL, e.g. https://app.lucasvu.io.vn</summary>
     public string CoreWebUrl { get; }
 
-    /// <summary>Identity Web URL (for password reset links), e.g. https://sso.lucasvu.io.vn</summary>
-    public string IdentityWebUrl { get; }
-
     // JWT Settings (consolidated — no more IConfiguration["Jwt:*"])
     /// <summary>Token issuer — MUST match AUTH_VALID_ISSUER on the gateway</summary>
     public string JwtIssuer { get; }
@@ -91,7 +88,6 @@ public class AppConfiguration
         GatewayUrl = GetRequiredUrl("URLS_GATEWAY");
         SsoWebUrl = GetRequiredUrl("URLS_SSO_WEB");
         CoreWebUrl = GetRequiredUrl("URLS_CORE_WEB");
-        IdentityWebUrl = GetRequiredUrl("URLS_IDENTITY_WEB");
 
         // JWT Settings (Required issuer/audience, optional lifetimes with sensible defaults)
         JwtIssuer = GetRequired("JWT_ISSUER");

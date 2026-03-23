@@ -372,7 +372,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var resetBaseUrl = _appConfig.IdentityWebUrl;
+        var resetBaseUrl = _appConfig.SsoWebUrl;
         var command = new ForgotPasswordCommand(request.Email, resetBaseUrl);
         var result = await _mediator.Send(command);
 
@@ -468,7 +468,6 @@ public class AuthController : BaseApiController
             {
                 _appConfig.SsoWebUrl,
                 _appConfig.CoreWebUrl,
-                _appConfig.IdentityWebUrl,
                 _appConfig.GatewayUrl
             };
 

@@ -1,6 +1,8 @@
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Configuration;
 
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -47,10 +49,17 @@ public static class AuthenticationConfigurationExtensions
                 options.ExpireTimeSpan = TimeSpan.FromDays(14);
                 options.SlidingExpiration = true;
                 options.Events.OnRedirectToLogin = context =>
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return Task.CompletedTask;
-                };
+                    WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status401Unauthorized,
+                        "You are not authorized to access this resource. Please provide a valid token.",
+                        "UNAUTHORIZED");
+                options.Events.OnRedirectToAccessDenied = context =>
+                    WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status403Forbidden,
+                        "You don't have permission to access this resource.",
+                        "FORBIDDEN");
             })
             // ── JWT Bearer scheme (API calls via Gateway) ──────────────────
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -69,6 +78,30 @@ public static class AuthenticationConfigurationExtensions
 
                     // Resolve signing keys from our own DB (via ISigningKeyRepository)
                     IssuerSigningKeyResolver = (_, _, _, _) => GetSigningKeys(services)
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = async context =>
+                    {
+                        if (context.Response.HasStarted)
+                        {
+                            return;
+                        }
+
+                        context.HandleResponse();
+                        await WriteAuthErrorAsync(
+                            context.Response,
+                            StatusCodes.Status401Unauthorized,
+                            "You are not authorized to access this resource. Please provide a valid token.",
+                            "UNAUTHORIZED");
+                    },
+                    OnForbidden = context =>
+                        WriteAuthErrorAsync(
+                            context.Response,
+                            StatusCodes.Status403Forbidden,
+                            "You don't have permission to access this resource.",
+                            "FORBIDDEN")
                 };
             })
             // ── Policy scheme that auto-selects Cookie vs Bearer ───────────
@@ -146,5 +179,26 @@ public static class AuthenticationConfigurationExtensions
         {
             return _cachedKeys ?? Enumerable.Empty<SecurityKey>();
         }
+    }
+
+    private static Task WriteAuthErrorAsync(HttpResponse response, int statusCode, string message, string code)
+    {
+        response.StatusCode = statusCode;
+        response.ContentType = "application/json";
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            success = false,
+            errors = new[]
+            {
+                new
+                {
+                    message,
+                    code
+                }
+            }
+        });
+
+        return response.WriteAsync(payload);
     }
 }

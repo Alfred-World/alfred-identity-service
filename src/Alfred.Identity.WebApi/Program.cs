@@ -12,6 +12,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 
 using Serilog;
+using Serilog.Events;
 
 // Load environment variables from .env file
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
@@ -27,6 +28,13 @@ builder.Host.UseSerilog((context, configuration) =>
 {
     configuration
         .ReadFrom.Configuration(context.Configuration)
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Mvc", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Routing", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .WriteTo.Console();
 });
@@ -118,7 +126,20 @@ app.UseScalarInDevelopment();
 
 // Add global exception handler (must be early in pipeline)
 app.UseExceptionHandler();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (httpContext, _, exception) =>
+    {
+        if (exception is not null || httpContext.Response.StatusCode >= 500)
+        {
+            return LogEventLevel.Error;
+        }
+
+        return httpContext.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            ? LogEventLevel.Verbose
+            : LogEventLevel.Information;
+    };
+});
 
 app.UseCors("AllowFrontend");
 
