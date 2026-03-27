@@ -41,7 +41,7 @@ public sealed class UserService : BaseEntityService, IUserService
             UserFieldMap.Views, u => UserDto.FromEntity(u), ct);
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<UserDto?> GetUserByIdAsync(UserId id, CancellationToken ct = default)
     {
         var user = await _unitOfWork.Users.GetByIdWithRolesAsync((UserId)id, ct);
         return user == null ? null : UserDto.FromEntity(user);
@@ -118,9 +118,9 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Roles
 
-    public async Task AssignRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
+    public async Task AssignRolesAsync(UserId userId, IEnumerable<RoleId> roleIds, CancellationToken ct = default)
     {
-        var user = await _unitOfWork.Users.GetByIdWithRolesAsync((UserId)userId, ct)
+        var user = await _unitOfWork.Users.GetByIdWithRolesAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
@@ -135,9 +135,9 @@ public sealed class UserService : BaseEntityService, IUserService
         await _unitOfWork.SaveChangesAsync(ct);
     }
 
-    public async Task RevokeRolesAsync(Guid userId, IEnumerable<Guid> roleIds, CancellationToken ct = default)
+    public async Task RevokeRolesAsync(UserId userId, IEnumerable<RoleId> roleIds, CancellationToken ct = default)
     {
-        var user = await _unitOfWork.Users.GetByIdWithRolesAsync((UserId)userId, ct)
+        var user = await _unitOfWork.Users.GetByIdWithRolesAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
         foreach (var roleId in roleIds)
@@ -153,7 +153,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Ban
 
-    public async Task BanUserAsync(Guid userId, string reason, DateTime? expiresAt, CancellationToken ct = default)
+    public async Task BanUserAsync(UserId userId, string reason, DateTime? expiresAt, CancellationToken ct = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
@@ -182,7 +182,7 @@ public sealed class UserService : BaseEntityService, IUserService
             $"Banned by {_currentUser.Username}. Reason: {reason}", ct);
     }
 
-    public async Task UnbanUserAsync(Guid userId, CancellationToken ct = default)
+    public async Task UnbanUserAsync(UserId userId, CancellationToken ct = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
@@ -211,7 +211,7 @@ public sealed class UserService : BaseEntityService, IUserService
             $"Unbanned by {_currentUser.Username}", ct);
     }
 
-    public async Task<List<BanDto>> GetBanHistoryAsync(Guid userId, CancellationToken ct = default)
+    public async Task<List<BanDto>> GetBanHistoryAsync(UserId userId, CancellationToken ct = default)
     {
         var history = await _unitOfWork.UserBans.GetHistoryByUserIdAsync(userId, ct);
         return history.Select(b => BanDto.FromEntity(b)).ToList();
@@ -221,7 +221,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Activity
 
-    public async Task<ActivityLogPageResult> GetActivityLogsAsync(Guid userId, int page, int pageSize,
+    public async Task<ActivityLogPageResult> GetActivityLogsAsync(UserId userId, int page, int pageSize,
         CancellationToken ct = default)
     {
         var (items, totalCount) = await _unitOfWork.UserActivityLogs.GetPagedAsync(userId, page, pageSize, ct);
@@ -233,7 +233,7 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Admin Password Management
 
-    public async Task AdminResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default)
+    public async Task AdminResetPasswordAsync(UserId userId, string newPassword, CancellationToken ct = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
@@ -248,7 +248,7 @@ public sealed class UserService : BaseEntityService, IUserService
             $"Password reset by admin {_currentUser.Username}", ct);
     }
 
-    public async Task AdminConfirmEmailAsync(Guid userId, CancellationToken ct = default)
+    public async Task AdminConfirmEmailAsync(UserId userId, CancellationToken ct = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");

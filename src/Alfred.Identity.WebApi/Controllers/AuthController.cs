@@ -496,7 +496,8 @@ public class AuthController : BaseApiController
     private string BuildSsoErrorUrl(string error, string description)
     {
         var ssoUrl = _appConfig.SsoWebUrl;
-        return $"{ssoUrl}/auth/error?error={Uri.EscapeDataString(error)}&error_description={Uri.EscapeDataString(description)}";
+        return
+            $"{ssoUrl}/auth/error?error={Uri.EscapeDataString(error)}&error_description={Uri.EscapeDataString(description)}";
     }
 
     private async Task<bool> IsRedirectUriAllowedAsync(string redirectUri)

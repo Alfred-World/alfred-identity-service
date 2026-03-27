@@ -5,6 +5,6 @@ using MediatR;
 namespace Alfred.Identity.Application.Auth.Commands.RevokeSession;
 
 public record RevokeSessionCommand(
-    Guid UserId,
-    Guid TokenId
+    UserId UserId,
+    TokenId TokenId
 ) : IRequest<Result<object>>;

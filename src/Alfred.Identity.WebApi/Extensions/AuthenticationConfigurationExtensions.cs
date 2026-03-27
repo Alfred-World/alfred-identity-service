@@ -1,7 +1,7 @@
+using System.Text.Json;
+
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Configuration;
-
-using System.Text.Json;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

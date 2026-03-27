@@ -69,6 +69,7 @@ public static class ServiceCollectionExtensions
 
         // === Auto-register Data Seeders ===
         services.AddImplementationsOf<IDataSeeder>(InfraAssembly);
+        services.AddScoped<ISeedHistoryRepository, SeedHistoryRepository>();
 
         return services;
     }

@@ -13,7 +13,8 @@ public sealed class MediatRDomainEventDispatcher : IDomainEventDispatcher
         _mediator = mediator;
     }
 
-    public async Task DispatchAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
+    public async Task DispatchAsync(IEnumerable<IDomainEvent> domainEvents,
+        CancellationToken cancellationToken = default)
     {
         foreach (var domainEvent in domainEvents)
         {

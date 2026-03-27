@@ -36,13 +36,13 @@ public sealed class RoleService : BaseEntityService, IRoleService
             RoleFieldMap.Views, r => RoleDto.FromEntity(r), cancellationToken);
     }
 
-    public async Task<RoleDto?> GetRoleByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<RoleDto?> GetRoleByIdAsync(RoleId id, CancellationToken cancellationToken = default)
     {
         var entity = await _roleRepository.GetByIdAsync(id, cancellationToken);
         return entity is null ? null : RoleDto.FromEntity(entity);
     }
 
-    public async Task<List<PermissionDto>> GetRolePermissionsAsync(Guid roleId,
+    public async Task<List<PermissionDto>> GetRolePermissionsAsync(RoleId roleId,
         CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(roleId, cancellationToken);
@@ -85,7 +85,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         return RoleDto.FromEntity(created!);
     }
 
-    public async Task<RoleDto> UpdateRoleAsync(Guid id, string name, string? icon, bool isImmutable, bool isSystem,
+    public async Task<RoleDto> UpdateRoleAsync(RoleId id, string name, string? icon, bool isImmutable, bool isSystem,
         IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(id, cancellationToken);
@@ -114,7 +114,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         return RoleDto.FromEntity(updated!);
     }
 
-    public async Task<RoleDto> DeleteRoleAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<RoleDto> DeleteRoleAsync(RoleId id, CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(id, cancellationToken);
         if (role is null)
@@ -141,7 +141,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         return dto;
     }
 
-    public async Task<RoleDto> AddPermissionsToRoleAsync(Guid roleId, IEnumerable<Guid> permissionIds,
+    public async Task<RoleDto> AddPermissionsToRoleAsync(RoleId roleId, IEnumerable<PermissionId> permissionIds,
         CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(roleId, cancellationToken);
@@ -155,7 +155,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException("Cannot modify immutable role.");
         }
 
-        var typedIds = permissionIds.Select(id => (PermissionId)id).Distinct().ToList();
+        var typedIds = permissionIds.Distinct().ToList();
         var valid =
             await _permissionRepository.FindAsync(p => typedIds.Contains(p.Id), cancellationToken);
         var validIds = valid.Select(p => p.Id).ToHashSet();
@@ -175,7 +175,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         return RoleDto.FromEntity(updated!);
     }
 
-    public async Task<RoleDto> RemovePermissionsFromRoleAsync(Guid roleId, IEnumerable<Guid> permissionIds,
+    public async Task<RoleDto> RemovePermissionsFromRoleAsync(RoleId roleId, IEnumerable<PermissionId> permissionIds,
         CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(roleId, cancellationToken);
@@ -189,7 +189,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException("Cannot modify immutable role.");
         }
 
-        var removeIds = permissionIds.Select(id => (PermissionId)id).ToHashSet();
+        var removeIds = permissionIds.ToHashSet();
         var keepIds = role.RolePermissions
             .Select(rp => rp.PermissionId)
             .Where(id => !removeIds.Contains(id))

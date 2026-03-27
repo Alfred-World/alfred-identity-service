@@ -42,7 +42,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserById(Guid userId, CancellationToken cancellationToken)
     {
-        var result = await _userService.GetUserByIdAsync(userId, cancellationToken);
+        var result = await _userService.GetUserByIdAsync((UserId)userId, cancellationToken);
         if (result == null)
         {
             return NotFoundResponse("User not found");
@@ -81,7 +81,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds,
         CancellationToken cancellationToken)
     {
-        await _userService.AssignRolesAsync(userId, roleIds, cancellationToken);
+        await _userService.AssignRolesAsync((UserId)userId, roleIds.Select(x => (RoleId)x).ToList(), cancellationToken);
         return OkResponse(true);
     }
 
@@ -94,7 +94,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> RevokeRoles(Guid userId, [FromBody] List<Guid> roleIds,
         CancellationToken cancellationToken)
     {
-        await _userService.RevokeRolesAsync(userId, roleIds, cancellationToken);
+        await _userService.RevokeRolesAsync((UserId)userId, roleIds.Select(x => (RoleId)x).ToList(), cancellationToken);
         return OkResponse(true);
     }
 
@@ -107,7 +107,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> BanUser(Guid userId, [FromBody] BanUserRequest request,
         CancellationToken cancellationToken)
     {
-        await _userService.BanUserAsync(userId, request.Reason, request.ExpiresAt, cancellationToken);
+        await _userService.BanUserAsync((UserId)userId, request.Reason, request.ExpiresAt, cancellationToken);
         return OkResponse(true);
     }
 
@@ -119,7 +119,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnbanUser(Guid userId, CancellationToken cancellationToken)
     {
-        await _userService.UnbanUserAsync(userId, cancellationToken);
+        await _userService.UnbanUserAsync((UserId)userId, cancellationToken);
         return OkResponse(true);
     }
 
@@ -129,7 +129,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<List<BanDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBanHistory(Guid userId, CancellationToken cancellationToken)
     {
-        var result = await _userService.GetBanHistoryAsync(userId, cancellationToken);
+        var result = await _userService.GetBanHistoryAsync((UserId)userId, cancellationToken);
         return OkResponse(result);
     }
 
@@ -143,7 +143,7 @@ public class UsersController : BaseApiController
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var result = await _userService.GetActivityLogsAsync(userId, page, pageSize, cancellationToken);
+        var result = await _userService.GetActivityLogsAsync((UserId)userId, page, pageSize, cancellationToken);
         return OkPaginatedResponse(new PageResult<ActivityLogDto>(result.Items, result.Page, result.PageSize,
             result.TotalCount));
     }
@@ -159,7 +159,7 @@ public class UsersController : BaseApiController
         [FromBody] AdminResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        await _userService.AdminResetPasswordAsync(userId, request.NewPassword, cancellationToken);
+        await _userService.AdminResetPasswordAsync((UserId)userId, request.NewPassword, cancellationToken);
         return OkResponse("Password has been reset successfully.");
     }
 
@@ -170,7 +170,7 @@ public class UsersController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AdminConfirmEmail(Guid userId, CancellationToken cancellationToken)
     {
-        await _userService.AdminConfirmEmailAsync(userId, cancellationToken);
+        await _userService.AdminConfirmEmailAsync((UserId)userId, cancellationToken);
         return OkResponse("Email has been confirmed successfully.");
     }
 }

@@ -37,9 +37,9 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
             a => ApplicationDto.FromEntity(a), ct);
     }
 
-    public async Task<ApplicationDto?> GetApplicationByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<ApplicationDto?> GetApplicationByIdAsync(ApplicationId id, CancellationToken ct = default)
     {
-        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct);
+        var app = await _unitOfWork.Applications.GetByIdAsync(id, ct);
         return app == null ? null : ApplicationDto.FromEntity(app);
     }
 
@@ -119,14 +119,14 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     }
 
     public async Task<ApplicationDto> UpdateApplicationAsync(
-        Guid id,
+        ApplicationId id,
         string displayName,
         string redirectUris,
         string? postLogoutRedirectUris,
         string? permissions,
         CancellationToken ct = default)
     {
-        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(id, ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         app.Update(
@@ -144,18 +144,18 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         return ApplicationDto.FromEntity(app);
     }
 
-    public async Task DeleteApplicationAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteApplicationAsync(ApplicationId id, CancellationToken ct = default)
     {
-        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(id, ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         _unitOfWork.Applications.Delete(app);
         await _unitOfWork.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default)
+    public async Task<bool> UpdateStatusAsync(ApplicationId id, bool isActive, CancellationToken ct = default)
     {
-        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct);
+        var app = await _unitOfWork.Applications.GetByIdAsync(id, ct);
         if (app == null)
         {
             return false;
@@ -166,9 +166,9 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         return true;
     }
 
-    public async Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default)
+    public async Task<string> RegenerateClientSecretAsync(ApplicationId id, CancellationToken ct = default)
     {
-        var app = await _unitOfWork.Applications.GetByIdAsync(new ApplicationId(id), ct)
+        var app = await _unitOfWork.Applications.GetByIdAsync(id, ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
         var secretBytes = RandomNumberGenerator.GetBytes(32);

@@ -8,7 +8,7 @@ public interface IApplicationService
     #region Query
 
     Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query, CancellationToken ct = default);
-    Task<ApplicationDto?> GetApplicationByIdAsync(Guid id, CancellationToken ct = default);
+    Task<ApplicationDto?> GetApplicationByIdAsync(ApplicationId id, CancellationToken ct = default);
     Task<ApplicationMetadataDto> GetMetadataAsync(CancellationToken ct = default);
 
     #endregion
@@ -25,16 +25,16 @@ public interface IApplicationService
         CancellationToken ct = default);
 
     Task<ApplicationDto> UpdateApplicationAsync(
-        Guid id,
+        ApplicationId id,
         string displayName,
         string redirectUris,
         string? postLogoutRedirectUris,
         string? permissions,
         CancellationToken ct = default);
 
-    Task DeleteApplicationAsync(Guid id, CancellationToken ct = default);
-    Task<bool> UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default);
-    Task<string> RegenerateClientSecretAsync(Guid id, CancellationToken ct = default);
+    Task DeleteApplicationAsync(ApplicationId id, CancellationToken ct = default);
+    Task<bool> UpdateStatusAsync(ApplicationId id, bool isActive, CancellationToken ct = default);
+    Task<string> RegenerateClientSecretAsync(ApplicationId id, CancellationToken ct = default);
 
     #endregion
 }

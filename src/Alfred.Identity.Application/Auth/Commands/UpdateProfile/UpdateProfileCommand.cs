@@ -5,7 +5,7 @@ using MediatR;
 namespace Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 
 public record UpdateProfileCommand(
-    Guid UserId,
+    UserId UserId,
     string FullName,
     string? PhoneNumber,
     string? Avatar

@@ -295,8 +295,16 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         // RedeemByIdAsync above used ExecuteUpdateAsync which auto-commits independently.
         await _tokenRepository.SaveChangesAsync(cancellationToken);
 
-        // Clean up expired/redeemed/revoked tokens for this user (fire-and-forget).
-        _ = _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(userId, CancellationToken.None);
+        // Cleanup stale tokens. Must be awaited — fire-and-forget on a scoped DbContext causes
+        // Npgsql to receive BindComplete while the connection is already being closed on scope dispose.
+        try
+        {
+            await _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(userId, CancellationToken.None);
+        }
+        catch
+        {
+            /* non-critical cleanup — swallow */
+        }
 
         return new ExchangeCodeResult(
             true,

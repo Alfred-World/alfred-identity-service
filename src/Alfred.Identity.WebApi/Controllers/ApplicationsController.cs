@@ -52,7 +52,7 @@ public class ApplicationsController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _applicationService.GetApplicationByIdAsync(id, cancellationToken);
+        var result = await _applicationService.GetApplicationByIdAsync((ApplicationId)id, cancellationToken);
         if (result == null)
         {
             return NotFoundResponse("Application not found");
@@ -92,7 +92,7 @@ public class ApplicationsController : BaseApiController
         CancellationToken cancellationToken)
     {
         var result = await _applicationService.UpdateApplicationAsync(
-            id,
+            (ApplicationId)id,
             request.DisplayName,
             request.RedirectUris,
             request.PostLogoutRedirectUris,
@@ -108,7 +108,7 @@ public class ApplicationsController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await _applicationService.DeleteApplicationAsync(id, cancellationToken);
+        await _applicationService.DeleteApplicationAsync((ApplicationId)id, cancellationToken);
         return OkResponse(true, "Application deleted successfully");
     }
 
@@ -122,7 +122,8 @@ public class ApplicationsController : BaseApiController
         [FromBody] UpdateApplicationStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _applicationService.UpdateStatusAsync(id, request.IsActive, cancellationToken);
+        var updated =
+            await _applicationService.UpdateStatusAsync((ApplicationId)id, request.IsActive, cancellationToken);
         if (!updated)
         {
             return NotFoundResponse("Application not found");
@@ -138,7 +139,7 @@ public class ApplicationsController : BaseApiController
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegenerateSecret(Guid id, CancellationToken cancellationToken)
     {
-        var rawSecret = await _applicationService.RegenerateClientSecretAsync(id, cancellationToken);
+        var rawSecret = await _applicationService.RegenerateClientSecretAsync((ApplicationId)id, cancellationToken);
         return OkResponse(rawSecret, "Client secret regenerated successfully. Please save it immediately.");
     }
 }

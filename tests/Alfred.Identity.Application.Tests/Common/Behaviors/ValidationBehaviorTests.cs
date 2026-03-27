@@ -30,7 +30,8 @@ public class ValidationBehaviorTests
         var request = new FakeRequest(string.Empty);
 
         // Act
-        var act = () => behavior.Handle(request, _ => Task.FromResult(new FakeResponse("should-not-run")), CancellationToken.None);
+        var act = () => behavior.Handle(request, _ => Task.FromResult(new FakeResponse("should-not-run")),
+            CancellationToken.None);
 
         // Assert
         await Assert.ThrowsAsync<ValidationException>(act);

@@ -8,4 +8,4 @@ namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;
 /// Regenerate 10 new single-use recovery codes, invalidating all existing ones.
 /// </summary>
 /// <param name="UserId">The authenticated user requesting regeneration.</param>
-public record RegenerateBackupCodesCommand(Guid UserId) : IRequest<Result<IEnumerable<string>>>;
+public record RegenerateBackupCodesCommand(UserId UserId) : IRequest<Result<IEnumerable<string>>>;

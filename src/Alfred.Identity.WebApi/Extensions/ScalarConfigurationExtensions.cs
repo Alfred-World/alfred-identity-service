@@ -1,5 +1,7 @@
 using System.Reflection;
 
+using Alfred.Identity.WebApi.Configuration;
+
 using Microsoft.OpenApi.Models;
 
 using Scalar.AspNetCore;
@@ -32,6 +34,9 @@ public static class ScalarConfigurationExtensions
 
             // Support non-nullable reference types for proper required field detection in .NET 9
             c.SupportNonNullableReferenceTypes();
+
+            // Map all strongly typed IDs to their underlying primitive schemas
+            c.SchemaFilter<StronglyTypedIdSchemaFilter>();
 
             c.UseAllOfForInheritance();
             c.UseAllOfToExtendReferenceSchemas();

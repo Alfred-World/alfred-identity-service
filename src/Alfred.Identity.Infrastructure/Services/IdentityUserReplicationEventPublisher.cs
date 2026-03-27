@@ -23,7 +23,8 @@ public sealed class IdentityUserReplicationEventPublisher : IIdentityUserReplica
         _logger = logger;
     }
 
-    public async Task PublishUserUpsertedAsync(Guid userId, string userName, string email, string fullName, string? avatar,
+    public async Task PublishUserUpsertedAsync(Guid userId, string userName, string email, string fullName,
+        string? avatar,
         string status,
         bool isBanned,
         bool isDeleted,
