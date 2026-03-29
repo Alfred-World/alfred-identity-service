@@ -33,8 +33,8 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
     public async Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query,
         CancellationToken ct = default)
     {
-        return await GetPagedAsync(_unitOfWork.Applications, query, ApplicationFieldMap.Instance,
-            a => ApplicationDto.FromEntity(a), ct);
+        return await GetPagedWithViewAsync(_unitOfWork.Applications, query, ApplicationFieldMap.Instance,
+            ApplicationFieldMap.Views, a => ApplicationDto.FromEntity(a), ct);
     }
 
     public async Task<ApplicationDto?> GetApplicationByIdAsync(ApplicationId id, CancellationToken ct = default)
@@ -115,7 +115,12 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         await _unitOfWork.SaveChangesAsync(ct);
 
         var dto = ApplicationDto.FromEntity(app);
-        return rawSecret != null ? dto with { ClientSecret = rawSecret } : dto;
+        if (rawSecret != null)
+        {
+            dto.ClientSecret = rawSecret;
+        }
+
+        return dto;
     }
 
     public async Task<ApplicationDto> UpdateApplicationAsync(

@@ -61,7 +61,7 @@ public class PermissionCacheService : IPermissionCacheService
     {
         try
         {
-            // Get all unique roles from role_permissions
+            // Sequential DB reads (DbContext is not thread-safe for concurrent access)
             var ownerPermissions =
                 await _rolePermissionRepository.GetPermissionsByRoleNameAsync("Owner", cancellationToken);
             var adminPermissions =
@@ -69,10 +69,12 @@ public class PermissionCacheService : IPermissionCacheService
             var userPermissions =
                 await _rolePermissionRepository.GetPermissionsByRoleNameAsync("User", cancellationToken);
 
-            // Sync each role
-            await SyncPermissionsToCache("OWNER", ownerPermissions.Select(p => p.Code).ToList(), cancellationToken);
-            await SyncPermissionsToCache("ADMIN", adminPermissions.Select(p => p.Code).ToList(), cancellationToken);
-            await SyncPermissionsToCache("USER", userPermissions.Select(p => p.Code).ToList(), cancellationToken);
+            // Parallel cache writes (Redis is thread-safe)
+            await Task.WhenAll(
+                SyncPermissionsToCache("OWNER", ownerPermissions.Select(p => p.Code).ToList(), cancellationToken),
+                SyncPermissionsToCache("ADMIN", adminPermissions.Select(p => p.Code).ToList(), cancellationToken),
+                SyncPermissionsToCache("USER", userPermissions.Select(p => p.Code).ToList(), cancellationToken)
+            );
 
             _logger.LogInformation("Synced all role permissions to cache");
         }

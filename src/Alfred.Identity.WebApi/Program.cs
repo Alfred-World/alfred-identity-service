@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 using Alfred.Identity.Application;
 using Alfred.Identity.Infrastructure;
@@ -10,6 +11,7 @@ using Alfred.Identity.WebApi.Middleware;
 using FluentValidation;
 
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 
 using Serilog;
 using Serilog.Events;
@@ -94,10 +96,44 @@ builder.Services.AddInfrastructure();
 // Add Cookie + JWT Bearer Authentication
 builder.Services.AddAuthenticationSchemes(appConfig);
 
+// Add Rate Limiting (defense-in-depth; gateway is primary enforcer)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"success\":false,\"errors\":[{\"message\":\"Too many requests. Please try again later.\",\"code\":\"RATE_LIMIT_EXCEEDED\"}]}",
+            ct);
+    };
+
+    // Auth endpoints: tight limit per client IP
+    options.AddFixedWindowLimiter("auth", opt =>
+    {
+        opt.PermitLimit = 20;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    // General API: generous global limit per user/IP
+    options.AddFixedWindowLimiter("default", opt =>
+    {
+        opt.PermitLimit = 200;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+});
+
 // Add Health Checks
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Register the built service provider so the JWT signing key resolver can use
+// the real DI container instead of calling BuildServiceProvider() on each cache refresh.
+AuthenticationConfigurationExtensions.RegisterServiceProvider(app.Services);
 
 // Validate all services before starting the application
 await app.ValidateServicesAsync();
@@ -122,6 +158,22 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
+// Security headers (defense-in-depth)
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
+    if (!app.Environment.IsDevelopment())
+    {
+        context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    }
+
+    await next();
+});
+
 // Use Scalar API reference in development
 app.UseScalarInDevelopment();
 
@@ -143,6 +195,9 @@ app.UseSerilogRequestLogging(options =>
 });
 
 app.UseCors("AllowFrontend");
+
+// Rate limiting (applied after CORS so preflight requests are not rate-limited)
+app.UseRateLimiter();
 
 // Only use HTTPS redirection if mTLS is not enabled
 if (!mtlsConfig.Enabled)

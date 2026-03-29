@@ -24,6 +24,7 @@ public class RoleRepository : BaseRepository<Role, RoleId>, IRoleRepository
     public override async Task<IEnumerable<Role>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbSet
+            .AsNoTracking()
             .OrderBy(r => r.Name)
             .ToListAsync(cancellationToken);
     }

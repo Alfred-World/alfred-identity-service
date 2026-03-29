@@ -1,4 +1,8 @@
+using System.Linq.Expressions;
+
+using Alfred.Identity.Application.Applications.Common;
 using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Projection;
 
 using ApplicationEntity = Alfred.Identity.Domain.Entities.Application;
 
@@ -26,4 +30,24 @@ public class ApplicationFieldMap : BaseFieldMap<ApplicationEntity>
         .Add("isActive", s => s.IsActive).AllowAll()
         .Add("createdAt", s => s.CreatedAt).Sortable().Selectable()
         .Add("updatedAt", s => s.UpdatedAt!).Sortable().Selectable();
+
+    /// <summary>
+    /// List view: projects only scalar fields — excludes JSON-parsed collections
+    /// (RedirectUris, PostLogoutRedirectUris, Permissions) which require in-memory deserialization.
+    /// The fallback mapper handles those for detail scenarios.
+    /// </summary>
+    public static ViewRegistry<ApplicationEntity, ApplicationDto> Views { get; } =
+        new ViewRegistry<ApplicationEntity, ApplicationDto>()
+            .Register("list", new Expression<Func<ApplicationDto, object?>>[]
+            {
+                x => x.Id,
+                x => x.ClientId,
+                x => x.DisplayName,
+                x => x.ApplicationType,
+                x => x.ClientType,
+                x => x.IsActive,
+                x => x.CreatedAt,
+                x => x.UpdatedAt
+            })
+            .SetDefault("list");
 }

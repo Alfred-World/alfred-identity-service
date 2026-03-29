@@ -27,47 +27,16 @@ public abstract class BaseEntityService
     }
 
     /// <summary>
-    /// Execute a paginated query with DSL filtering and dynamic sorting.
+    /// Execute a paginated query with DSL filtering, dynamic sorting, and optional pre-filter / includes.
     /// </summary>
     protected async Task<PageResult<TDto>> GetPagedAsync<TEntity, TId, TDto>(
         IRepository<TEntity, TId> repository,
         QueryRequest query,
         BaseFieldMap<TEntity> fieldMap,
         Func<TEntity, TDto> mapper,
-        CancellationToken cancellationToken = default)
-        where TEntity : BaseEntity<TId>
-        where TId : IEquatable<TId>
-    {
-        return await GetPagedAsync(repository, query, fieldMap, null, null, mapper, cancellationToken);
-    }
-
-    /// <summary>
-    /// Execute a paginated query with an optional pre-filter, DSL filtering, and sorting.
-    /// </summary>
-    protected async Task<PageResult<TDto>> GetPagedAsync<TEntity, TId, TDto>(
-        IRepository<TEntity, TId> repository,
-        QueryRequest query,
-        BaseFieldMap<TEntity> fieldMap,
-        Expression<Func<TEntity, bool>>? preFilter,
-        Func<TEntity, TDto> mapper,
-        CancellationToken cancellationToken = default)
-        where TEntity : BaseEntity<TId>
-        where TId : IEquatable<TId>
-    {
-        return await GetPagedAsync(repository, query, fieldMap, preFilter, null, mapper, cancellationToken);
-    }
-
-    /// <summary>
-    /// Full overload with pre-filter + includes support.
-    /// </summary>
-    protected async Task<PageResult<TDto>> GetPagedAsync<TEntity, TId, TDto>(
-        IRepository<TEntity, TId> repository,
-        QueryRequest query,
-        BaseFieldMap<TEntity> fieldMap,
-        Expression<Func<TEntity, bool>>? preFilter,
-        Expression<Func<TEntity, object>>[]? includes,
-        Func<TEntity, TDto> mapper,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Expression<Func<TEntity, bool>>? preFilter = null,
+        Expression<Func<TEntity, object>>[]? includes = null)
         where TEntity : BaseEntity<TId>
         where TId : IEquatable<TId>
     {
@@ -125,7 +94,7 @@ public abstract class BaseEntityService
     #region View/Projection overloads
 
     /// <summary>
-    /// Execute a paginated query with View/Projection support.
+    /// Execute a paginated query with View/Projection support and optional pre-filter.
     /// Resolves query.View from the ViewRegistry and applies DB-level projection via ProjectionBinder.
     /// Falls back to in-memory mapper when no view is matched.
     /// </summary>
@@ -135,26 +104,8 @@ public abstract class BaseEntityService
         BaseFieldMap<TEntity> fieldMap,
         ViewRegistry<TEntity, TDto>? viewRegistry,
         Func<TEntity, TDto> fallbackMapper,
-        CancellationToken cancellationToken = default)
-        where TEntity : BaseEntity<TId>
-        where TId : IEquatable<TId>
-        where TDto : class, new()
-    {
-        return await GetPagedWithViewAsync(repository, query, fieldMap, null, viewRegistry, fallbackMapper,
-            cancellationToken);
-    }
-
-    /// <summary>
-    /// Execute a paginated query with pre-filter and View/Projection support.
-    /// </summary>
-    protected async Task<PageResult<TDto>> GetPagedWithViewAsync<TEntity, TId, TDto>(
-        IRepository<TEntity, TId> repository,
-        QueryRequest query,
-        BaseFieldMap<TEntity> fieldMap,
-        Expression<Func<TEntity, bool>>? preFilter,
-        ViewRegistry<TEntity, TDto>? viewRegistry,
-        Func<TEntity, TDto> fallbackMapper,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Expression<Func<TEntity, bool>>? preFilter = null)
         where TEntity : BaseEntity<TId>
         where TId : IEquatable<TId>
         where TDto : class, new()

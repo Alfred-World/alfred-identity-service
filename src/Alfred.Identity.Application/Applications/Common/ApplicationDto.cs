@@ -5,23 +5,23 @@ namespace Alfred.Identity.Application.Applications.Common;
 /// <summary>
 /// DTO for Application entity - shared between queries and responses
 /// </summary>
-public sealed record ApplicationDto
+public sealed class ApplicationDto
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
-    public string ClientId { get; init; } = null!;
+    public string? ClientId { get; set; }
 
     // Only populated when creating or generating a new secret
-    public string? ClientSecret { get; init; }
-    public string? DisplayName { get; init; }
-    public List<string>? RedirectUris { get; init; }
-    public List<string>? PostLogoutRedirectUris { get; init; }
-    public List<string>? Permissions { get; init; }
-    public string? ApplicationType { get; init; }
-    public string? ClientType { get; init; }
-    public bool IsActive { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public DateTime? UpdatedAt { get; init; }
+    public string? ClientSecret { get; set; }
+    public string? DisplayName { get; set; }
+    public List<string>? RedirectUris { get; set; }
+    public List<string>? PostLogoutRedirectUris { get; set; }
+    public List<string>? Permissions { get; set; }
+    public string? ApplicationType { get; set; }
+    public string? ClientType { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public static ApplicationDto FromEntity(Domain.Entities.Application app)
     {

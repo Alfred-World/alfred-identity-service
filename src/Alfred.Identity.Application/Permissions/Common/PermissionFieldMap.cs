@@ -1,4 +1,8 @@
+using System.Linq.Expressions;
+
+using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Querying.Fields;
+using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Permissions.Common;
@@ -25,4 +29,18 @@ public class PermissionFieldMap : BaseFieldMap<Permission>
         .Add("action", p => p.Action).AllowAll()
         .Add("isActive", p => p.IsActive).AllowAll()
         .Add("createdAt", p => p.CreatedAt).AllowAll();
+
+    public static ViewRegistry<Permission, PermissionDto> Views { get; } =
+        new ViewRegistry<Permission, PermissionDto>()
+            .Register("list", new Expression<Func<PermissionDto, object?>>[]
+            {
+                x => x.Id,
+                x => x.Code,
+                x => x.Name,
+                x => x.Description,
+                x => x.Resource,
+                x => x.Action,
+                x => x.IsActive
+            })
+            .SetDefault("list");
 }

@@ -81,12 +81,26 @@ public sealed class UserService : BaseEntityService, IUserService
         var passwordHash = _passwordHasher.HashPassword(input.Password);
         var user = User.CreateWithUsername(email, userName, passwordHash, fullName, false, _currentUser.UserId);
 
-        var roleIds = input.RoleIds?.Distinct().ToList() ?? new List<Guid>();
-        foreach (var roleId in roleIds)
+        var roleIdGuids = input.RoleIds?.Distinct().ToList() ?? new List<Guid>();
+        if (roleIdGuids.Count > 0)
         {
-            var role = await _unitOfWork.Roles.GetByIdAsync(roleId, ct)
-                       ?? throw new KeyNotFoundException($"Role with ID {roleId} not found");
-            user.AddRole(role.Id, _currentUser.UserId);
+            // Batch-load all roles in a single query to avoid N+1
+            var typedRoleIds = roleIdGuids.Select(id => (RoleId)id).ToList();
+            var foundRoles = await _executor.ToListAsync(
+                _unitOfWork.Roles.GetQueryable().Where(r => typedRoleIds.Contains(r.Id)),
+                ct);
+
+            var missingIds = typedRoleIds.Except(foundRoles.Select(r => r.Id)).ToList();
+            if (missingIds.Count > 0)
+            {
+                throw new KeyNotFoundException(
+                    $"Roles with IDs [{string.Join(", ", missingIds)}] not found.");
+            }
+
+            foreach (var role in foundRoles)
+            {
+                user.AddRole(role.Id, _currentUser.UserId);
+            }
         }
 
         await _unitOfWork.Users.AddAsync(user, ct);
@@ -123,12 +137,25 @@ public sealed class UserService : BaseEntityService, IUserService
         var user = await _unitOfWork.Users.GetByIdWithRolesAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
-        foreach (var roleId in roleIds)
+        // Batch-validate all role IDs exist in a single query to avoid N+1
+        var roleIdsList = roleIds.Distinct().ToList();
+        if (roleIdsList.Count > 0)
         {
-            var role = await _unitOfWork.Roles.GetByIdAsync(roleId, ct)
-                       ?? throw new KeyNotFoundException($"Role with ID {roleId} not found");
-            _ = role; // validate exists
-            user.AddRole(roleId, _currentUser.UserId);
+            var foundIds = (await _executor.ToListAsync(
+                _unitOfWork.Roles.GetQueryable().Where(r => roleIdsList.Contains(r.Id)),
+                ct)).Select(r => r.Id).ToHashSet();
+
+            var missingIds = roleIdsList.Where(id => !foundIds.Contains(id)).ToList();
+            if (missingIds.Count > 0)
+            {
+                throw new KeyNotFoundException(
+                    $"Roles with IDs [{string.Join(", ", missingIds)}] not found.");
+            }
+
+            foreach (var roleId in roleIdsList)
+            {
+                user.AddRole(roleId, _currentUser.UserId);
+            }
         }
 
         _unitOfWork.Users.Update(user);

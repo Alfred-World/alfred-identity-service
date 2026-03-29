@@ -19,6 +19,18 @@ public static class AuthenticationConfigurationExtensions
     private static DateTime _keysLastFetched = DateTime.MinValue;
     private static readonly TimeSpan KeysCacheDuration = TimeSpan.FromHours(1);
 
+    // Resolved after app.Build() to avoid BuildServiceProvider() on every cache miss
+    private static IServiceProvider? _serviceProvider;
+
+    /// <summary>
+    /// Must be called once after <c>var app = builder.Build()</c> so the key resolver
+    /// can use the real DI container instead of building a new one on each cache refresh.
+    /// </summary>
+    public static void RegisterServiceProvider(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     /// <summary>
     /// Add Cookie + JWT Bearer dual authentication for the Identity Service.
     /// <para>
@@ -77,7 +89,7 @@ public static class AuthenticationConfigurationExtensions
                     ClockSkew = TimeSpan.Zero,
 
                     // Resolve signing keys from our own DB (via ISigningKeyRepository)
-                    IssuerSigningKeyResolver = (_, _, _, _) => GetSigningKeys(services)
+                    IssuerSigningKeyResolver = (_, _, _, _) => GetSigningKeys()
                 };
 
                 options.Events = new JwtBearerEvents
@@ -138,19 +150,27 @@ public static class AuthenticationConfigurationExtensions
 
     /// <summary>
     /// Load signing keys from database via <see cref="ISigningKeyRepository"/>.
-    /// Keys are cached for 1 hour (same pattern as Gateway JWKS fetch).
+    /// Keys are cached for 1 hour. Uses the registered <see cref="_serviceProvider"/> to
+    /// avoid the expensive <c>BuildServiceProvider()</c> call on every cache refresh.
     /// </summary>
-    private static IEnumerable<SecurityKey> GetSigningKeys(IServiceCollection services)
+    private static IEnumerable<SecurityKey> GetSigningKeys()
     {
         if (_cachedKeys != null && DateTime.UtcNow - _keysLastFetched < KeysCacheDuration)
         {
             return _cachedKeys;
         }
 
+        if (_serviceProvider is null)
+        {
+            // Called before RegisterServiceProvider — return cached keys or empty.
+            // Token validation will fail (fail-closed), not pass.
+            return _cachedKeys ?? Enumerable.Empty<SecurityKey>();
+        }
+
         try
         {
-            using var sp = services.BuildServiceProvider();
-            var keyRepo = sp.GetRequiredService<ISigningKeyRepository>();
+            using var scope = _serviceProvider.CreateScope();
+            var keyRepo = scope.ServiceProvider.GetRequiredService<ISigningKeyRepository>();
 
             var keys = keyRepo.GetValidKeysAsync(CancellationToken.None)
                 .GetAwaiter().GetResult();
@@ -166,7 +186,7 @@ public static class AuthenticationConfigurationExtensions
                 }
                 catch
                 {
-                    // Skip malformed keys
+                    // Skip malformed key entries
                 }
             }
 
@@ -177,6 +197,7 @@ public static class AuthenticationConfigurationExtensions
         }
         catch
         {
+            // On refresh failure, continue serving cached keys if available
             return _cachedKeys ?? Enumerable.Empty<SecurityKey>();
         }
     }

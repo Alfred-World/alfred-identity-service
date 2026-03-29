@@ -33,27 +33,25 @@ public class RoleFieldMap : BaseFieldMap<Role>
         .Add("updatedAt", r => r.UpdatedAt!).AllowAll()
 
         // Full permission projection - all fields
-        .Add("permissions", r => r.RolePermissions.Select(rp => new PermissionDto(
-            rp.Permission.Id.Value,
-            rp.Permission.Code,
-            rp.Permission.Name,
-            rp.Permission.Description,
-            rp.Permission.Resource,
-            rp.Permission.Action,
-            rp.Permission.IsActive
-        ))).AllowAll()
+        .Add("permissions", r => r.RolePermissions.Select(rp => new PermissionDto
+        {
+            Id = rp.Permission.Id.Value,
+            Code = rp.Permission.Code,
+            Name = rp.Permission.Name,
+            Description = rp.Permission.Description,
+            Resource = rp.Permission.Resource,
+            Action = rp.Permission.Action,
+            IsActive = rp.Permission.IsActive
+        })).AllowAll()
 
         // Lightweight permission projection - only id, code, name (for list views)
         // Returns PermissionDto with null for non-essential fields (skipped in JSON)
-        .Add("permissionsSummary", r => r.RolePermissions.Select(rp => new PermissionDto(
-            rp.Permission.Id.Value,
-            rp.Permission.Code,
-            rp.Permission.Name,
-            null, // Description - skipped in JSON
-            null, // Resource - skipped in JSON
-            null, // Action - skipped in JSON
-            null // IsActive - skipped in JSON
-        ))).Selectable();
+        .Add("permissionsSummary", r => r.RolePermissions.Select(rp => new PermissionDto
+        {
+            Id = rp.Permission.Id.Value,
+            Code = rp.Permission.Code,
+            Name = rp.Permission.Name
+        })).Selectable();
 
     /// <summary>
     /// Available views for Role entity.
