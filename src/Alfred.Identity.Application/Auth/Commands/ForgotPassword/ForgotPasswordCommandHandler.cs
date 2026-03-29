@@ -1,5 +1,3 @@
-using Alfred.Identity.Application.Common;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.Domain.Entities;

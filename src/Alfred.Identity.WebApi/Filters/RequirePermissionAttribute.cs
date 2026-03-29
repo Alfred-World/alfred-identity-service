@@ -3,7 +3,6 @@ using System.Security.Claims;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.WebApi.Contracts.Common;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

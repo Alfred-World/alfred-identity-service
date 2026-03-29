@@ -1,7 +1,5 @@
 using System.ComponentModel;
 
-using Alfred.Identity.Application.Querying.Core;
-
 using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Contracts.Common;

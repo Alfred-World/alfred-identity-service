@@ -1,10 +1,6 @@
-using Alfred.Identity.Application.Common;
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Roles.Common;
-using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 

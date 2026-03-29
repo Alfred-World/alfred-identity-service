@@ -1,5 +1,3 @@
-using Alfred.Identity.Application.Querying.Core;
-using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Filtering;
 using Alfred.Identity.Application.Querying.Filtering.Binding;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;

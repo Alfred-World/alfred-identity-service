@@ -1,4 +1,3 @@
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 
 using MediatR;

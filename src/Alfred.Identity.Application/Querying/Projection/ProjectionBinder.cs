@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using Alfred.Identity.Application.Querying.Common;
-using Alfred.Identity.Application.Querying.Fields;
 
 namespace Alfred.Identity.Application.Querying.Projection;
 

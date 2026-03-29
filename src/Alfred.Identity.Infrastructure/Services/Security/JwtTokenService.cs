@@ -4,7 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Infrastructure.Common.Options;

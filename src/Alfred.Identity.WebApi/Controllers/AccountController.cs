@@ -5,7 +5,6 @@ using Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.WebApi.Contracts.Account;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Filters;
 
 using MediatR;

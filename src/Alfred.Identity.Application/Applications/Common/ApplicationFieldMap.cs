@@ -1,9 +1,5 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Querying.Fields;
-using Alfred.Identity.Application.Querying.Projection;
-
 using ApplicationEntity = Alfred.Identity.Domain.Entities.Application;
 
 namespace Alfred.Identity.Application.Applications.Common;

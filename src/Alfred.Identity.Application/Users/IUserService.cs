@@ -1,4 +1,3 @@
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Users.Common;
 
 namespace Alfred.Identity.Application.Users;

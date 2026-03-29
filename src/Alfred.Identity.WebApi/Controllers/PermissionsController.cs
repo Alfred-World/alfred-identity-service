@@ -1,6 +1,5 @@
 using Alfred.Identity.Application.Permissions;
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Filters;
 
 using Microsoft.AspNetCore.Authorization;

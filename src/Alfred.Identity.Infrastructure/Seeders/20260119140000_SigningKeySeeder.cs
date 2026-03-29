@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Alfred.Identity.Domain.Entities;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 
 using Microsoft.EntityFrameworkCore;

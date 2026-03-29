@@ -1,5 +1,4 @@
 using Alfred.Identity.Application.Auth.Commands.Rotation;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Filters;
 
 using MediatR;

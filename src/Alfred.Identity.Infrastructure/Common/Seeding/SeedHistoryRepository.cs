@@ -1,7 +1,5 @@
 using System.Data;
 
-using Alfred.Identity.Infrastructure.Common.Abstractions;
-
 using Microsoft.EntityFrameworkCore;
 
 using Npgsql;

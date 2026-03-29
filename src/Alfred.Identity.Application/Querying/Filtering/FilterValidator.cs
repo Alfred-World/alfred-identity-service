@@ -1,4 +1,3 @@
-using Alfred.Identity.Application.Querying.Fields;
 using Alfred.Identity.Application.Querying.Filtering.Ast;
 
 namespace Alfred.Identity.Application.Querying.Filtering;

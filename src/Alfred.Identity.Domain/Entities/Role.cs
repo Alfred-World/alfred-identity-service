@@ -1,6 +1,3 @@
-using Alfred.Identity.Domain.Common.Base;
-using Alfred.Identity.Domain.Common.Interfaces;
-
 namespace Alfred.Identity.Domain.Entities;
 
 /// <summary>

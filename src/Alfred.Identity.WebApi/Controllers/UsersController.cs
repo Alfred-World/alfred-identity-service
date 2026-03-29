@@ -1,7 +1,5 @@
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Users;
 using Alfred.Identity.Application.Users.Common;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Users;
 using Alfred.Identity.WebApi.Filters;
 

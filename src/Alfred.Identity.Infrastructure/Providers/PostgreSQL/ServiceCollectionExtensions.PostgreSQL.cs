@@ -1,9 +1,7 @@
 using System.Reflection;
 
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Options;
 using Alfred.Identity.Infrastructure.Common.Seeding;
 using Alfred.Identity.Infrastructure.Services;

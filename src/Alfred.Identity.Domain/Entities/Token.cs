@@ -1,4 +1,3 @@
-using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Enums;
 
 namespace Alfred.Identity.Domain.Entities;

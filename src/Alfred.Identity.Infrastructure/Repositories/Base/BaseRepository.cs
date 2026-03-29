@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Interfaces;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 
 using Microsoft.EntityFrameworkCore;
 

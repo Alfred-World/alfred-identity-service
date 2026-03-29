@@ -2,10 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Common;
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Querying.Filtering.Parsing;
-using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Security;
 
 namespace Alfred.Identity.Application.Applications;

@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 

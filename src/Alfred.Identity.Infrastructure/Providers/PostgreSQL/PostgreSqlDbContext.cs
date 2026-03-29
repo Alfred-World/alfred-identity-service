@@ -2,7 +2,6 @@ using System.Reflection;
 
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.Domain.ValueObjects;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Converters;
 using Alfred.Identity.Infrastructure.Common.Options;
 

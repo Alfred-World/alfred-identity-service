@@ -1,6 +1,3 @@
-using Alfred.Identity.Application.Querying.Core;
-using Alfred.Identity.WebApi.Contracts.Common;
-
 using Asp.Versioning;
 
 using Microsoft.AspNetCore.Mvc;

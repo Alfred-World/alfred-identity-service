@@ -1,6 +1,3 @@
-using Alfred.Identity.Application.Common;
-using Alfred.Identity.Domain.Abstractions.Repositories;
-
 using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.TwoFactor;

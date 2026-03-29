@@ -1,7 +1,5 @@
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Common.Events;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Repositories;
 
 using Microsoft.EntityFrameworkCore;

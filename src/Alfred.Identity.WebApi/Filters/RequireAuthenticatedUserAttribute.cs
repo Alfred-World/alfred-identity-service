@@ -1,5 +1,4 @@
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.WebApi.Contracts.Common;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

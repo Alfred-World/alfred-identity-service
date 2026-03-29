@@ -10,7 +10,6 @@ using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Auth;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Extensions;
 
 using MediatR;

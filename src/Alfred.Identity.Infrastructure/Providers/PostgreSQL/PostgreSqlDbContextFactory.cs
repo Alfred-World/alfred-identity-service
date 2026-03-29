@@ -1,4 +1,3 @@
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.Options;
 
 namespace Alfred.Identity.Infrastructure.Providers.PostgreSQL;

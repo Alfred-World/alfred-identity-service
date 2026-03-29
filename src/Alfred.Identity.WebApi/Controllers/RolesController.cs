@@ -1,7 +1,6 @@
 using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Roles;
 using Alfred.Identity.Application.Roles.Common;
-using Alfred.Identity.WebApi.Contracts.Common;
 using Alfred.Identity.WebApi.Contracts.Roles;
 using Alfred.Identity.WebApi.Filters;
 

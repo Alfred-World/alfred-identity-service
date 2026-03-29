@@ -1,6 +1,4 @@
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Entities;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Repositories.Base;
 
 using Microsoft.EntityFrameworkCore;

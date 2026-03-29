@@ -1,6 +1,5 @@
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Entities;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 
 using Microsoft.AspNetCore.Http;
 

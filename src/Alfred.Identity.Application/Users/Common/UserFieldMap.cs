@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 
-using Alfred.Identity.Application.Querying.Fields;
-using Alfred.Identity.Application.Querying.Projection;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Entities;
 

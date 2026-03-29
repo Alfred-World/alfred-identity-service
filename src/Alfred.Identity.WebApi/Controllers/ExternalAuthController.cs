@@ -1,7 +1,6 @@
 using System.Security.Claims;
 
 using Alfred.Identity.Application.Auth.Commands.ExternalLogin;
-using Alfred.Identity.WebApi.Contracts.Common;
 
 using MediatR;
 

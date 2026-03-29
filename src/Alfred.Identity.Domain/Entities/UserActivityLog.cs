@@ -1,5 +1,3 @@
-using Alfred.Identity.Domain.Common.Base;
-
 namespace Alfred.Identity.Domain.Entities;
 
 public sealed class UserActivityLog : BaseEntity<UserActivityLogId>

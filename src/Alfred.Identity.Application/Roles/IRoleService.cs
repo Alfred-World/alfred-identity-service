@@ -1,5 +1,4 @@
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying.Core;
 using Alfred.Identity.Application.Roles.Common;
 
 namespace Alfred.Identity.Application.Roles;

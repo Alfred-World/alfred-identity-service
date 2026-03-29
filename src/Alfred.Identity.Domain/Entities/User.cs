@@ -1,6 +1,4 @@
-using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Events;
-using Alfred.Identity.Domain.Common.Interfaces;
 using Alfred.Identity.Domain.Enums;
 
 namespace Alfred.Identity.Domain.Entities;

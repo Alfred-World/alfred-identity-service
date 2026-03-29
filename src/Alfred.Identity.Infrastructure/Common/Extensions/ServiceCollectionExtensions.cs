@@ -1,8 +1,6 @@
 using Alfred.Identity.Domain.Abstractions;
-using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
-using Alfred.Identity.Infrastructure.Common.Abstractions;
 using Alfred.Identity.Infrastructure.Common.HealthChecks;
 using Alfred.Identity.Infrastructure.Common.Identity;
 using Alfred.Identity.Infrastructure.Common.Options;

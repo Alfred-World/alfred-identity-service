@@ -1,5 +1,4 @@
 using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Querying.Core;
 
 namespace Alfred.Identity.Application.Applications;
 
