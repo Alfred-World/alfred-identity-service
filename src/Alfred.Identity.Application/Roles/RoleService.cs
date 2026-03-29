@@ -5,6 +5,7 @@ using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 
 namespace Alfred.Identity.Application.Roles;
@@ -14,17 +15,20 @@ public sealed class RoleService : BaseEntityService, IRoleService
     private readonly IRoleRepository _roleRepository;
     private readonly IPermissionRepository _permissionRepository;
     private readonly ICurrentUser _currentUser;
+    private readonly IPermissionCacheService _permissionCacheService;
 
     public RoleService(
         IRoleRepository roleRepository,
         IPermissionRepository permissionRepository,
         ICurrentUser currentUser,
+        IPermissionCacheService permissionCacheService,
         IFilterParser filterParser,
         IAsyncQueryExecutor executor) : base(filterParser, executor)
     {
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
         _currentUser = currentUser;
+        _permissionCacheService = permissionCacheService;
     }
 
     #region Queries
@@ -80,6 +84,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         await _roleRepository.AddAsync(role, cancellationToken);
         await _roleRepository.SaveChangesAsync(cancellationToken);
+        await _permissionCacheService.SyncRolePermissionsAsync(role.Name, cancellationToken);
 
         var created = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
         return RoleDto.FromEntity(created!);
@@ -109,6 +114,8 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
+        // Sync updated permissions to cache; use the new name in case role was renamed
+        await _permissionCacheService.SyncRolePermissionsAsync(name, cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
         return RoleDto.FromEntity(updated!);
@@ -137,6 +144,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         _roleRepository.Delete(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
+        await _permissionCacheService.InvalidateRoleAsync(role.Name, cancellationToken);
 
         return dto;
     }
@@ -170,6 +178,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
+        await _permissionCacheService.SyncRolePermissionsAsync(role.Name, cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
         return RoleDto.FromEntity(updated!);
@@ -199,6 +208,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
         _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
+        await _permissionCacheService.SyncRolePermissionsAsync(role.Name, cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
         return RoleDto.FromEntity(updated!);

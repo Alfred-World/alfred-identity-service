@@ -67,6 +67,21 @@ public sealed class RedisCacheProvider : ICacheProvider
         }
     }
 
+    public async ValueTask<string?> GetDeleteAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Redis GETDEL — atomic get-and-delete in a single round-trip
+            var value = await _database.StringGetDeleteAsync(key);
+            return value.HasValue ? value.ToString() : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error get-deleting key {Key} from Redis", key);
+            return null;
+        }
+    }
+
     public async ValueTask<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {
         try

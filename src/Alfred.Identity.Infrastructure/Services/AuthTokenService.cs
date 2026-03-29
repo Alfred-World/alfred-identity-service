@@ -52,15 +52,13 @@ public sealed class AuthTokenService : IAuthTokenService
 
         var cacheKey = CacheKeyPrefix + token;
 
-        // Get and delete atomically (consume)
-        var json = await _cacheProvider.GetAsync(cacheKey);
+        // Atomic get-and-delete: prevents double-consumption if two requests arrive simultaneously
+        // (e.g. user double-clicks email verification link)
+        var json = await _cacheProvider.GetDeleteAsync(cacheKey);
         if (string.IsNullOrEmpty(json))
         {
             return null;
         }
-
-        // Delete the token (one-time use)
-        await _cacheProvider.DeleteAsync(cacheKey);
 
         try
         {

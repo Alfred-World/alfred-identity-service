@@ -56,6 +56,22 @@ public sealed class InMemoryCacheProvider : ICacheProvider
         return ValueTask.FromResult(_cache.TryRemove(key, out _));
     }
 
+    public ValueTask<string?> GetDeleteAsync(string key, CancellationToken cancellationToken = default)
+    {
+        // ConcurrentDictionary.TryRemove is a single atomic operation — truly safe under concurrency
+        if (_cache.TryRemove(key, out var entry))
+        {
+            if (entry.ExpiresAt.HasValue && entry.ExpiresAt.Value < DateTime.UtcNow)
+            {
+                return ValueTask.FromResult<string?>(null);
+            }
+
+            return ValueTask.FromResult<string?>(entry.Value);
+        }
+
+        return ValueTask.FromResult<string?>(null);
+    }
+
     public async ValueTask<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {
         var value = await GetAsync(key, cancellationToken);

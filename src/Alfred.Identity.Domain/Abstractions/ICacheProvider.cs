@@ -26,6 +26,12 @@ public interface ICacheProvider
     ValueTask<bool> DeleteAsync(string key, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Atomically get and delete a value from cache.
+    /// Use for one-time-use tokens to prevent double-consumption under concurrent requests.
+    /// </summary>
+    ValueTask<string?> GetDeleteAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Check if a key exists in cache
     /// </summary>
     ValueTask<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
