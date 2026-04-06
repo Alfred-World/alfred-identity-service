@@ -62,6 +62,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.JsonSerializerOptions.Converters.Add(new StronglyTypedIdJsonConverterFactory());
+        options.JsonSerializerOptions.Converters.Add(new OptionalJsonConverterFactory());
     });
 
 // Add API Versioning

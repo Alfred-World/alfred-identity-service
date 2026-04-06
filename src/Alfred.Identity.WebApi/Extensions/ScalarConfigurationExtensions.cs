@@ -38,6 +38,10 @@ public static class ScalarConfigurationExtensions
             // Map all strongly typed IDs to their underlying primitive schemas
             c.SchemaFilter<StronglyTypedIdSchemaFilter>();
 
+            // Unwrap Optional<T> to inner type in Swagger schemas
+            c.SchemaFilter<OptionalSchemaFilter>();
+            c.DocumentFilter<OptionalSchemaDocumentFilter>();
+
             c.UseAllOfForInheritance();
             c.UseAllOfToExtendReferenceSchemas();
 

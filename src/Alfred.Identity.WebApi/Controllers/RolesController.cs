@@ -75,7 +75,7 @@ public class RolesController : BaseApiController
     }
 
     /// <summary>Update an existing role</summary>
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     [RequirePermission("roles:update")]
     [ProducesResponseType(typeof(ApiResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -83,9 +83,15 @@ public class RolesController : BaseApiController
     public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _roleService.UpdateRoleAsync(
-            (RoleId)id, request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions,
-            cancellationToken);
+        var dto = new UpdateRoleDto
+        {
+            Name = request.Name,
+            Icon = request.Icon,
+            IsImmutable = request.IsImmutable,
+            IsSystem = request.IsSystem,
+            Permissions = request.Permissions
+        };
+        var result = await _roleService.UpdateRoleAsync((RoleId)id, dto, cancellationToken);
         return OkResponse(result);
     }
 

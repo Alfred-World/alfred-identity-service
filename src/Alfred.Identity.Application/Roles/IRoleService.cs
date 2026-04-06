@@ -16,8 +16,7 @@ public interface IRoleService
     Task<RoleDto> CreateRoleAsync(string name, string? icon, bool isImmutable, bool isSystem,
         IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default);
 
-    Task<RoleDto> UpdateRoleAsync(RoleId id, string name, string? icon, bool isImmutable, bool isSystem,
-        IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default);
+    Task<RoleDto> UpdateRoleAsync(RoleId id, UpdateRoleDto dto, CancellationToken cancellationToken = default);
 
     Task<RoleDto> DeleteRoleAsync(RoleId id, CancellationToken cancellationToken = default);
 

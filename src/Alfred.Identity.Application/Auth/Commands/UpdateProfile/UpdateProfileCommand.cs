@@ -2,12 +2,13 @@ using MediatR;
 
 namespace Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 
-public record UpdateProfileCommand(
-    UserId UserId,
-    string FullName,
-    string? PhoneNumber,
-    string? Avatar
-) : IRequest<Result<UpdateProfileResult>>;
+public sealed record UpdateProfileCommand : IRequest<Result<UpdateProfileResult>>
+{
+    public required UserId UserId { get; init; }
+    public Optional<string> FullName { get; init; }
+    public Optional<string?> PhoneNumber { get; init; }
+    public Optional<string?> Avatar { get; init; }
+}
 
 public record UpdateProfileResult(
     Guid Id,

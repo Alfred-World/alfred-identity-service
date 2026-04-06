@@ -86,8 +86,8 @@ public sealed class RoleService : BaseEntityService, IRoleService
         return RoleDto.FromEntity(created!);
     }
 
-    public async Task<RoleDto> UpdateRoleAsync(RoleId id, string name, string? icon, bool isImmutable, bool isSystem,
-        IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default)
+    public async Task<RoleDto> UpdateRoleAsync(RoleId id, UpdateRoleDto dto,
+        CancellationToken cancellationToken = default)
     {
         var role = await _roleRepository.GetByIdAsync(id, cancellationToken);
         if (role is null)
@@ -100,18 +100,30 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException("Cannot modify immutable role.");
         }
 
-        role.Update(name, icon, isImmutable, isSystem);
+        role.Update(
+            dto.Name.GetValueOrDefault(role.Name),
+            dto.Icon.GetValueOrDefault(role.Icon),
+            dto.IsImmutable.GetValueOrDefault(role.IsImmutable),
+            dto.IsSystem.GetValueOrDefault(role.IsSystem));
         role.UpdatedById = _currentUser.UserId;
 
-        if (permissions != null)
+        if (dto.Permissions.HasValue)
         {
-            role.SyncPermissions(permissions.Select(p => (PermissionId)p), _currentUser.UserId);
+            var permissions = dto.Permissions.Value;
+            if (permissions is not null)
+            {
+                role.SyncPermissions(permissions.Select(p => (PermissionId)p), _currentUser.UserId);
+            }
+            else
+            {
+                role.SyncPermissions([], _currentUser.UserId);
+            }
         }
 
         _roleRepository.Update(role);
         await _roleRepository.SaveChangesAsync(cancellationToken);
         // Sync updated permissions to cache; use the new name in case role was renamed
-        await _permissionCacheService.SyncRolePermissionsAsync(name, cancellationToken);
+        await _permissionCacheService.SyncRolePermissionsAsync(role.Name, cancellationToken);
 
         var updated = await _roleRepository.GetByIdAsync(role.Id, cancellationToken);
         return RoleDto.FromEntity(updated!);

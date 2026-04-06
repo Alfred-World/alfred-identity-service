@@ -81,7 +81,7 @@ public class ApplicationsController : BaseApiController
     }
 
     /// <summary>Update an existing application</summary>
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     [RequirePermission("applications:update")]
     [ProducesResponseType(typeof(ApiResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -90,13 +90,15 @@ public class ApplicationsController : BaseApiController
         [FromBody] UpdateApplicationRequest request,
         CancellationToken cancellationToken)
     {
+        var dto = new UpdateApplicationDto
+        {
+            DisplayName = request.DisplayName,
+            RedirectUris = request.RedirectUris,
+            PostLogoutRedirectUris = request.PostLogoutRedirectUris,
+            Permissions = request.Permissions
+        };
         var result = await _applicationService.UpdateApplicationAsync(
-            (ApplicationId)id,
-            request.DisplayName,
-            request.RedirectUris,
-            request.PostLogoutRedirectUris,
-            request.Permissions,
-            cancellationToken);
+            (ApplicationId)id, dto, cancellationToken);
         return OkResponse(result, "Application updated successfully");
     }
 

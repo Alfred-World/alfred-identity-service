@@ -25,10 +25,7 @@ public interface IApplicationService
 
     Task<ApplicationDto> UpdateApplicationAsync(
         ApplicationId id,
-        string displayName,
-        string redirectUris,
-        string? postLogoutRedirectUris,
-        string? permissions,
+        UpdateApplicationDto dto,
         CancellationToken ct = default);
 
     Task DeleteApplicationAsync(ApplicationId id, CancellationToken ct = default);

@@ -122,20 +122,25 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     public async Task<ApplicationDto> UpdateApplicationAsync(
         ApplicationId id,
-        string displayName,
-        string redirectUris,
-        string? postLogoutRedirectUris,
-        string? permissions,
+        UpdateApplicationDto dto,
         CancellationToken ct = default)
     {
         var app = await _unitOfWork.Applications.GetByIdAsync(id, ct)
                   ?? throw new KeyNotFoundException($"Application with ID {id} not found");
 
+        var mergedRedirectUris = dto.RedirectUris.HasValue
+            ? SplitUris(dto.RedirectUris.Value)
+            : app.RedirectUris.Uris;
+
+        var mergedPostLogoutRedirectUris = dto.PostLogoutRedirectUris.HasValue
+            ? SplitUris(dto.PostLogoutRedirectUris.Value)
+            : app.PostLogoutRedirectUris.Uris;
+
         app.Update(
-            displayName,
-            SplitUris(redirectUris),
-            SplitUris(postLogoutRedirectUris),
-            permissions ?? string.Empty,
+            dto.DisplayName.GetValueOrDefault(app.DisplayName ?? string.Empty),
+            mergedRedirectUris,
+            mergedPostLogoutRedirectUris,
+            dto.Permissions.GetValueOrDefault(app.Permissions) ?? string.Empty,
             app.ClientType,
             _currentUser.UserId
         );

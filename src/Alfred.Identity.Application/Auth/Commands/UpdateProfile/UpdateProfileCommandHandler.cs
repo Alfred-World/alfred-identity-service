@@ -26,11 +26,13 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
             return Result<UpdateProfileResult>.Failure("UserNotFound");
         }
 
-        user.UpdateProfile(request.FullName, request.PhoneNumber);
+        user.UpdateProfile(
+            request.FullName.GetValueOrDefault(user.FullName),
+            request.PhoneNumber.GetValueOrDefault(user.PhoneNumber));
 
-        if (request.Avatar != null)
+        if (request.Avatar.HasValue)
         {
-            user.UpdateAvatar(request.Avatar);
+            user.UpdateAvatar(request.Avatar.Value);
         }
 
         _userRepository.Update(user);

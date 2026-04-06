@@ -36,11 +36,11 @@ public class ProfileResponse
 /// </summary>
 public class UpdateProfileRequest
 {
-    public string FullName { get; set; } = string.Empty;
-    public string? PhoneNumber { get; set; }
+    public Optional<string> FullName { get; set; }
+    public Optional<string?> PhoneNumber { get; set; }
 
     /// <summary>Base64 encoded image or URL. Null to keep existing.</summary>
-    public string? Avatar { get; set; }
+    public Optional<string?> Avatar { get; set; }
 }
 
 /// <summary>

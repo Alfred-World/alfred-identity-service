@@ -71,19 +71,20 @@ public class AccountController : BaseApiController
     /// <summary>
     /// Update current user's profile (full name, phone number, avatar)
     /// </summary>
-    [HttpPut("profile")]
+    [HttpPatch("profile")]
     [ProducesResponseType(typeof(ApiResponse<ProfileResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateProfileCommand(
-            (UserId)_currentUser.UserId!.Value,
-            request.FullName,
-            request.PhoneNumber,
-            request.Avatar
-        );
+        var command = new UpdateProfileCommand
+        {
+            UserId = (UserId)_currentUser.UserId!.Value,
+            FullName = request.FullName,
+            PhoneNumber = request.PhoneNumber,
+            Avatar = request.Avatar
+        };
 
         var result = await _mediator.Send(command, cancellationToken);
 

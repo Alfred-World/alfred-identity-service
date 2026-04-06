@@ -52,25 +52,22 @@ public sealed record UpdateApplicationRequest
     /// <summary>
     /// Display name for the application
     /// </summary>
-    [Required]
-    [StringLength(200)]
-    public required string DisplayName { get; init; }
+    public Optional<string> DisplayName { get; init; }
 
     /// <summary>
     /// Comma-separated list of allowed redirect URIs
     /// </summary>
-    [Required]
-    public required string RedirectUris { get; init; }
+    public Optional<string> RedirectUris { get; init; }
 
     /// <summary>
     /// Comma-separated list of allowed post-logout redirect URIs
     /// </summary>
-    public string? PostLogoutRedirectUris { get; init; }
+    public Optional<string?> PostLogoutRedirectUris { get; init; }
 
     /// <summary>
     /// Comma-separated list of permissions/scopes
     /// </summary>
-    public string? Permissions { get; init; }
+    public Optional<string?> Permissions { get; init; }
 }
 
 public record UpdateApplicationStatusRequest(
