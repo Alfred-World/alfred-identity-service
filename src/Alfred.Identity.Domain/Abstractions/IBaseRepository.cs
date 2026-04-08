@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Alfred.Identity.Domain.Querying;
+
 namespace Alfred.Identity.Domain.Abstractions;
 
 /// <summary>
@@ -40,22 +42,23 @@ public interface IRepository<T, TId> : IReadRepository<T> where T : class
     void Delete(T entity);
     Task<bool> ExistsAsync(TId id, CancellationToken cancellationToken = default);
 
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
-    /// Build a query with filtering, sorting, pagination at database level.
-    /// Returns query + total count - handlers can materialize or apply projection.
+    /// Build a search query from JSON DSL FilterNode, with sorting, pagination at database level.
+    /// Filter binding and sort expression building are handled entirely in Infrastructure.
     /// </summary>
-    Task<(IQueryable<T> Query, long Total)> BuildPagedQueryAsync(
-        Expression<Func<T, bool>>? filter,
-        string? sort,
+    Task<(IQueryable<T> Query, long Total)> BuildSearchQueryAsync(
+        FilterNode? filter,
+        IReadOnlyList<SortField>? order,
         int page,
         int pageSize,
-        Expression<Func<T, object>>[]? includes,
-        Func<string, (Expression<Func<T, object>>? Expression, bool CanSort)>? fieldSelector,
+        IFieldResolver<T> fieldResolver,
+        Expression<Func<T, object>>[]? includes = null,
+        Expression<Func<T, bool>>? preFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(
-            "BuildPagedQueryAsync not implemented for this repository. Override in derived class if needed.");
+            "BuildSearchQueryAsync not implemented for this repository. Override in derived class if needed.");
     }
-
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

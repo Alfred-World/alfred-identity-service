@@ -40,7 +40,12 @@ public class UserFieldMap : BaseFieldMap<User>
             Id = ur.Role.Id.Value,
             Name = ur.Role.Name,
             Icon = ur.Role.Icon
-        })).AllowAll()
+        })).AllowInnerFields("id", "name", "icon")
+        // Filter expression uses the raw navigation (u.UserRoles -> Role entity) so EF Core
+        // can translate inner predicates (e.g. name == "Admin") to SQL without going through
+        // the RoleDto projection, which EF Core cannot trace in subquery EXISTS checks.
+        .WithFilterExpression(u => u.UserRoles.Select(ur => ur.Role))
+        .AllowAll()
 
         // Lightweight role projection — only id and name (for summary views)
         .Add("rolesSummary", u => u.UserRoles.Select(ur => new RoleDto

@@ -1,5 +1,5 @@
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying.Filtering.Parsing;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Permissions;
 
@@ -9,17 +9,21 @@ public sealed class PermissionService : BaseEntityService, IPermissionService
 
     public PermissionService(
         IPermissionRepository permissionRepository,
-        IFilterParser filterParser,
         IAsyncQueryExecutor executor)
-        : base(filterParser, executor)
+        : base(executor)
     {
         _permissionRepository = permissionRepository;
     }
 
-    public async Task<PageResult<PermissionDto>> GetAllPermissionsAsync(QueryRequest query,
+    public async Task<PageResult<PermissionDto>> SearchPermissionsAsync(SearchRequest request,
         CancellationToken ct = default)
     {
-        return await GetPagedWithViewAsync(_permissionRepository, query, PermissionFieldMap.Instance,
+        return await SearchWithViewAsync(_permissionRepository, request, PermissionFieldMap.Instance,
             PermissionFieldMap.Views, p => PermissionDto.FromEntity(p), ct);
+    }
+
+    public SearchMetadataResponse GetSearchMetadata()
+    {
+        return BuildSearchMetadata(PermissionFieldMap.Instance);
     }
 }

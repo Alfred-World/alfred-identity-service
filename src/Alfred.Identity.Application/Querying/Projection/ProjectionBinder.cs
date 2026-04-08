@@ -1,8 +1,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-using Alfred.Identity.Application.Querying.Common;
-
 namespace Alfred.Identity.Application.Querying.Projection;
 
 /// <summary>
@@ -40,6 +38,7 @@ public static class ProjectionBinder
         IQueryable<TSource> query,
         string[]? fields,
         FieldMap<TSource> fieldMap)
+        where TSource : class
         where TDto : class, new()
     {
         return ApplyProjectionInternal<TSource, TDto>(
@@ -56,6 +55,7 @@ public static class ProjectionBinder
         IReadOnlySet<string>? computedFields,
         FieldMap<TSource> fieldMap,
         Func<string, string> getFieldMapKey)
+        where TSource : class
         where TDto : class, new()
     {
         // If no fields specified, return all (will need manual mapping later)
@@ -160,7 +160,7 @@ public static class ProjectionBinder
     /// <returns>Expression for use with IQueryable.Select()</returns>
     public static Expression<Func<TSource, Dictionary<string, object?>>> BuildDictionaryProjection<TSource>(
         string[]? fields,
-        FieldMap<TSource> fieldMap)
+        FieldMap<TSource> fieldMap) where TSource : class
     {
         var parameter = Expression.Parameter(typeof(TSource), "x");
         var dictType = typeof(Dictionary<string, object?>);
@@ -213,7 +213,7 @@ public static class ProjectionBinder
     /// </summary>
     public static (bool IsValid, string[] InvalidFields) ValidateFields<TSource>(
         string[]? fields,
-        FieldMap<TSource> fieldMap)
+        FieldMap<TSource> fieldMap) where TSource : class
     {
         if (fields == null || fields.Length == 0)
         {
@@ -235,5 +235,22 @@ public static class ProjectionBinder
         }
 
         return char.ToLowerInvariant(str[0]) + str.Substring(1);
+    }
+
+    private static class ParameterReplacer
+    {
+        public static Expression ReplaceIn(LambdaExpression lambda, ParameterExpression newParameter)
+        {
+            return new Visitor(lambda.Parameters[0], newParameter).Visit(lambda.Body);
+        }
+
+        private sealed class Visitor(ParameterExpression oldParam, ParameterExpression newParam)
+            : ExpressionVisitor
+        {
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                return node == oldParam ? newParam : base.VisitParameter(node);
+            }
+        }
     }
 }

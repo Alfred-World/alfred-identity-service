@@ -1,4 +1,5 @@
 using Alfred.Identity.Application.Applications.Common;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Applications;
 
@@ -6,7 +7,8 @@ public interface IApplicationService
 {
     #region Query
 
-    Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query, CancellationToken ct = default);
+    Task<PageResult<ApplicationDto>> SearchApplicationsAsync(SearchRequest request, CancellationToken ct = default);
+    SearchMetadataResponse GetSearchMetadata();
     Task<ApplicationDto?> GetApplicationByIdAsync(ApplicationId id, CancellationToken ct = default);
     Task<ApplicationMetadataDto> GetMetadataAsync(CancellationToken ct = default);
 

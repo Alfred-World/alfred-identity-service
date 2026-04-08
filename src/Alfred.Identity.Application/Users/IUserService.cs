@@ -1,4 +1,5 @@
 using Alfred.Identity.Application.Users.Common;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Users;
 
@@ -6,7 +7,8 @@ public interface IUserService
 {
     #region Users
 
-    Task<PageResult<UserDto>> GetAllUsersAsync(QueryRequest query, CancellationToken ct = default);
+    Task<PageResult<UserDto>> SearchUsersAsync(SearchRequest request, CancellationToken ct = default);
+    SearchMetadataResponse GetSearchMetadata();
     Task<UserDto?> GetUserByIdAsync(UserId id, CancellationToken ct = default);
     Task<UserDto> CreateUserAsync(CreateUserInput input, CancellationToken ct = default);
 

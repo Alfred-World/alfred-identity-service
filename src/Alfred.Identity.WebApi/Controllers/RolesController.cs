@@ -1,6 +1,7 @@
 using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Roles;
 using Alfred.Identity.Application.Roles.Common;
+using Alfred.Identity.Domain.Querying;
 using Alfred.Identity.WebApi.Contracts.Roles;
 using Alfred.Identity.WebApi.Filters;
 
@@ -21,17 +22,27 @@ public class RolesController : BaseApiController
         _roleService = roleService;
     }
 
-    /// <summary>Get paginated list of roles</summary>
-    [HttpGet]
+    /// <summary>Search roles with typed filter (POST)</summary>
+    [HttpPost("search")]
     [RequirePermission("roles:read")]
     [ProducesResponseType(typeof(ApiPagedResponse<RoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetRoles(
-        [FromQuery] PaginationQueryParameters queryRequest,
+    public async Task<IActionResult> SearchRoles(
+        [FromBody] SearchRequest<RoleFilterInput> request,
         CancellationToken cancellationToken)
     {
-        var result = await _roleService.GetAllRolesAsync(queryRequest.ToQueryRequest(), cancellationToken);
+        var result = await _roleService.SearchRolesAsync(request.ToSearchRequest(), cancellationToken);
         return OkPaginatedResponse(result);
+    }
+
+    /// <summary>Get search metadata for roles</summary>
+    [HttpGet("search/metadata")]
+    [RequirePermission("roles:read")]
+    [ProducesResponseType(typeof(ApiResponse<SearchMetadataResponse>), StatusCodes.Status200OK)]
+    public IActionResult GetSearchMetadata()
+    {
+        var metadata = _roleService.GetSearchMetadata();
+        return OkResponse(metadata);
     }
 
     /// <summary>Get role by ID</summary>

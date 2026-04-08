@@ -1,5 +1,6 @@
 using Alfred.Identity.Application.Users;
 using Alfred.Identity.Application.Users.Common;
+using Alfred.Identity.Domain.Querying;
 using Alfred.Identity.WebApi.Contracts.Users;
 using Alfred.Identity.WebApi.Filters;
 
@@ -20,17 +21,27 @@ public class UsersController : BaseApiController
         _userService = userService;
     }
 
-    /// <summary>Get paginated list of users</summary>
-    [HttpGet]
+    /// <summary>Search users with typed filter (POST)</summary>
+    [HttpPost("search")]
     [RequirePermission("users:read")]
     [ProducesResponseType(typeof(ApiPagedResponse<UserDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetUsers(
-        [FromQuery] PaginationQueryParameters queryRequest,
+    public async Task<IActionResult> SearchUsers(
+        [FromBody] SearchRequest<UserFilterInput> request,
         CancellationToken cancellationToken)
     {
-        var result = await _userService.GetAllUsersAsync(queryRequest.ToQueryRequest(), cancellationToken);
+        var result = await _userService.SearchUsersAsync(request.ToSearchRequest(), cancellationToken);
         return OkPaginatedResponse(result);
+    }
+
+    /// <summary>Get search metadata (available fields, operators, types)</summary>
+    [HttpGet("search/metadata")]
+    [RequirePermission("users:read")]
+    [ProducesResponseType(typeof(ApiResponse<SearchMetadataResponse>), StatusCodes.Status200OK)]
+    public IActionResult GetSearchMetadata()
+    {
+        var metadata = _userService.GetSearchMetadata();
+        return OkResponse(metadata);
     }
 
     /// <summary>Get user by ID</summary>

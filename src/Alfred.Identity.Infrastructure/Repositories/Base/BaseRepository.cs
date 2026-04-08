@@ -1,9 +1,10 @@
-using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Common.Base;
 using Alfred.Identity.Domain.Common.Interfaces;
+using Alfred.Identity.Domain.Querying;
+using Alfred.Identity.Infrastructure.Querying;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -137,16 +138,17 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
     }
 
     /// <summary>
-    /// Build a query with filtering, sorting, pagination at database level.
-    /// Returns the query + total count for Handler to apply projection.
+    /// Build a search query from JSON DSL FilterNode with structured sort fields.
+    /// All filter binding and sort expression building happen here in Infrastructure.
     /// </summary>
-    public virtual async Task<(IQueryable<TEntity> Query, long Total)> BuildPagedQueryAsync(
-        Expression<Func<TEntity, bool>>? filter,
-        string? sort,
+    public virtual async Task<(IQueryable<TEntity> Query, long Total)> BuildSearchQueryAsync(
+        FilterNode? filter,
+        IReadOnlyList<SortField>? order,
         int page,
         int pageSize,
-        Expression<Func<TEntity, object>>[]? includes,
-        Func<string, (Expression<Func<TEntity, object>>? Expression, bool CanSort)>? fieldSelector,
+        IFieldResolver<TEntity> fieldResolver,
+        Expression<Func<TEntity, object>>[]? includes = null,
+        Expression<Func<TEntity, bool>>? preFilter = null,
         CancellationToken cancellationToken = default)
     {
         IQueryable<TEntity> query = _dbSet;
@@ -157,13 +159,20 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
             query = query.Where(e => !((IHasDeletionTime)e).IsDeleted);
         }
 
-        // Apply filter (at DB level)
-        if (filter != null)
+        // Apply pre-filter (business-level filter applied before DSL)
+        if (preFilter != null)
         {
-            query = query.Where(filter);
+            query = query.Where(preFilter);
         }
 
-        // Apply includes (for nested projections)
+        // Apply JSON DSL filter (at DB level)
+        if (filter != null)
+        {
+            var filterExpression = FilterExpressionBinder<TEntity>.Bind(filter, fieldResolver);
+            query = query.Where(filterExpression);
+        }
+
+        // Apply includes
         if (includes != null)
         {
             foreach (var include in includes)
@@ -172,104 +181,16 @@ public abstract class BaseRepository<TEntity, TId> : IRepository<TEntity, TId>
             }
         }
 
-        // Get total count (before pagination, after filtering)
-        var total = await query.CountAsync(cancellationToken);
+        // Get total count (after filtering, before pagination)
+        var total = await query.LongCountAsync(cancellationToken);
 
-        // Apply sorting (at DB level)
-        if (string.IsNullOrWhiteSpace(sort))
-        {
-            query = query.OrderBy("Id");
-        }
-        else
-        {
-            if (fieldSelector != null)
-            {
-                query = ApplySortingWithFieldSelector(query, sort, fieldSelector);
-            }
-            else
-            {
-                try
-                {
-                    query = query.OrderBy(sort);
-                }
-                catch
-                {
-                    throw new ArgumentException($"Invalid sort expression: {sort}");
-                }
-            }
-        }
+        // Apply sorting
+        query = SortExpressionBinder<TEntity>.Apply(query, order, fieldResolver);
 
-        // Apply pagination (at DB level)
+        // Apply pagination
         query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
         return (query, total);
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Apply dynamic sorting using field selector
-    /// </summary>
-    protected IQueryable<TEntity> ApplySortingWithFieldSelector(
-        IQueryable<TEntity> query,
-        string sort,
-        Func<string, (Expression<Func<TEntity, object>>? Expression, bool CanSort)> fieldSelector)
-    {
-        var sortParts = sort.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        IOrderedQueryable<TEntity>? orderedQuery = null;
-
-        foreach (var sortPart in sortParts)
-        {
-            var trimmed = sortPart.Trim();
-            if (string.IsNullOrEmpty(trimmed))
-            {
-                continue;
-            }
-
-            var descending = trimmed.StartsWith('-'); // Or ends with " desc"? Check convention. 
-            // Standard convention often space separated "Name desc", but let's support user's logic if "Name desc" comes in.
-            // Actually user's snippet logic: `var descending = trimmed.StartsWith('-');` implies "-Name". 
-            // BUT Alfred API standard (from GetApplicationsQuery) is likely "Name desc" or "Name asc".
-            // Let's SUPPORT BOTH conventions to be safe, or check GetApplicationsQueryHandler.
-
-            // Standardizing on Dynamic Linq style parsing for safety if selector fails? 
-            // Let's stick closer to the user's snippet logic but adapt for "Name desc" common case too.
-
-            var isDescending = false;
-            var fieldName = trimmed;
-
-            if (trimmed.StartsWith('-'))
-            {
-                isDescending = true;
-                fieldName = trimmed[1..];
-            }
-            else if (trimmed.EndsWith(" desc", StringComparison.OrdinalIgnoreCase))
-            {
-                isDescending = true;
-                fieldName = trimmed[0..^5];
-            }
-            else if (trimmed.EndsWith(" asc", StringComparison.OrdinalIgnoreCase))
-            {
-                fieldName = trimmed[0..^4];
-            }
-
-            var (expression, canSort) = fieldSelector(fieldName);
-
-            if (expression == null || !canSort)
-            {
-                continue;
-            }
-
-            orderedQuery = orderedQuery == null
-                ? isDescending ? query.OrderByDescending(expression) : query.OrderBy(expression)
-                : isDescending
-                    ? orderedQuery.ThenByDescending(expression)
-                    : orderedQuery.ThenBy(expression);
-        }
-
-        return orderedQuery ?? query.OrderBy("Id");
     }
 
     #endregion

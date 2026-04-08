@@ -1,11 +1,15 @@
 using System.Linq.Expressions;
 
+using Alfred.Identity.Domain.Querying;
+
 namespace Alfred.Identity.Application.Querying.Fields;
 
 /// <summary>
-/// FieldMap defines a whitelist of fields that can be queried/sorted and their types
+/// FieldMap defines a whitelist of fields that can be queried/sorted and their types.
+/// Implements IFieldResolver so Infrastructure can use it for filter/sort binding
+/// without referencing Application.
 /// </summary>
-public sealed class FieldMap<T>
+public sealed class FieldMap<T> : IFieldResolver<T> where T : class
 {
     private readonly Dictionary<string, FieldMapping> _map = new(StringComparer.OrdinalIgnoreCase);
 
@@ -62,6 +66,34 @@ public sealed class FieldMap<T>
         {
             _map.UpdateMapping(_name, m => m with { CanFilter = true, CanSort = true, CanSelect = true });
             return _map;
+        }
+
+        /// <summary>
+        /// For collection fields: declare which inner fields are allowed in collection predicates
+        /// (e.g. some/all/none). Only these field names will be accepted by the expression binder.
+        /// </summary>
+        public FieldBuilder AllowInnerFields(params string[] fieldNames)
+        {
+            var set = new HashSet<string>(fieldNames, StringComparer.OrdinalIgnoreCase);
+            _map.UpdateMapping(_name, m => m with { AllowedInnerFields = set });
+            return this;
+        }
+
+        /// <summary>
+        /// Register an alternative expression used exclusively for filter binding (WHERE clauses).
+        /// Use this for collection fields where the projection expression selects a DTO type
+        /// that EF Core cannot trace through when building subquery predicates.
+        /// <para>Example: <c>.WithFilterExpression(u => u.UserRoles.Select(ur => ur.Role))</c>
+        /// lets EF Core generate <c>EXISTS (... WHERE role.Name = 'x')</c> correctly.</para>
+        /// </summary>
+        public FieldBuilder WithFilterExpression<TElement>(Expression<Func<T, IEnumerable<TElement>>> filterExpr)
+        {
+            _map.UpdateMapping(_name, m => m with
+            {
+                FilterExpression = filterExpr,
+                FilterType = typeof(IEnumerable<TElement>)
+            });
+            return this;
         }
 
         // Allow continuing the chain on the map itself
@@ -126,10 +158,70 @@ public sealed class FieldMap<T>
         return _map.Select(kvp => (kvp.Key, kvp.Value.Expression, kvp.Value.Type));
     }
 
+    #region IFieldResolver<T> Implementation
+
+    bool IFieldResolver<T>.TryResolve(string fieldName, out LambdaExpression expression, out Type propertyType)
+    {
+        return TryGet(fieldName, out expression, out propertyType);
+    }
+
+    bool IFieldResolver<T>.TryResolveForFilter(string fieldName, out LambdaExpression expression, out Type propertyType)
+    {
+        if (_map.TryGetValue(fieldName, out var m) && m.FilterExpression is not null && m.FilterType is not null)
+        {
+            expression = m.FilterExpression;
+            propertyType = m.FilterType;
+            return true;
+        }
+
+        return TryGet(fieldName, out expression, out propertyType);
+    }
+
+    bool IFieldResolver<T>.CanFilter(string fieldName)
+    {
+        return CanFilter(fieldName);
+    }
+
+    bool IFieldResolver<T>.CanSort(string fieldName)
+    {
+        return CanSort(fieldName);
+    }
+
+    bool IFieldResolver<T>.ContainsField(string fieldName)
+    {
+        return ContainsField(fieldName);
+    }
+
+    IReadOnlySet<string>? IFieldResolver<T>.GetAllowedInnerFields(string fieldName)
+    {
+        return _map.TryGetValue(fieldName, out var m) ? m.AllowedInnerFields : null;
+    }
+
+    IEnumerable<FieldMeta> IFieldResolver<T>.GetAllFieldMeta()
+    {
+        return _map.Select(kvp =>
+        {
+            var typeName = OperatorsByType.MapTypeName(kvp.Value.Type);
+            var operators = OperatorsByType.GetOperators(kvp.Value.Type);
+            return new FieldMeta(
+                kvp.Key,
+                typeName,
+                operators,
+                kvp.Value.CanFilter,
+                kvp.Value.CanSort,
+                kvp.Value.CanSelect);
+        });
+    }
+
+    #endregion
+
     private sealed record FieldMapping(
         LambdaExpression Expression,
         Type Type,
         bool CanFilter,
         bool CanSort,
-        bool CanSelect);
+        bool CanSelect,
+        IReadOnlySet<string>? AllowedInnerFields = null,
+        LambdaExpression? FilterExpression = null,
+        Type? FilterType = null);
 }

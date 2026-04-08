@@ -2,8 +2,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Alfred.Identity.Application.Applications.Common;
-using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Applications;
 
@@ -17,8 +17,7 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
         IPasswordHasher passwordHasher,
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
-        IFilterParser filterParser,
-        IAsyncQueryExecutor executor) : base(filterParser, executor)
+        IAsyncQueryExecutor executor) : base(executor)
     {
         _passwordHasher = passwordHasher;
         _unitOfWork = unitOfWork;
@@ -27,11 +26,16 @@ public sealed class ApplicationService : BaseEntityService, IApplicationService
 
     #region Query
 
-    public async Task<PageResult<ApplicationDto>> GetAllApplicationsAsync(QueryRequest query,
+    public async Task<PageResult<ApplicationDto>> SearchApplicationsAsync(SearchRequest request,
         CancellationToken ct = default)
     {
-        return await GetPagedWithViewAsync(_unitOfWork.Applications, query, ApplicationFieldMap.Instance,
+        return await SearchWithViewAsync(_unitOfWork.Applications, request, ApplicationFieldMap.Instance,
             ApplicationFieldMap.Views, a => ApplicationDto.FromEntity(a), ct);
+    }
+
+    public SearchMetadataResponse GetSearchMetadata()
+    {
+        return BuildSearchMetadata(ApplicationFieldMap.Instance);
     }
 
     public async Task<ApplicationDto?> GetApplicationByIdAsync(ApplicationId id, CancellationToken ct = default)

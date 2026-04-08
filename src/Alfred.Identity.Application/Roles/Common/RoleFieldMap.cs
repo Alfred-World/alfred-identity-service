@@ -40,7 +40,7 @@ public class RoleFieldMap : BaseFieldMap<Role>
             Resource = rp.Permission.Resource,
             Action = rp.Permission.Action,
             IsActive = rp.Permission.IsActive
-        })).AllowAll()
+        })).AllowInnerFields("id", "code", "name", "resource", "action", "isActive").AllowAll()
 
         // Lightweight permission projection - only id, code, name (for list views)
         // Returns PermissionDto with null for non-essential fields (skipped in JSON)

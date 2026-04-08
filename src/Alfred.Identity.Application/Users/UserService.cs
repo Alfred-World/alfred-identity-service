@@ -1,8 +1,8 @@
-using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Users.Common;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Users;
 
@@ -18,10 +18,9 @@ public sealed class UserService : BaseEntityService, IUserService
         IUnitOfWork unitOfWork,
         IUserActivityLogger activityLogger,
         ICurrentUser currentUser,
-        IFilterParser filterParser,
         IPasswordHasher passwordHasher,
         IIdentityUserReplicationEventPublisher replicationEventPublisher,
-        IAsyncQueryExecutor executor) : base(filterParser, executor)
+        IAsyncQueryExecutor executor) : base(executor)
     {
         _unitOfWork = unitOfWork;
         _activityLogger = activityLogger;
@@ -32,10 +31,15 @@ public sealed class UserService : BaseEntityService, IUserService
 
     #region Users
 
-    public async Task<PageResult<UserDto>> GetAllUsersAsync(QueryRequest query, CancellationToken ct = default)
+    public async Task<PageResult<UserDto>> SearchUsersAsync(SearchRequest request, CancellationToken ct = default)
     {
-        return await GetPagedWithViewAsync(_unitOfWork.Users, query, UserFieldMap.Instance,
+        return await SearchWithViewAsync(_unitOfWork.Users, request, UserFieldMap.Instance,
             UserFieldMap.Views, u => UserDto.FromEntity(u), ct);
+    }
+
+    public SearchMetadataResponse GetSearchMetadata()
+    {
+        return BuildSearchMetadata(UserFieldMap.Instance);
     }
 
     public async Task<UserDto?> GetUserByIdAsync(UserId id, CancellationToken ct = default)

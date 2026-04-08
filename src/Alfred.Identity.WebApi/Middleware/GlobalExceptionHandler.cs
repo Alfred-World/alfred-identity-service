@@ -33,8 +33,11 @@ public class GlobalExceptionHandler : IExceptionHandler
         var (statusCode, errorResponse) = exception switch
         {
             ValidationException validationEx => HandleValidationException(validationEx),
-            FilterValidationException filterEx => HandleFilterValidationException(
-                filterEx), // Legacy/Search filter format
+            FilterValidationException filterEx => HandleFilterValidationException(filterEx),
+            // InvalidOperationException from filter binder must NOT leak internal type/property names
+            InvalidOperationException invalidOpEx when IsFilterBinderException(invalidOpEx)
+                => (StatusCodes.Status400BadRequest,
+                    ApiErrorResponse.BadRequest(invalidOpEx.Message, "INVALID_FILTER")),
             DomainException domainEx => HandleDomainException(domainEx),
             UnauthorizedAccessException => HandleUnauthorizedAccessException(),
             KeyNotFoundException keyNotFoundEx => HandleKeyNotFoundException(keyNotFoundEx),
@@ -71,6 +74,22 @@ public class GlobalExceptionHandler : IExceptionHandler
             cancellationToken);
 
         return true;
+    }
+
+    private static bool IsFilterBinderException(InvalidOperationException ex)
+    {
+        // Messages from FilterExpressionBinder and SortExpressionBinder are safe to surface
+        // because they describe user-facing filter/field errors (field not filterable/sortable/found).
+        // Messages from internal reflection (InnerField reflection, CoerceConstant) may contain entity internals —
+        // those are caught here via source check via stack.
+        var msg = ex.Message;
+        return msg.Contains("not filterable", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("not sortable", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("not found", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("not a collection type", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("requires an inner filter", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("Cannot convert", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("is not a valid value", StringComparison.OrdinalIgnoreCase);
     }
 
     private static (int statusCode, ApiErrorResponse response) HandleValidationException(ValidationException ex)

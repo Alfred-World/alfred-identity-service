@@ -1,12 +1,15 @@
 using Alfred.Identity.Application.Permissions.Common;
 using Alfred.Identity.Application.Roles.Common;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Roles;
 
 public interface IRoleService
 {
-    Task<PageResult<RoleDto>> GetAllRolesAsync(QueryRequest query,
+    Task<PageResult<RoleDto>> SearchRolesAsync(SearchRequest request,
         CancellationToken cancellationToken = default);
+
+    SearchMetadataResponse GetSearchMetadata();
 
     Task<RoleDto?> GetRoleByIdAsync(RoleId id, CancellationToken cancellationToken = default);
 

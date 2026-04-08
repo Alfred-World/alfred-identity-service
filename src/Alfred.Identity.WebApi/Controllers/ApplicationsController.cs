@@ -1,5 +1,6 @@
 using Alfred.Identity.Application.Applications;
 using Alfred.Identity.Application.Applications.Common;
+using Alfred.Identity.Domain.Querying;
 using Alfred.Identity.WebApi.Contracts.Applications;
 using Alfred.Identity.WebApi.Filters;
 
@@ -20,18 +21,27 @@ public class ApplicationsController : BaseApiController
         _applicationService = applicationService;
     }
 
-    /// <summary>Get paginated list of applications</summary>
-    [HttpGet]
+    /// <summary>Search applications with typed filter (POST)</summary>
+    [HttpPost("search")]
     [RequirePermission("applications:read")]
     [ProducesResponseType(typeof(ApiPagedResponse<ApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetApplications(
-        [FromQuery] PaginationQueryParameters queryRequest,
+    public async Task<IActionResult> SearchApplications(
+        [FromBody] SearchRequest<ApplicationFilterInput> request,
         CancellationToken cancellationToken)
     {
-        var result =
-            await _applicationService.GetAllApplicationsAsync(queryRequest.ToQueryRequest(), cancellationToken);
+        var result = await _applicationService.SearchApplicationsAsync(request.ToSearchRequest(), cancellationToken);
         return OkPaginatedResponse(result);
+    }
+
+    /// <summary>Get search metadata for applications</summary>
+    [HttpGet("search/metadata")]
+    [RequirePermission("applications:read")]
+    [ProducesResponseType(typeof(ApiResponse<SearchMetadataResponse>), StatusCodes.Status200OK)]
+    public IActionResult GetSearchMetadata()
+    {
+        var metadata = _applicationService.GetSearchMetadata();
+        return OkResponse(metadata);
     }
 
     /// <summary>Get application metadata (types, permissions)</summary>

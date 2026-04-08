@@ -1,8 +1,8 @@
 using Alfred.Identity.Application.Permissions.Common;
-using Alfred.Identity.Application.Querying.Filtering.Parsing;
 using Alfred.Identity.Application.Roles.Common;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
+using Alfred.Identity.Domain.Querying;
 
 namespace Alfred.Identity.Application.Roles;
 
@@ -18,8 +18,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         IPermissionRepository permissionRepository,
         ICurrentUser currentUser,
         IPermissionCacheService permissionCacheService,
-        IFilterParser filterParser,
-        IAsyncQueryExecutor executor) : base(filterParser, executor)
+        IAsyncQueryExecutor executor) : base(executor)
     {
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
@@ -29,11 +28,16 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
     #region Queries
 
-    public async Task<PageResult<RoleDto>> GetAllRolesAsync(QueryRequest query,
+    public async Task<PageResult<RoleDto>> SearchRolesAsync(SearchRequest request,
         CancellationToken cancellationToken = default)
     {
-        return await GetPagedWithViewAsync(_roleRepository, query, RoleFieldMap.Instance,
+        return await SearchWithViewAsync(_roleRepository, request, RoleFieldMap.Instance,
             RoleFieldMap.Views, r => RoleDto.FromEntity(r), cancellationToken);
+    }
+
+    public SearchMetadataResponse GetSearchMetadata()
+    {
+        return BuildSearchMetadata(RoleFieldMap.Instance);
     }
 
     public async Task<RoleDto?> GetRoleByIdAsync(RoleId id, CancellationToken cancellationToken = default)

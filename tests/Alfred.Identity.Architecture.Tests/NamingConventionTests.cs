@@ -74,6 +74,8 @@ public class NamingConventionTests
             .DoNotHaveNameEndingWith("Discovery") // Discovery classes
             .And()
             .DoNotHaveNameEndingWith("Helper") // Helper classes
+            .And()
+            .DoNotHaveNameEndingWith("Binder`1") // Static generic binder classes (Querying)
             .Should()
             .HaveNameStartingWith("Base")
             .Or()
