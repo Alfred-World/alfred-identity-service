@@ -1,8 +1,11 @@
+using System.Security.Claims;
 using System.Text.Json;
 
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.WebApi.Configuration;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -45,6 +48,8 @@ public static class AuthenticationConfigurationExtensions
         this IServiceCollection services,
         AppConfiguration config)
     {
+        var useSecureCookies = config.GatewayUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
         services.AddAuthentication(options =>
             {
                 // Use a policy scheme that picks the right handler per request
@@ -56,9 +61,10 @@ public static class AuthenticationConfigurationExtensions
             {
                 options.Cookie.Name = "AlfredSession";
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.None;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.ExpireTimeSpan = TimeSpan.FromDays(14);
+                options.Cookie.SameSite = useSecureCookies ? SameSiteMode.None : SameSiteMode.Lax;
+                options.Cookie.SecurePolicy =
+                    useSecureCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+                options.ExpireTimeSpan = TimeSpan.FromDays(30);
                 options.SlidingExpiration = true;
                 options.Events.OnRedirectToLogin = context =>
                     WriteAuthErrorAsync(
@@ -72,6 +78,7 @@ public static class AuthenticationConfigurationExtensions
                         StatusCodes.Status403Forbidden,
                         "You don't have permission to access this resource.",
                         "FORBIDDEN");
+                options.Events.OnValidatePrincipal = ValidateSsoSessionAsync;
             })
             // ── JWT Bearer scheme (API calls via Gateway) ──────────────────
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -146,6 +153,36 @@ public static class AuthenticationConfigurationExtensions
         }
 
         return services;
+    }
+
+
+    private static async Task ValidateSsoSessionAsync(CookieValidatePrincipalContext context)
+    {
+        var ssoSessionService = context.HttpContext.RequestServices.GetRequiredService<ISsoSessionService>();
+        var sessionId = context.Principal?.FindFirst(ssoSessionService.SsoSessionClaimType)?.Value;
+        var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? context.Principal?.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrWhiteSpace(sessionId) ||
+            string.IsNullOrWhiteSpace(userIdClaim) ||
+            !Guid.TryParse(userIdClaim, out var userId))
+        {
+            await RejectCookieAsync(context);
+            return;
+        }
+
+        var validation = await ssoSessionService.ValidateAsync(sessionId, (UserId)userId,
+            context.HttpContext.RequestAborted);
+        if (!validation.IsValid)
+        {
+            await RejectCookieAsync(context);
+        }
+    }
+
+    private static async Task RejectCookieAsync(CookieValidatePrincipalContext context)
+    {
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 
     /// <summary>

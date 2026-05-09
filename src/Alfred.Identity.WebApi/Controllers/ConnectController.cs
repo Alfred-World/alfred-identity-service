@@ -5,6 +5,8 @@ using Alfred.Identity.Application.Auth.Commands.ExchangeCode;
 using Alfred.Identity.Application.Auth.Common;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
+using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Connect;
 using Alfred.Identity.WebApi.Extensions;
@@ -30,19 +32,22 @@ public class ConnectController : BaseApiController
     private readonly AppConfiguration _appConfig;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ISsoSessionService _ssoSessionService;
 
     public ConnectController(
         IMediator mediator,
         ICurrentUser currentUser,
         AppConfiguration appConfig,
         IApplicationRepository applicationRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        ISsoSessionService ssoSessionService)
     {
         _mediator = mediator;
         _currentUser = currentUser;
         _appConfig = appConfig;
         _applicationRepository = applicationRepository;
         _userRepository = userRepository;
+        _ssoSessionService = ssoSessionService;
     }
 
     /// <summary>
@@ -59,7 +64,10 @@ public class ConnectController : BaseApiController
         {
             if (request.prompt == "none")
             {
-                return BadRequest(new { error = "login_required" });
+                return await CreateAuthorizeErrorResultAsync(
+                    request,
+                    "login_required",
+                    "The end-user is not authenticated");
             }
 
             var gatewayUrl = _appConfig.GatewayUrl;
@@ -88,16 +96,24 @@ public class ConnectController : BaseApiController
 
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
-            return BadRequest(new { error = "invalid_user" });
+            return Redirect(BuildSsoErrorUrl("invalid_user", "The authenticated session is invalid.", BuildCurrentAuthorizeRequestUrl()));
         }
 
         var user = await _userRepository.GetByIdAsync((UserId)userId, HttpContext.RequestAborted);
         if (user == null || !user.CanSsoLogin())
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var sessionId = User.FindFirst(_ssoSessionService.SsoSessionClaimType)?.Value;
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                await _ssoSessionService.RevokeAsync(
+                    sessionId,
+                    (UserId)userId,
+                    "account_not_eligible",
+                    HttpContext.RequestAborted);
+            }
 
-            var ssoUrl = _appConfig.SsoWebUrl;
-            return Redirect($"{ssoUrl}/login?error=account_not_eligible");
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect(BuildSsoErrorUrl("account_not_eligible", "Your account cannot use SSO right now.", BuildCurrentAuthorizeRequestUrl()));
         }
 
         var ipAddress = GetClientIpAddress();
@@ -121,13 +137,10 @@ public class ConnectController : BaseApiController
 
         if (!result.Success)
         {
-            // Per RFC 6749 §4.1.2.1: if redirect_uri is invalid, do NOT redirect to it.
-            // Instead redirect to SSO login page with error details for user-friendly display.
-            var ssoUrl = _appConfig.SsoWebUrl;
-            var errorParams = $"error={Uri.EscapeDataString(result.Error ?? "server_error")}" +
-                              $"&error_description={Uri.EscapeDataString(result.ErrorDescription ?? "Authorization failed")}";
-
-            return Redirect($"{ssoUrl}/login?{errorParams}");
+            return await CreateAuthorizeErrorResultAsync(
+                request,
+                result.Error ?? OAuthConstants.Errors.ServerError,
+                result.ErrorDescription ?? "Authorization failed");
         }
 
         return Redirect(result.RedirectLocation!);
@@ -241,6 +254,16 @@ public class ConnectController : BaseApiController
         [FromQuery] string? id_token_hint,
         [FromQuery] string? state)
     {
+        var sessionId = User.FindFirst(_ssoSessionService.SsoSessionClaimType)?.Value;
+        if (_currentUser.UserId.HasValue && !string.IsNullOrWhiteSpace(sessionId))
+        {
+            await _ssoSessionService.RevokeAsync(
+                sessionId,
+                (UserId)_currentUser.UserId.Value,
+                "oidc_logout",
+                HttpContext.RequestAborted);
+        }
+
         // Sign out from cookie authentication
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -263,7 +286,10 @@ public class ConnectController : BaseApiController
                 redirectUrl += (redirectUrl.Contains('?') ? "&" : "?") + $"state={state}";
             }
 
-            return Redirect(redirectUrl);
+            var ssoForceLogoutUrl =
+                $"{_appConfig.SsoWebUrl}/api/auth/force-logout?callbackUrl={Uri.EscapeDataString(redirectUrl)}";
+
+            return Redirect(ssoForceLogoutUrl);
         }
 
         // Default redirect to SSO login
@@ -272,6 +298,76 @@ public class ConnectController : BaseApiController
     }
 
     #region Private Methods
+
+
+    private async Task<IActionResult> CreateAuthorizeErrorResultAsync(
+        AuthorizeRequest request,
+        string error,
+        string errorDescription)
+    {
+        var returnUrl = BuildCurrentAuthorizeRequestUrl();
+
+        var redirectUri = await GetValidatedAuthorizeRedirectUriAsync(request);
+        if (!string.IsNullOrEmpty(redirectUri))
+        {
+            var delimiter = redirectUri.Contains('?') ? "&" : "?";
+            var redirectLocation = $"{redirectUri}{delimiter}error={Uri.EscapeDataString(error)}" +
+                                   $"&error_description={Uri.EscapeDataString(errorDescription)}";
+
+            if (!string.IsNullOrEmpty(request.state))
+            {
+                redirectLocation += $"&state={Uri.EscapeDataString(request.state)}";
+            }
+
+            return Redirect(redirectLocation);
+        }
+
+        return Redirect(BuildSsoErrorUrl(error, errorDescription, returnUrl));
+    }
+
+    private string BuildCurrentAuthorizeRequestUrl()
+    {
+        var gatewayUrl = _appConfig.GatewayUrl;
+        var forwardedHost = Request.Headers["X-Forwarded-Host"].FirstOrDefault();
+        var forwardedProto = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? "https";
+
+        return !string.IsNullOrEmpty(forwardedHost)
+            ? $"{forwardedProto}://{forwardedHost}{Request.Path}{Request.QueryString}"
+            : $"{gatewayUrl}{Request.Path}{Request.QueryString}";
+    }
+
+    private string BuildSsoErrorUrl(string error, string errorDescription, string? returnUrl = null)
+    {
+        var ssoUrl = _appConfig.SsoWebUrl;
+        var errorParams = $"error={Uri.EscapeDataString(error)}" +
+                          $"&error_description={Uri.EscapeDataString(errorDescription)}";
+
+        if (!string.IsNullOrWhiteSpace(returnUrl))
+        {
+            errorParams += $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
+        }
+
+        return $"{ssoUrl}/auth/error?{errorParams}";
+    }
+
+    private async Task<string?> GetValidatedAuthorizeRedirectUriAsync(AuthorizeRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.client_id) || string.IsNullOrWhiteSpace(request.redirect_uri))
+        {
+            return null;
+        }
+
+        var client = await _applicationRepository.GetByClientIdAsync(request.client_id);
+        if (client is not { IsActive: true })
+        {
+            return null;
+        }
+
+        var allowedUris = UriHelper.ParseUriList(client.RedirectUris);
+        return allowedUris.Any(allowed => UriHelper.UriMatches(request.redirect_uri, allowed))
+            ? request.redirect_uri
+            : null;
+    }
 
     private async Task<bool> ValidatePostLogoutRedirectUriAsync(string? clientId, string postLogoutRedirectUri)
     {

@@ -64,7 +64,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
 
     #region Commands
 
-    public async Task<RoleDto> CreateRoleAsync(string name, string? icon, bool isImmutable, bool isSystem,
+    public async Task<RoleDto> CreateRoleAsync(string name, string? icon, bool isSystem,
         IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default)
     {
         if (await _roleRepository.ExistsAsync(name, cancellationToken))
@@ -72,7 +72,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
             throw new InvalidOperationException($"Role '{name}' already exists.");
         }
 
-        var role = Role.Create(name, icon, isImmutable, isSystem, _currentUser.UserId);
+        var role = Role.Create(name, icon, isImmutable: false, isSystem, _currentUser.UserId);
 
         if (permissions != null)
         {
@@ -107,7 +107,7 @@ public sealed class RoleService : BaseEntityService, IRoleService
         role.Update(
             dto.Name.GetValueOrDefault(role.Name),
             dto.Icon.GetValueOrDefault(role.Icon),
-            dto.IsImmutable.GetValueOrDefault(role.IsImmutable),
+            role.IsImmutable,
             dto.IsSystem.GetValueOrDefault(role.IsSystem));
         role.UpdatedById = _currentUser.UserId;
 

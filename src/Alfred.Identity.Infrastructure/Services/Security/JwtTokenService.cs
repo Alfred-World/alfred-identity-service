@@ -12,8 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 
 using TokenValidationResult = Alfred.Identity.Domain.Abstractions.Security.TokenValidationResult;
 
-// For simple deserialization if needed, though we use Jwks logic manually?
-
 namespace Alfred.Identity.Infrastructure.Services.Security;
 
 /// <summary>
@@ -23,7 +21,6 @@ public class JwtTokenService : IJwtTokenService
 {
     private readonly ISigningKeyRepository _keyRepository;
     private readonly string _issuer;
-    private readonly string _audience;
 
     public int AccessTokenLifetimeSeconds { get; }
     public int RefreshTokenLifetimeSeconds { get; }
@@ -31,17 +28,28 @@ public class JwtTokenService : IJwtTokenService
     public JwtTokenService(JwtSettings jwtSettings, ISigningKeyRepository keyRepository)
     {
         _keyRepository = keyRepository;
-
         _issuer = jwtSettings.Issuer;
-        _audience = jwtSettings.Audience;
         AccessTokenLifetimeSeconds = jwtSettings.AccessTokenLifetimeSeconds;
         RefreshTokenLifetimeSeconds = jwtSettings.RefreshTokenLifetimeSeconds;
     }
 
     /// <inheritdoc />
-    public async Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName,
-        Guid? applicationId = null, Guid? authorizationId = null)
+    public async Task<string> GenerateAccessTokenAsync(
+        Guid userId,
+        string email,
+        string? fullName,
+        Guid applicationId,
+        string clientId,
+        Guid? authorizationId = null,
+        string? scopes = null)
     {
+        if (applicationId == Guid.Empty)
+        {
+            throw new ArgumentOutOfRangeException(nameof(applicationId), "Application ID must be provided.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
+
         var activeKey = await _keyRepository.GetActiveKeyAsync();
         if (activeKey == null)
         {
@@ -49,15 +57,17 @@ public class JwtTokenService : IJwtTokenService
         }
 
         var signingCredentials = CreateSigningCredentials(activeKey);
-
-        var jwtId = Guid.NewGuid().ToString();
+        var jwtId = Guid.NewGuid().ToString("N");
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
             new(JwtRegisteredClaimNames.Jti, jwtId),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64)
+                ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Azp, clientId),
+            new("client_id", clientId),
+            new("app_id", applicationId.ToString())
         };
 
         if (!string.IsNullOrEmpty(fullName))
@@ -65,23 +75,19 @@ public class JwtTokenService : IJwtTokenService
             claims.Add(new Claim("name", fullName));
         }
 
-        if (applicationId.HasValue)
-        {
-            claims.Add(new Claim("client_id", applicationId.Value.ToString()));
-        }
-
-        // Include authorization_id so the Gateway can perform session-level revocation checks.
-        // When a session is revoked, the Gateway looks up revoked:session:{authorizationId} in Redis
-        // and rejects any AT that still carries the old authorizationId — providing immediate revocation
-        // without waiting for the AT to expire naturally.
         if (authorizationId.HasValue)
         {
             claims.Add(new Claim("authorization_id", authorizationId.Value.ToString()));
         }
 
+        if (!string.IsNullOrWhiteSpace(scopes))
+        {
+            claims.Add(new Claim("scope", scopes));
+        }
+
         var token = new JwtSecurityToken(
             _issuer,
-            _audience,
+            clientId,
             claims,
             DateTime.UtcNow,
             DateTime.UtcNow.AddSeconds(AccessTokenLifetimeSeconds),
@@ -127,8 +133,7 @@ public class JwtTokenService : IJwtTokenService
             {
                 try
                 {
-                    // Reconstruct RSA Public Key for validation
-                    var jwk = new JsonWebKey(k.PublicKey); // Assuming PublicKey is JWK JSON
+                    var jwk = new JsonWebKey(k.PublicKey);
                     securityKeys.Add(jwk);
                 }
                 catch
@@ -141,30 +146,39 @@ public class JwtTokenService : IJwtTokenService
             {
                 ValidateIssuer = true,
                 ValidIssuer = _issuer,
-                ValidateAudience = true,
-                ValidAudience = _audience,
+                ValidateAudience = false,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKeys = securityKeys, // Support multiple keys for rotation
+                IssuerSigningKeys = securityKeys,
                 ClockSkew = TimeSpan.Zero
             };
 
+            SecurityToken? validatedToken = null;
             var principal = await Task.Run(() =>
-                handler.ValidateToken(token, validationParameters, out var validatedToken));
+                handler.ValidateToken(token, validationParameters, out validatedToken));
 
+            var jwtToken = validatedToken as JwtSecurityToken;
             var userId = principal.Claims
                 .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == JwtRegisteredClaimNames.Sub)
                 ?.Value;
             var email = principal.Claims
                 .FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == JwtRegisteredClaimNames.Email)?.Value;
             var jwtId = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+            var clientId = principal.Claims.FirstOrDefault(c => c.Type == "client_id")?.Value
+                           ?? principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Azp)?.Value;
+            var applicationId = principal.Claims.FirstOrDefault(c => c.Type == "app_id")?.Value;
+            var audience = jwtToken?.Audiences.FirstOrDefault()
+                           ?? principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Aud)?.Value;
 
             return new TokenValidationResult
             {
                 IsValid = true,
                 UserId = Guid.TryParse(userId, out var id) ? id : null,
                 Email = email,
-                JwtId = jwtId
+                JwtId = jwtId,
+                ClientId = clientId,
+                ApplicationId = Guid.TryParse(applicationId, out var appId) ? appId : null,
+                Audience = audience
             };
         }
         catch (SecurityTokenExpiredException)
@@ -209,7 +223,7 @@ public class JwtTokenService : IJwtTokenService
                 ClaimValueTypes.Integer64),
             new(JwtRegisteredClaimNames.AuthTime, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
                 ClaimValueTypes.Integer64),
-            new(JwtRegisteredClaimNames.Azp, clientId) // Authorized party
+            new(JwtRegisteredClaimNames.Azp, clientId)
         };
 
         if (!string.IsNullOrEmpty(fullName))
@@ -222,10 +236,9 @@ public class JwtTokenService : IJwtTokenService
             claims.Add(new Claim(JwtRegisteredClaimNames.Nonce, nonce));
         }
 
-        // ID Token typically has shorter lifetime (1 hour)
         var token = new JwtSecurityToken(
             _issuer,
-            clientId, // For ID token, audience is the client_id
+            clientId,
             claims,
             DateTime.UtcNow,
             DateTime.UtcNow.AddHours(1),
@@ -237,7 +250,6 @@ public class JwtTokenService : IJwtTokenService
 
     private SigningCredentials CreateSigningCredentials(SigningKey key)
     {
-        // Private Key is stored as JWK-like format with Base64URL encoded values
         var rsa = RSA.Create();
 
         using var doc = JsonDocument.Parse(key.PrivateKey);
@@ -261,19 +273,16 @@ public class JwtTokenService : IJwtTokenService
         return new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
     }
 
-    private static byte[] Base64UrlDecode(string base64Url)
+    private static byte[] Base64UrlDecode(string arg)
     {
-        var base64 = base64Url
-            .Replace('-', '+')
-            .Replace('_', '/');
-
-        // Add padding if necessary
-        switch (base64.Length % 4)
+        var s = arg.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
         {
-            case 2: base64 += "=="; break;
-            case 3: base64 += "="; break;
+            case 0: break;
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+            default: throw new FormatException("Illegal base64url string!");
         }
-
-        return Convert.FromBase64String(base64);
+        return Convert.FromBase64String(s);
     }
 }

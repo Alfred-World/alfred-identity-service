@@ -58,8 +58,10 @@ public static class ServiceCollectionExtensions
 
         // Token Services
         services.AddSingleton<IAuthTokenService, AuthTokenService>();
+        services.AddSingleton<IClientSecretHasher, ClientSecretHasher>();
         services.AddScoped<IJwksService, JwksService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<ISsoSessionService, SsoSessionService>();
 
         // Caching
         services.AddScoped<IPermissionCacheService, PermissionCacheService>();

@@ -76,6 +76,30 @@ public sealed class TokenRepository : BaseRepository<Token, TokenId>, ITokenRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<Token?> GetSsoSessionByReferenceIdAsync(string referenceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet.AsNoTracking()
+            .FirstOrDefaultAsync(t =>
+                    t.ReferenceId == referenceId &&
+                    t.Type == OAuthConstants.TokenTypes.SsoSession,
+                cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Token>> GetActiveSsoSessionsByUserIdAsync(UserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await DbSet
+            .AsNoTracking()
+            .Where(t => t.UserId == userId &&
+                        t.Type == OAuthConstants.TokenTypes.SsoSession &&
+                        t.Status == TokenStatus.Valid &&
+                        (t.ExpirationDate == null || t.ExpirationDate > now))
+            .OrderByDescending(t => t.CreationDate)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<Token>> GetAllValidRefreshTokensByAuthorizationIdAsync(
         AuthorizationId authorizationId,

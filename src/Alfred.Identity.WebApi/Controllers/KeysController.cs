@@ -10,7 +10,7 @@ namespace Alfred.Identity.WebApi.Controllers;
 
 [Authorize]
 [RequireAuthenticatedUser]
-[Route("identity/keys")]
+[Route("identity/v{version:apiVersion}/keys")]
 public class KeysController : BaseApiController
 {
     private readonly IMediator _mediator;

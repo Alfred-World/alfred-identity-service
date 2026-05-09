@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("identity/permissions")]
+[Route("identity/v{version:apiVersion}/permissions")]
 [Authorize]
 [RequireAuthenticatedUser]
 public class PermissionsController : BaseApiController

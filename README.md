@@ -93,7 +93,7 @@ Service sẽ chạy tại: `http://api.test:8100`
 
 ### Endpoints
 
-- **SSO Login**: `POST /api/v1/identity/auth/sso-login`
+- **SSO Login**: `POST /identity/v1/auth/sso-login`
 - **OAuth2 Authorize**: `GET /connect/authorize`
 - **Token Exchange**: `POST /connect/token`
 - **User Info**: `GET /connect/userinfo`

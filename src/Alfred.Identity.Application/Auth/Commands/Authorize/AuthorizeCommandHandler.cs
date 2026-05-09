@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using Alfred.Identity.Application.Auth.Common;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Common.Constants;
 using Alfred.Identity.Domain.Entities;
@@ -10,154 +11,128 @@ namespace Alfred.Identity.Application.Auth.Commands.Authorize;
 
 public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, AuthorizeResult>
 {
-    private readonly ITokenRepository _tokenRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IAuthorizationCodeService _authCodeService;
 
-    private readonly IUnitOfWork _unitOfWork;
-    // Assuming we have IApplicationRepository or similar, but typically IRepository<Application>
-    // Since Application was added to Context, we can use Generic Repository or create specific one.
-    // For now, let's assume we can access Applications via DbContext or IRepository if we had one.
-    // But currently ITokenRepository is specific.
-    // Let's use IUnitOfWork if we added Applications there? We added ITokenRepository to UnitOfWork. 
-    // We haven't created ApplicationRepository yet.
-    // Let's create IApplicationRepository or just use DbContext directly via UnitOfWork if feasible, 
-    // but better to stick to Repo pattern.
-    // I need to fetch Application by ClientId.
-
-    // TEMPORARY: I will use ITokenRepository but I really need IApplicationRepository.
-    // Let's assume I will create IApplicationRepository next.
-    // For now I'll stub it or use a "Applications" dbSet directly if I can access context? No, clean architecture.
-    // I'll create `IApplicationRepository` interface and implementation in this step too?
-    // Let's define it here to be used.
-    private readonly IApplicationRepository _applicationRepository;
-    private readonly IAuthorizationRepository _authorizationRepository;
-
     public AuthorizeCommandHandler(
-        ITokenRepository tokenRepository,
-        IAuthorizationCodeService authCodeService,
-        IApplicationRepository applicationRepository,
-        IAuthorizationRepository authorizationRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuthorizationCodeService authCodeService)
     {
-        _tokenRepository = tokenRepository;
-        _authCodeService = authCodeService;
-        _applicationRepository = applicationRepository;
-        _authorizationRepository = authorizationRepository;
         _unitOfWork = unitOfWork;
+        _authCodeService = authCodeService;
     }
 
     public async Task<AuthorizeResult> Handle(AuthorizeCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validate Client
-        var client = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
-        if (client == null)
+        var client = await _unitOfWork.Applications.GetByClientIdAsync(request.ClientId, cancellationToken);
+        if (client is not { IsActive: true })
         {
-            return Error("invalid_client", "Client not found");
+            return Error("invalid_client", "Client not found or inactive");
         }
 
-        // 2. Validate Redirect URI
-        var isValidRedirectUri = !string.IsNullOrWhiteSpace(request.RedirectUri)
-                                 && client.RedirectUris.Contains(request.RedirectUri);
-
-        if (!isValidRedirectUri)
+        if (!client.RedirectUris.Contains(request.RedirectUri))
         {
             return Error("invalid_request", "Invalid redirect_uri detected");
         }
 
-        // 3. User Authentication
+        if (!string.Equals(request.ResponseType, "code", StringComparison.Ordinal))
+        {
+            return Error("unsupported_response_type", "Only response_type=code is supported");
+        }
+
+        if (!OidcClientPermissions.SupportsEndpoint(client, ApplicationConstants.Endpoints.Authorization))
+        {
+            return Error(OAuthConstants.Errors.UnauthorizedClient,
+                "Client is not allowed to use the authorization endpoint");
+        }
+
+        if (!OidcClientPermissions.SupportsGrantType(client, OAuthConstants.GrantTypes.AuthorizationCode))
+        {
+            return Error(OAuthConstants.Errors.UnauthorizedClient,
+                "Client is not allowed to use the authorization_code grant");
+        }
+
+        if (!OidcClientPermissions.AreScopesAllowed(client, request.Scope, out var unsupportedScopes))
+        {
+            return Error(OAuthConstants.Errors.InvalidScope,
+                $"Unsupported scope(s): {string.Join(", ", unsupportedScopes)}");
+        }
+
+        if (!string.IsNullOrEmpty(request.CodeChallenge) || !string.IsNullOrEmpty(request.CodeChallengeMethod))
+        {
+            if (string.IsNullOrEmpty(request.CodeChallenge) || request.CodeChallengeMethod != "S256")
+            {
+                return Error(OAuthConstants.Errors.InvalidRequest,
+                    "Only code_challenge_method=S256 is supported when PKCE is supplied");
+            }
+        }
+
         if (request.UserId == null)
         {
-            // User not authenticated, Controller should have redirected to Login
-            // But if we are here, logic says we need user.
-            // Typically Controller checks User.Identity.IsAuthenticated.
-            // If not, it redirects to Login.
-            // If we are here, we might return a result saying "Need Login"
             return new AuthorizeResult(false, Error: "login_required");
         }
 
-        // 4. Generate Auth Code
-        var code = _authCodeService.GenerateAuthorizationCode();
-        var codeHash = _authCodeService.HashAuthorizationCode(code); // Optional hashing
-
-        // 5. Create Authorization (Consent) - Implicit for now or check if exists
-        // simplified: assuming implicit consent for internal apps or if ConsentType is implicit
-        // For strictly following user request: "hoàn thiện logic"
-        // Let's stick to creating a Token entity of type "authorization_code"
-
-        // Note: Token entity has AuthorizationId. Ideally we create an Authorization entity first representing the grant.
-        // Let's create an Authorization entity first.
-
-        // 5. Create or Get Authorization (Consent)
-        // Simplified: assuming implicit consent for now if no "prompt=consent"
         var typedUserId = new UserId(request.UserId.Value);
-        var authorization =
-            await _authorizationRepository.GetValidAsync(client.Id, typedUserId, request.Scope,
-                cancellationToken);
+        string? redirectLocation = null;
 
-        if (authorization == null)
+        await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            authorization = Authorization.Create(
+            var authorization =
+                await _unitOfWork.Authorizations.GetValidAsync(client.Id, typedUserId, request.Scope, ct);
+
+            if (authorization == null)
+            {
+                authorization = Authorization.Create(
+                    client.Id,
+                    typedUserId,
+                    request.Scope,
+                    "Permanent"
+                );
+                await _unitOfWork.Authorizations.AddAsync(authorization, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+
+            var codeValue = _authCodeService.GenerateAuthorizationCode();
+            var authTokenHash = _authCodeService.HashAuthorizationCode(codeValue);
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                redirect_uri = request.RedirectUri,
+                code_challenge = request.CodeChallenge,
+                code_challenge_method = request.CodeChallengeMethod,
+                nonce = (string?)null,
+                scope = request.Scope
+            });
+
+            var codeToken = Token.Create(
+                OAuthConstants.TokenTypes.AuthorizationCode,
                 client.Id,
+                request.UserId.Value.ToString(),
                 typedUserId,
-                request.Scope,
-                "Permanent"
+                DateTime.UtcNow.AddMinutes(5),
+                authTokenHash,
+                authorization.Id,
+                payload,
+                ipAddress: request.IpAddress,
+                device: request.Device
             );
-            await _authorizationRepository.AddAsync(authorization, cancellationToken);
-            await _authorizationRepository.SaveChangesAsync(cancellationToken); // Need SaveChanges in Repo or UoW
-        }
 
-        // 6. Create Authorization Code (Token entity)
-        var codeValue = _authCodeService.GenerateAuthorizationCode();
-        // Hash it? OpenIddict usually stores the code or a hash. 
-        // Token entity has ReferenceId. Let's use ReferenceId for the Code string itself (or hash if we want to be secure).
-        // If we hash, we return the plain code to user, and store hash.
-        // Let's store hash in ReferenceId, and return plain code.
+            await _unitOfWork.Tokens.AddAsync(codeToken, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
 
-        var authTokenHash = _authCodeService.HashAuthorizationCode(codeValue);
-
-        // Payload: could store code_challenge, redirect_uri, nonce, etc.
-        var payload = JsonSerializer.Serialize(new
-        {
-            redirect_uri = request.RedirectUri,
-            code_challenge = request.CodeChallenge,
-            code_challenge_method = request.CodeChallengeMethod,
-            // nonce should only be set if client sends a nonce parameter - NextAuth doesn't send one
-            nonce = (string?)null,
-            scope = request.Scope
-        });
-
-        // Create Token entity for the code
-        var codeToken = Token.Create(
-            OAuthConstants.TokenTypes.AuthorizationCode,
-            client.Id,
-            request.UserId.Value.ToString(),
-            typedUserId,
-            DateTime.UtcNow.AddMinutes(5), // Short lived
-            authTokenHash,
-            authorization.Id,
-            payload,
-            ipAddress: request.IpAddress,
-            device: request.Device
-        );
-
-        await _tokenRepository.AddAsync(codeToken, cancellationToken);
-        await _tokenRepository.SaveChangesAsync(cancellationToken);
-
-        // 7. Construct Redirect URI
-        var delimiter = request.RedirectUri.Contains("?") ? "&" : "?";
-        var redirectLocation = $"{request.RedirectUri}{delimiter}code={codeValue}";
-        if (!string.IsNullOrEmpty(request.State))
-        {
-            redirectLocation += $"&state={request.State}";
-        }
+            var delimiter = request.RedirectUri.Contains('?') ? "&" : "?";
+            redirectLocation = $"{request.RedirectUri}{delimiter}code={codeValue}";
+            if (!string.IsNullOrEmpty(request.State))
+            {
+                redirectLocation += $"&state={request.State}";
+            }
+        }, cancellationToken);
 
         return new AuthorizeResult(true, redirectLocation);
     }
 
     private AuthorizeResult Error(string error, string description)
     {
-        // Should redirect back to redirect_uri with error if possible, unless redirect_uri is invalid
-        // logic is complex. For API, return object.
         return new AuthorizeResult(false, Error: error, ErrorDescription: description);
     }
 }

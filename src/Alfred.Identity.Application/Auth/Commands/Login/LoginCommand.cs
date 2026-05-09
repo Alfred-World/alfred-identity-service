@@ -15,7 +15,9 @@ public record LoginCommand(
     /// When true (SSO web flow), skip direct refresh-token creation.
     /// The OIDC flow issues its own tokens via /connect/token — creating tokens here would only add orphaned rows.
     /// </summary>
-    bool IsSsoFlow = false
+    bool IsSsoFlow = false,
+    string? ClientId = null,
+    string? ClientSecret = null
 ) : IRequest<Result<LoginData>>;
 
 /// <summary>

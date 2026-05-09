@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using Alfred.Identity.Application.Auth.Common;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Common.Constants;
@@ -14,29 +15,32 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
 {
     private readonly ITokenRepository _tokenRepository;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly IAuthorizationRepository _authorizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IAuthorizationCodeService _authCodeService;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ICacheProvider _cacheProvider;
+    private readonly IClientSecretHasher _clientSecretHasher;
 
     public ExchangeCodeCommandHandler(
         ITokenRepository tokenRepository,
         IApplicationRepository applicationRepository,
+        IAuthorizationRepository authorizationRepository,
         IUserRepository userRepository,
         IAuthorizationCodeService authCodeService,
         IJwtTokenService jwtTokenService,
-        ICacheProvider cacheProvider)
+        ICacheProvider cacheProvider,
+        IClientSecretHasher clientSecretHasher)
     {
         _tokenRepository = tokenRepository;
         _applicationRepository = applicationRepository;
+        _authorizationRepository = authorizationRepository;
         _userRepository = userRepository;
         _authCodeService = authCodeService;
         _jwtTokenService = jwtTokenService;
         _cacheProvider = cacheProvider;
+        _clientSecretHasher = clientSecretHasher;
     }
-
-    // ... (Handle method remains)
-
 
     public async Task<ExchangeCodeResult> Handle(ExchangeCodeCommand request, CancellationToken cancellationToken)
     {
@@ -56,25 +60,20 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
     private async Task<ExchangeCodeResult> HandleAuthorizationCodeGrant(ExchangeCodeCommand request,
         CancellationToken cancellationToken)
     {
-        // 1. Validate Request
         if (string.IsNullOrEmpty(request.Code) || string.IsNullOrEmpty(request.RedirectUri))
         {
             return Error("invalid_request", "Missing code or redirect_uri");
         }
 
-        // 2. Client Authentication
-        if (string.IsNullOrEmpty(request.ClientId))
+        var clientResult = await ValidateClientAsync(request, OAuthConstants.GrantTypes.AuthorizationCode,
+            cancellationToken);
+        if (!clientResult.Success)
         {
-            return Error("invalid_client", "Client ID is required");
+            return Error(clientResult.Error!, clientResult.Description!);
         }
 
-        var client = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
-        if (client == null)
-        {
-            return Error("invalid_client", "Invalid client");
-        }
+        var client = clientResult.Client!;
 
-        // 3. Retrieve Authorization Code
         var codeHash = _authCodeService.HashAuthorizationCode(request.Code);
         var authCodeToken = await _tokenRepository.GetByReferenceIdAsync(codeHash, cancellationToken);
 
@@ -84,13 +83,16 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             return Error(OAuthConstants.Errors.InvalidGrant, "Authorization code is invalid or expired");
         }
 
-        // 4. Validate Expiration
+        if (authCodeToken.ApplicationId != client.Id)
+        {
+            return Error(OAuthConstants.Errors.InvalidGrant, "Authorization code does not belong to this client");
+        }
+
         if (authCodeToken.ExpirationDate < DateTime.UtcNow)
         {
             return Error("invalid_grant", "Authorization code has expired");
         }
 
-        // 5. Validate PKCE
         if (string.IsNullOrEmpty(authCodeToken.Payload))
         {
             return Error("server_error", "Invalid token payload");
@@ -100,10 +102,17 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         var storedRedirectUri = payload.GetProperty("redirect_uri").GetString();
         var codeChallenge = payload.TryGetProperty("code_challenge", out var c) ? c.GetString() : null;
         var codeChallengeMethod = payload.TryGetProperty("code_challenge_method", out var m) ? m.GetString() : null;
+        var requestedScopes = payload.TryGetProperty("scope", out var scope) ? scope.GetString() : null;
 
         if (storedRedirectUri != request.RedirectUri)
         {
             return Error("invalid_grant", "Redirect URI mismatch");
+        }
+
+        if (!OidcClientPermissions.AreScopesAllowed(client, requestedScopes, out var unsupportedScopes))
+        {
+            return Error(OAuthConstants.Errors.InvalidScope,
+                $"Unsupported scope(s): {string.Join(", ", unsupportedScopes)}");
         }
 
         if (!string.IsNullOrEmpty(codeChallenge))
@@ -119,46 +128,52 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             }
         }
 
-        // 6. Redeem Code (Burn it)
         authCodeToken.Redeem();
         _tokenRepository.Update(authCodeToken);
 
-        // 7. Generate Tokens
         var userId = authCodeToken.UserId ?? UserId.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
+        if (user == null || !user.CanLogin())
         {
-            return Error("invalid_grant", "User not found");
+            return Error("invalid_grant", "User not found or inactive");
         }
 
         var accessToken =
             await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName, client.Id.Value,
-                authCodeToken.AuthorizationId?.Value);
-        var refreshTokenStr = _jwtTokenService.GenerateRefreshToken();
-        var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenStr);
+                client.ClientId, authCodeToken.AuthorizationId?.Value, requestedScopes);
 
         var nonce = payload.TryGetProperty("nonce", out var n) ? n.GetString() : null;
-        var idToken =
-            await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName, request.ClientId,
-                nonce);
+        string? idToken = null;
+        if (OidcClientPermissions.ContainsScope(requestedScopes, "openid"))
+        {
+            idToken =
+                await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName,
+                    request.ClientId!, nonce);
+        }
 
-        // 8. Store Refresh Token
-        var refreshToken = Token.Create(
-            OAuthConstants.TokenTypes.RefreshToken,
-            client.Id,
-            userId.ToString(),
-            userId,
-            DateTime.UtcNow.AddDays(14),
-            refreshTokenHash,
-            authCodeToken.AuthorizationId,
-            null,
-            ipAddress: request.IpAddress,
-            device: request.Device
-        );
+        string? refreshTokenStr = null;
+        if (OidcClientPermissions.SupportsGrantType(client, OAuthConstants.GrantTypes.RefreshToken) &&
+            OidcClientPermissions.ContainsScope(requestedScopes, "offline_access"))
+        {
+            refreshTokenStr = _jwtTokenService.GenerateRefreshToken();
+            var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenStr);
 
-        await _tokenRepository.AddAsync(refreshToken, cancellationToken);
+            var refreshToken = Token.Create(
+                OAuthConstants.TokenTypes.RefreshToken,
+                client.Id,
+                userId.ToString(),
+                userId,
+                DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
+                refreshTokenHash,
+                authCodeToken.AuthorizationId,
+                null,
+                ipAddress: authCodeToken.IpAddress,
+                device: authCodeToken.Device
+            );
 
-        // Single SaveChanges for atomic operation
+            await _tokenRepository.AddAsync(refreshToken, cancellationToken);
+        }
+
         await _tokenRepository.SaveChangesAsync(cancellationToken);
 
         return new ExchangeCodeResult(
@@ -174,26 +189,20 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
     private async Task<ExchangeCodeResult> HandleRefreshTokenGrant(ExchangeCodeCommand request,
         CancellationToken cancellationToken)
     {
-        // 1. Validate Request
         if (string.IsNullOrEmpty(request.RefreshToken))
         {
             return Error("invalid_request", "Missing refresh_token");
         }
 
-        // 2. Client Authentication
-        if (string.IsNullOrEmpty(request.ClientId))
+        var clientResult = await ValidateClientAsync(request, OAuthConstants.GrantTypes.RefreshToken,
+            cancellationToken);
+        if (!clientResult.Success)
         {
-            return Error("invalid_client", "Client ID is required");
+            return Error(clientResult.Error!, clientResult.Description!);
         }
 
-        var client = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
-        if (client == null)
-        {
-            return Error("invalid_client", "Invalid client");
-        }
+        var client = clientResult.Client!;
 
-        // 3. Retrieve Refresh Token
-        // Hash incoming refresh token to find it
         var refreshTokenHash = _jwtTokenService.HashRefreshToken(request.RefreshToken);
         var tokenEntity = await _tokenRepository.GetByReferenceIdAsync(refreshTokenHash, cancellationToken);
 
@@ -202,28 +211,20 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             return Error(OAuthConstants.Errors.InvalidGrant, "Invalid refresh token");
         }
 
-        // 4. Validate Token Usage
-        // Track grace-period reuse to skip calling Redeem() again on an already-Redeemed token.
-        // Calling Redeem() resets RedemptionDate to "now", which would shift the createdAfter
-        // window and cause subsequent parallel requests to miss the new RT (invalid_grant).
+        if (tokenEntity.ApplicationId != client.Id)
+        {
+            return Error(OAuthConstants.Errors.InvalidGrant, "Refresh token does not belong to this client");
+        }
+
         var isGracePeriodReuse = false;
         if (tokenEntity.Status != TokenStatus.Valid)
         {
-            // Grace Period: if token was just redeemed (< 60s ago) a concurrent request already rotated it.
-            // Instead of issuing yet another new token (which causes DB bloat), find the one that was
-            // already created for this AuthorizationId and return it. This prevents the race condition
-            // where NextAuth fires multiple parallel refresh requests at startup.
             var gracePeriodSeconds = 60;
             if (tokenEntity.Status == TokenStatus.Redeemed &&
                 tokenEntity.RedemptionDate.HasValue &&
                 tokenEntity.RedemptionDate.Value > DateTime.UtcNow.AddSeconds(-gracePeriodSeconds) &&
                 tokenEntity.AuthorizationId.HasValue)
             {
-                // Parallel request race: RT was already redeemed by a concurrent request.
-                // Do NOT query/revoke the new RT that was issued by request A — if we revoke it
-                // and request A's cookie arrives after ours, the cookie has a Revoked RT → invalid_grant.
-                // Instead let both new RTs briefly coexist. Whichever the cookie ends up with is valid.
-                // Orphaned Valid RTs expire naturally (14 days) and are cleaned up by DeleteExpiredAndRedeemed.
                 isGracePeriodReuse = true;
             }
             else
@@ -237,71 +238,77 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
             return Error("invalid_grant", "Refresh token expired");
         }
 
-        // Check if session was explicitly revoked via Redis (immediate revoke from session management)
         if (await _cacheProvider.ExistsAsync($"session:revoked:{tokenEntity.Id}", cancellationToken))
         {
             return Error(OAuthConstants.Errors.InvalidGrant, "Session has been revoked");
         }
 
-        // 5. Rotate Refresh Token
-        // Use RedeemByIdAsync (ExecuteUpdateAsync) instead of change-tracking Update().
-        // This is a direct SQL UPDATE that never causes DbUpdateConcurrencyException:
-        //   - If concurrent request already redeemed this token: 0 rows, no exception.
-        //   - If cleanup deleted the row: 0 rows, no exception.
-        //   - Normal case: 1 row updated, RedemptionDate set.
+        if (tokenEntity.AuthorizationId.HasValue &&
+            await _cacheProvider.ExistsAsync($"revoked:session:{tokenEntity.AuthorizationId.Value}",
+                cancellationToken))
+        {
+            return Error(OAuthConstants.Errors.InvalidGrant, "Session has been revoked");
+        }
+
         if (!isGracePeriodReuse)
         {
             await _tokenRepository.RedeemByIdAsync(tokenEntity.Id, cancellationToken);
         }
 
-        // 6. Generate New Tokens
         var userId = tokenEntity.UserId ?? UserId.Empty;
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
+        if (user == null || !user.CanLogin())
         {
-            return Error("invalid_grant", "User not found");
+            return Error("invalid_grant", "User not found or inactive");
+        }
+
+        string? authorizationScopes = null;
+        if (tokenEntity.AuthorizationId.HasValue)
+        {
+            var authorization = await _authorizationRepository.GetByIdAsync(tokenEntity.AuthorizationId.Value,
+                cancellationToken);
+            authorizationScopes = authorization?.Scopes;
         }
 
         var newAccessToken =
             await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName, client.Id.Value,
-                tokenEntity.AuthorizationId?.Value);
+                client.ClientId, tokenEntity.AuthorizationId?.Value, authorizationScopes);
 
-        // Generate new Refresh Token (Rotation)
         var newRefreshTokenStr = _jwtTokenService.GenerateRefreshToken();
         var newRefreshTokenHash = _jwtTokenService.HashRefreshToken(newRefreshTokenStr);
+        var newRefreshTokenDevice = ResolveRefreshDevice(request.Device, tokenEntity.Device);
 
-        // ID Token (optional for refresh flow, but good for updating claims)
-        var newIdToken =
-            await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName, client.ClientId);
+        string? newIdToken = null;
+        if (OidcClientPermissions.ContainsScope(authorizationScopes, "openid"))
+        {
+            newIdToken =
+                await _jwtTokenService.GenerateIdTokenAsync(user.Id.Value, user.Email, user.FullName,
+                    client.ClientId);
+        }
 
         var newRefreshTokenEntity = Token.Create(
             OAuthConstants.TokenTypes.RefreshToken,
             client.Id,
             userId.ToString(),
             userId,
-            DateTime.UtcNow.AddDays(14), // Extend session
+            DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
             newRefreshTokenHash,
             tokenEntity.AuthorizationId,
             null,
             ipAddress: request.IpAddress,
-            device: request.Device
+            device: newRefreshTokenDevice
         );
 
         await _tokenRepository.AddAsync(newRefreshTokenEntity, cancellationToken);
-
-        // SaveChangesAsync now only handles the new RT INSERT (no change-tracked updates).
-        // RedeemByIdAsync above used ExecuteUpdateAsync which auto-commits independently.
         await _tokenRepository.SaveChangesAsync(cancellationToken);
 
-        // Cleanup stale tokens. Must be awaited — fire-and-forget on a scoped DbContext causes
-        // Npgsql to receive BindComplete while the connection is already being closed on scope dispose.
         try
         {
             await _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(userId, CancellationToken.None);
         }
         catch
         {
-            /* non-critical cleanup — swallow */
+            /* non-critical cleanup */
         }
 
         return new ExchangeCodeResult(
@@ -314,8 +321,80 @@ public class ExchangeCodeCommandHandler : IRequestHandler<ExchangeCodeCommand, E
         );
     }
 
+    private async Task<ClientValidationResult> ValidateClientAsync(ExchangeCodeCommand request, string grantType,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(request.ClientId))
+        {
+            return ClientError("invalid_client", "Client ID is required");
+        }
+
+        var client = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
+        if (client is not { IsActive: true })
+        {
+            return ClientError("invalid_client", "Invalid client");
+        }
+
+        if (!OidcClientPermissions.SupportsEndpoint(client, ApplicationConstants.Endpoints.Token))
+        {
+            return ClientError(OAuthConstants.Errors.UnauthorizedClient,
+                "Client is not allowed to use the token endpoint");
+        }
+
+        if (!OidcClientPermissions.SupportsGrantType(client, grantType))
+        {
+            return ClientError(OAuthConstants.Errors.UnauthorizedClient,
+                $"Client is not allowed to use the {grantType} grant");
+        }
+
+        if (client.ClientType?.Equals(ApplicationConstants.ClientTypes.Confidential, StringComparison.OrdinalIgnoreCase) == true)
+        {
+            if (string.IsNullOrEmpty(request.ClientSecret) || string.IsNullOrEmpty(client.ClientSecret))
+            {
+                return ClientError("invalid_client", "Client secret is required for confidential clients");
+            }
+
+            if (!_clientSecretHasher.VerifySecret(request.ClientSecret, client.ClientSecret))
+            {
+                return ClientError("invalid_client", "Invalid client secret");
+            }
+        }
+
+        return new ClientValidationResult(true, client);
+    }
+
+    private static ClientValidationResult ClientError(string error, string description)
+    {
+        return new ClientValidationResult(false, Error: error, Description: description);
+    }
+
     private ExchangeCodeResult Error(string error, string description)
     {
         return new ExchangeCodeResult(false, Error: error, ErrorDescription: description);
     }
+
+    private static string? ResolveRefreshDevice(string? requestDevice, string? existingDevice)
+    {
+        if (string.IsNullOrWhiteSpace(requestDevice) || IsServerSideUserAgent(requestDevice))
+        {
+            return existingDevice ?? requestDevice;
+        }
+
+        return requestDevice;
+    }
+
+    private static bool IsServerSideUserAgent(string device)
+    {
+        var normalized = device.Trim();
+
+        return normalized.Equals("node", StringComparison.OrdinalIgnoreCase) ||
+               normalized.StartsWith("undici", StringComparison.OrdinalIgnoreCase) ||
+               normalized.StartsWith("NextAuth.js", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record ClientValidationResult(
+        bool Success,
+        Domain.Entities.Application? Client = null,
+        string? Error = null,
+        string? Description = null);
 }

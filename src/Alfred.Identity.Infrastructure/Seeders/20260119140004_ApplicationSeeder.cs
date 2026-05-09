@@ -100,7 +100,7 @@ public class ApplicationSeeder : BaseDataSeeder
                 hashedSecret, // Confidential client - Secret required for NextAuth
                 coreRedirectUris,
                 corePostLogoutUris,
-                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
+                "[\"ept:authorization\",\"ept:token\",\"ept:userinfo\",\"gt:authorization_code\",\"gt:refresh_token\",\"gt:password\",\"scp:openid\",\"scp:profile\",\"scp:email\",\"scp:offline_access\"]",
                 "confidential", // CONFIDENTIAL client for NextAuth (Backend-for-Frontend)
                 "web"
             ),

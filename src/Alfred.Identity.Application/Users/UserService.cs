@@ -98,6 +98,13 @@ public sealed class UserService : BaseEntityService, IUserService
                     $"Roles with IDs [{string.Join(", ", missingIds)}] not found.");
             }
 
+            var immutableRoles = foundRoles.Where(r => r.IsImmutable).Select(r => r.Name).ToList();
+            if (immutableRoles.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Immutable roles cannot be assigned to users: {string.Join(", ", immutableRoles)}.");
+            }
+
             foreach (var role in foundRoles)
             {
                 user.AddRole(role.Id, _currentUser.UserId);
@@ -142,15 +149,23 @@ public sealed class UserService : BaseEntityService, IUserService
         var roleIdsList = roleIds.Distinct().ToList();
         if (roleIdsList.Count > 0)
         {
-            var foundIds = (await _executor.ToListAsync(
+            var foundRoles = await _executor.ToListAsync(
                 _unitOfWork.Roles.GetQueryable().Where(r => roleIdsList.Contains(r.Id)),
-                ct)).Select(r => r.Id).ToHashSet();
+                ct);
+            var foundIds = foundRoles.Select(r => r.Id).ToHashSet();
 
             var missingIds = roleIdsList.Where(id => !foundIds.Contains(id)).ToList();
             if (missingIds.Count > 0)
             {
                 throw new KeyNotFoundException(
                     $"Roles with IDs [{string.Join(", ", missingIds)}] not found.");
+            }
+
+            var immutableRoles = foundRoles.Where(r => r.IsImmutable).Select(r => r.Name).ToList();
+            if (immutableRoles.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Immutable roles cannot be assigned to users: {string.Join(", ", immutableRoles)}.");
             }
 
             foreach (var roleId in roleIdsList)
@@ -168,9 +183,32 @@ public sealed class UserService : BaseEntityService, IUserService
         var user = await _unitOfWork.Users.GetByIdWithRolesAsync(userId, ct)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found");
 
-        foreach (var roleId in roleIds)
+        var roleIdsList = roleIds.Distinct().ToList();
+        if (roleIdsList.Count > 0)
         {
-            user.RemoveRole(roleId);
+            var foundRoles = await _executor.ToListAsync(
+                _unitOfWork.Roles.GetQueryable().Where(r => roleIdsList.Contains(r.Id)),
+                ct);
+            var foundIds = foundRoles.Select(r => r.Id).ToHashSet();
+
+            var missingIds = roleIdsList.Where(id => !foundIds.Contains(id)).ToList();
+            if (missingIds.Count > 0)
+            {
+                throw new KeyNotFoundException(
+                    $"Roles with IDs [{string.Join(", ", missingIds)}] not found.");
+            }
+
+            var immutableRoles = foundRoles.Where(r => r.IsImmutable).Select(r => r.Name).ToList();
+            if (immutableRoles.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Immutable roles cannot be revoked from users: {string.Join(", ", immutableRoles)}.");
+            }
+
+            foreach (var roleId in roleIdsList)
+            {
+                user.RemoveRole(roleId);
+            }
         }
 
         _unitOfWork.Users.Update(user);

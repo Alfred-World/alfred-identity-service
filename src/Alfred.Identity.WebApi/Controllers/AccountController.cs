@@ -4,6 +4,7 @@ using Alfred.Identity.Application.Auth.Commands.TwoFactor;
 using Alfred.Identity.Application.Auth.Commands.UpdateProfile;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.WebApi.Contracts.Account;
 using Alfred.Identity.WebApi.Filters;
 
@@ -17,7 +18,7 @@ namespace Alfred.Identity.WebApi.Controllers;
 [Authorize]
 [RequireAuthenticatedUser]
 [ApiController]
-[Route("identity/account")]
+[Route("identity/v{version:apiVersion}/account")]
 [Produces("application/json")]
 public class AccountController : BaseApiController
 {
@@ -26,19 +27,22 @@ public class AccountController : BaseApiController
     private readonly IBackupCodeRepository _backupCodeRepository;
     private readonly IUserRepository _userRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly ISsoSessionService _ssoSessionService;
 
     public AccountController(
         IMediator mediator,
         ICurrentUser currentUser,
         IBackupCodeRepository backupCodeRepository,
         IUserRepository userRepository,
-        ITokenRepository tokenRepository)
+        ITokenRepository tokenRepository,
+        ISsoSessionService ssoSessionService)
     {
         _mediator = mediator;
         _currentUser = currentUser;
         _backupCodeRepository = backupCodeRepository;
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
+        _ssoSessionService = ssoSessionService;
     }
 
     /// <summary>
@@ -153,6 +157,75 @@ public class AccountController : BaseApiController
         }
 
         return OkResponse("Session revoked successfully");
+    }
+
+    /// <summary>
+    /// Get current user's active SSO browser sessions.
+    /// </summary>
+    [HttpGet("sso-sessions")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SessionDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetSsoSessions(CancellationToken cancellationToken)
+    {
+        var tokens = await _ssoSessionService.GetActiveSessionsByUserAsync(
+            (UserId)_currentUser.UserId!.Value,
+            cancellationToken);
+        var currentSessionId = User.FindFirst(_ssoSessionService.SsoSessionClaimType)?.Value;
+        var currentSessionHash = string.IsNullOrWhiteSpace(currentSessionId)
+            ? null
+            : _ssoSessionService.HashSessionId(currentSessionId);
+
+        var sessions = tokens.Select(t => new SessionDto
+        {
+            Id = t.Id.Value,
+            Device = t.Device ?? "Unknown Device",
+            IpAddress = t.IpAddress,
+            Location = t.Location,
+            CreatedAt = t.CreationDate,
+            ExpiresAt = t.ExpirationDate,
+            IsCurrentSession = currentSessionHash != null && t.ReferenceId == currentSessionHash
+        });
+
+        return OkResponse(sessions);
+    }
+
+    /// <summary>
+    /// Revoke a specific SSO browser session.
+    /// </summary>
+    [HttpDelete("sso-sessions/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RevokeSsoSession([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var revoked = await _ssoSessionService.RevokeByIdAsync(
+            (TokenId)id,
+            (UserId)_currentUser.UserId!.Value,
+            "user_revoked_session",
+            cancellationToken);
+
+        if (!revoked)
+        {
+            return BadRequestResponse("SessionNotFound");
+        }
+
+        return OkResponse("SSO session revoked successfully");
+    }
+
+    /// <summary>
+    /// Revoke all SSO browser sessions for the current user.
+    /// </summary>
+    [HttpPost("sso-sessions/revoke-all")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RevokeAllSsoSessions(CancellationToken cancellationToken)
+    {
+        await _ssoSessionService.RevokeAllByUserAsync(
+            (UserId)_currentUser.UserId!.Value,
+            "user_revoked_all_sessions",
+            cancellationToken);
+
+        return OkResponse("SSO sessions revoked successfully");
     }
 
     /// <summary>

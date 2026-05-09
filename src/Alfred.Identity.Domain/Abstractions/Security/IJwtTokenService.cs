@@ -16,10 +16,16 @@ public interface IJwtTokenService
     int RefreshTokenLifetimeSeconds { get; }
 
     /// <summary>
-    /// Generate an access token for a user (async for RSA key retrieval)
+    /// Generate an app-bound access token for a user.
     /// </summary>
-    Task<string> GenerateAccessTokenAsync(Guid userId, string email, string? fullName, Guid? applicationId = null,
-        Guid? authorizationId = null);
+    Task<string> GenerateAccessTokenAsync(
+        Guid userId,
+        string email,
+        string? fullName,
+        Guid applicationId,
+        string clientId,
+        Guid? authorizationId = null,
+        string? scopes = null);
 
     /// <summary>
     /// Generate a refresh token
@@ -57,5 +63,8 @@ public class TokenValidationResult
     public Guid? UserId { get; set; }
     public string? Email { get; set; }
     public string? JwtId { get; set; }
+    public string? ClientId { get; set; }
+    public Guid? ApplicationId { get; set; }
+    public string? Audience { get; set; }
     public string? Error { get; set; }
 }

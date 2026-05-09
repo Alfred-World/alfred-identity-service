@@ -31,3 +31,25 @@ public sealed record SsoLoginRequest
     /// </summary>
     public bool RememberMe { get; init; } = false;
 }
+
+/// <summary>
+/// Request model for obtaining app-bound tokens directly. Use for API testing and non-browser clients.
+/// </summary>
+public sealed record DirectLoginRequest
+{
+    [Required]
+    [StringLength(100)]
+    [System.Text.Json.Serialization.JsonPropertyName("client_id")]
+    public required string ClientId { get; init; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("client_secret")]
+    public string? ClientSecret { get; init; }
+
+    [Required]
+    [StringLength(256)]
+    public required string Identity { get; init; }
+
+    [Required]
+    [MinLength(6)]
+    public required string Password { get; init; }
+}

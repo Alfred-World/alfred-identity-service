@@ -1,3 +1,4 @@
+using Alfred.Identity.Application.Auth.Common;
 using Alfred.Identity.Domain.Abstractions.Security;
 using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Common.Constants;
@@ -17,50 +18,50 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ILocationService _locationService;
-
+    private readonly IApplicationRepository _applicationRepository;
+    private readonly IClientSecretHasher _clientSecretHasher;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
         ITokenRepository tokenRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
-        ILocationService locationService)
+        ILocationService locationService,
+        IApplicationRepository applicationRepository,
+        IClientSecretHasher clientSecretHasher)
     {
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _locationService = locationService;
+        _applicationRepository = applicationRepository;
+        _clientSecretHasher = clientSecretHasher;
     }
 
     public async Task<Result<LoginData>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        // Find user by identity (email or username)
         var user = await _userRepository.GetByIdentityAsync(request.Identity, cancellationToken);
         if (user == null)
         {
             return Result<LoginData>.Failure("Invalid credentials");
         }
 
-        // Check if user can login
         if (!user.CanLogin())
         {
             return Result<LoginData>.Failure("Account is not active");
         }
 
-        // SSO login requires verified email.
         if (request.IsSsoFlow && !user.EmailConfirmed)
         {
             return Result<LoginData>.Failure("Email is not confirmed");
         }
 
-        // Verify password
         if (!user.HasPassword() || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash!))
         {
             return Result<LoginData>.Failure("Invalid credentials");
         }
 
-        // Get location from IP
         var location = request.IpAddress != null
             ? await _locationService.GetLocationFromIpAsync(request.IpAddress)
             : null;
@@ -70,10 +71,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
 
         if (request.IsSsoFlow)
         {
-            // SSO web flow: credentials are validated here only.
-            // The OIDC /connect/token endpoint issues tokens after code exchange.
-            // Creating tokens here produces orphaned rows (ApplicationId=NULL, never delivered to any client).
-            // Clean up stale tokens left over from previous SSO attempts for this user instead.
             await _tokenRepository.DeleteExpiredAndRedeemedByUserAsync(user.Id, cancellationToken);
             await _tokenRepository.SaveChangesAsync(cancellationToken);
             accessToken = string.Empty;
@@ -81,8 +78,19 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
         }
         else
         {
-            // Direct API login (non-OIDC clients): generate and persist tokens.
-            accessToken = await _jwtTokenService.GenerateAccessTokenAsync(user.Id.Value, user.Email, user.FullName);
+            var clientResult = await ValidateDirectLoginClientAsync(request, cancellationToken);
+            if (clientResult.IsFailure)
+            {
+                return Result<LoginData>.Failure(clientResult.Error!);
+            }
+
+            var client = clientResult.Value!;
+            accessToken = await _jwtTokenService.GenerateAccessTokenAsync(
+                user.Id.Value,
+                user.Email,
+                user.FullName,
+                client.Id.Value,
+                client.ClientId);
             refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
 
             var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshTokenValue);
@@ -93,7 +101,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
 
             var refreshToken = Token.Create(
                 OAuthConstants.TokenTypes.RefreshToken,
-                null,
+                client.Id,
                 user.Id.ToString(),
                 user.Id,
                 DateTime.UtcNow.AddSeconds(_jwtTokenService.RefreshTokenLifetimeSeconds),
@@ -110,7 +118,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
             await _tokenRepository.SaveChangesAsync(cancellationToken);
         }
 
-        // Return login data with user info
         var loginData = new LoginData
         {
             AccessToken = accessToken,
@@ -127,5 +134,48 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginDat
         };
 
         return Result<LoginData>.Success(loginData);
+    }
+
+    private async Task<Result<Domain.Entities.Application>> ValidateDirectLoginClientAsync(
+        LoginCommand request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.ClientId))
+        {
+            return Result<Domain.Entities.Application>.Failure("Client ID is required");
+        }
+
+        var client = await _applicationRepository.GetByClientIdAsync(request.ClientId, cancellationToken);
+        if (client is not { IsActive: true })
+        {
+            return Result<Domain.Entities.Application>.Failure("Invalid client");
+        }
+
+        if (!OidcClientPermissions.SupportsEndpoint(client, ApplicationConstants.Endpoints.Token))
+        {
+            return Result<Domain.Entities.Application>.Failure("Client is not allowed to use the token endpoint");
+        }
+
+        if (!OidcClientPermissions.SupportsGrantType(client, OAuthConstants.GrantTypes.Password))
+        {
+            return Result<Domain.Entities.Application>.Failure("Client is not allowed to use direct password login");
+        }
+
+        if (client.ClientType?.Equals(ApplicationConstants.ClientTypes.Confidential,
+                StringComparison.OrdinalIgnoreCase) == true)
+        {
+            if (string.IsNullOrWhiteSpace(request.ClientSecret) || string.IsNullOrWhiteSpace(client.ClientSecret))
+            {
+                return Result<Domain.Entities.Application>.Failure(
+                    "Client secret is required for confidential clients");
+            }
+
+            if (!_clientSecretHasher.VerifySecret(request.ClientSecret, client.ClientSecret))
+            {
+                return Result<Domain.Entities.Application>.Failure("Invalid client secret");
+            }
+        }
+
+        return Result<Domain.Entities.Application>.Success(client);
     }
 }

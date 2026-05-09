@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("identity/roles")]
+[Route("identity/v{version:apiVersion}/roles")]
 [Authorize]
 [RequireAuthenticatedUser]
 public class RolesController : BaseApiController
@@ -81,7 +81,7 @@ public class RolesController : BaseApiController
         CancellationToken cancellationToken)
     {
         var result = await _roleService.CreateRoleAsync(
-            request.Name, request.Icon, request.IsImmutable, request.IsSystem, request.Permissions, cancellationToken);
+            request.Name, request.Icon, request.IsSystem, request.Permissions, cancellationToken);
         return CreatedResponse(result);
     }
 
@@ -98,7 +98,6 @@ public class RolesController : BaseApiController
         {
             Name = request.Name,
             Icon = request.Icon,
-            IsImmutable = request.IsImmutable,
             IsSystem = request.IsSystem,
             Permissions = request.Permissions
         };

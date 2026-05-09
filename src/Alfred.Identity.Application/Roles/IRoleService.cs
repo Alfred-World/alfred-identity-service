@@ -16,7 +16,7 @@ public interface IRoleService
     Task<List<PermissionDto>> GetRolePermissionsAsync(RoleId roleId,
         CancellationToken cancellationToken = default);
 
-    Task<RoleDto> CreateRoleAsync(string name, string? icon, bool isImmutable, bool isSystem,
+    Task<RoleDto> CreateRoleAsync(string name, string? icon, bool isSystem,
         IEnumerable<Guid>? permissions, CancellationToken cancellationToken = default);
 
     Task<RoleDto> UpdateRoleAsync(RoleId id, UpdateRoleDto dto, CancellationToken cancellationToken = default);

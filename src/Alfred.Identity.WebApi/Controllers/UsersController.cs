@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Alfred.Identity.WebApi.Controllers;
 
-[Route("identity/mgmt/users")]
+[Route("identity/v{version:apiVersion}/mgmt/users")]
 [Authorize]
 [RequireAuthenticatedUser]
 public class UsersController : BaseApiController

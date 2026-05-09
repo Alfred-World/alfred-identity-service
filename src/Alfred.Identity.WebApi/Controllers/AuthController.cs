@@ -7,6 +7,7 @@ using Alfred.Identity.Application.Auth.Commands.ResetPassword;
 using Alfred.Identity.Domain.Abstractions;
 using Alfred.Identity.Domain.Abstractions.Repositories;
 using Alfred.Identity.Domain.Abstractions.Security;
+using Alfred.Identity.Domain.Abstractions.Services;
 using Alfred.Identity.Domain.Entities;
 using Alfred.Identity.WebApi.Configuration;
 using Alfred.Identity.WebApi.Contracts.Auth;
@@ -25,10 +26,13 @@ namespace Alfred.Identity.WebApi.Controllers;
 /// Only supports SSO login mechanism - no direct login alternatives.
 /// </summary>
 [ApiController]
-[Route("identity/auth")]
+[Route("identity/v{version:apiVersion}/auth")]
 [Produces("application/json")]
 public class AuthController : BaseApiController
 {
+    private static readonly TimeSpan RememberedSsoSessionLifetime = TimeSpan.FromDays(30);
+    private static readonly TimeSpan BrowserSsoSessionLifetime = TimeSpan.FromDays(1);
+
     private readonly IMediator _mediator;
     private readonly ICurrentUser _currentUser;
     private readonly IAuthTokenService _authTokenService;
@@ -37,6 +41,7 @@ public class AuthController : BaseApiController
     private readonly AppConfiguration _appConfig;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ITokenRepository _tokenRepository;
+    private readonly ISsoSessionService _ssoSessionService;
 
     public AuthController(
         IMediator mediator,
@@ -46,7 +51,8 @@ public class AuthController : BaseApiController
         IUserRepository userRepository,
         AppConfiguration appConfig,
         IJwtTokenService jwtTokenService,
-        ITokenRepository tokenRepository)
+        ITokenRepository tokenRepository,
+        ISsoSessionService ssoSessionService)
     {
         _mediator = mediator;
         _currentUser = currentUser;
@@ -56,6 +62,7 @@ public class AuthController : BaseApiController
         _appConfig = appConfig;
         _jwtTokenService = jwtTokenService;
         _tokenRepository = tokenRepository;
+        _ssoSessionService = ssoSessionService;
     }
 
     /// <summary>
@@ -130,7 +137,7 @@ public class AuthController : BaseApiController
         }
 
         var exchangeUrl =
-            $"{baseUrl}/identity/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(validatedReturnUrl)}";
+            $"{baseUrl}/identity/v1/auth/exchange-token?token={Uri.EscapeDataString(authToken)}&returnUrl={Uri.EscapeDataString(validatedReturnUrl)}";
 
         // 4. Return minimal response
         return OkResponse(new SsoLoginResponse
@@ -172,12 +179,24 @@ public class AuthController : BaseApiController
             return Redirect(BuildSsoErrorUrl("account_not_eligible", "Your account cannot use SSO right now."));
         }
 
+        var expiresUtc = tokenData.RememberMe
+            ? DateTimeOffset.UtcNow.Add(RememberedSsoSessionLifetime)
+            : DateTimeOffset.UtcNow.Add(BrowserSsoSessionLifetime);
+        var ssoSession = await _ssoSessionService.CreateAsync(
+            (UserId)tokenData.UserId,
+            tokenData.RememberMe,
+            expiresUtc,
+            GetClientIpAddress(),
+            GetUserAgent(),
+            HttpContext.RequestAborted);
+
         // 3. Create claims for cookie authentication
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, tokenData.UserId.ToString()),
             new(ClaimTypes.Email, tokenData.Email ?? ""),
-            new("sub", tokenData.UserId.ToString())
+            new("sub", tokenData.UserId.ToString()),
+            new(_ssoSessionService.SsoSessionClaimType, ssoSession.SessionId)
         };
 
         if (!string.IsNullOrEmpty(tokenData.FullName))
@@ -194,10 +213,8 @@ public class AuthController : BaseApiController
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = tokenData.RememberMe,
-            ExpiresUtc = tokenData.RememberMe
-                ? DateTimeOffset.UtcNow.AddDays(14)
-                : DateTimeOffset.UtcNow.AddHours(24),
-            AllowRefresh = true
+            ExpiresUtc = expiresUtc,
+            AllowRefresh = tokenData.RememberMe
         };
 
         // 4. Sign in and set cookie (first-party context)
@@ -254,7 +271,7 @@ public class AuthController : BaseApiController
     /// </summary>
     /// <remarks>
     /// Flow:
-    /// 1. App redirects browser to: gateway.test/identity/auth/check-sso?returnUrl=https://sso.test/...
+    /// 1. App redirects browser to: gateway.test/identity/v1/auth/check-sso?returnUrl=https://sso.test/...
     /// 2. This endpoint checks the AlfredSession cookie
     /// 3. If authenticated: generate one-time token and redirect back with token
     /// 4. If not authenticated: redirect back with error param
@@ -359,6 +376,16 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
+        var sessionId = User.FindFirst(_ssoSessionService.SsoSessionClaimType)?.Value;
+        if (_currentUser.UserId.HasValue && !string.IsNullOrWhiteSpace(sessionId))
+        {
+            await _ssoSessionService.RevokeAsync(
+                sessionId,
+                (UserId)_currentUser.UserId.Value,
+                "logout",
+                HttpContext.RequestAborted);
+        }
+
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return OkResponse("Logged out successfully");
     }
@@ -402,6 +429,44 @@ public class AuthController : BaseApiController
         return OkResponse("Password has been reset successfully.");
     }
 
+
+
+    /// <summary>
+    /// Direct login — returns app-bound access + refresh tokens immediately. Use for API testing and non-browser clients.
+    /// </summary>
+    [HttpPost("token")]
+    [ProducesResponseType(typeof(ApiResponse<DirectLoginResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DirectLogin([FromBody] DirectLoginRequest request)
+    {
+        var command = new LoginCommand(
+            request.Identity,
+            request.Password,
+            false,
+            GetClientIpAddress(),
+            GetUserAgent(),
+            false,
+            request.ClientId,
+            request.ClientSecret
+        );
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return UnauthorizedResponse(result.Error ?? "Login failed");
+        }
+
+        var data = result.Value!;
+        return OkResponse(new DirectLoginResponse
+        {
+            AccessToken = data.AccessToken,
+            RefreshToken = data.RefreshToken,
+            ExpiresIn = data.ExpiresIn,
+            TokenType = data.TokenType,
+            User = data.User
+        });
+    }
 
     #region Private Methods
 
@@ -481,7 +546,7 @@ public class AuthController : BaseApiController
                 }
             }
 
-            // Fallback: check against registered application RedirectUris
+            // Fallback: check against registered application RedirectUris/PostLogoutRedirectUris
             var isAllowed = await IsRedirectUriAllowedAsync(uri.ToString());
             if (isAllowed)
             {
@@ -507,6 +572,12 @@ public class AuthController : BaseApiController
         {
             var allowedUris = UriHelper.ParseUriList(app.RedirectUris);
             if (allowedUris.Any(allowed => UriHelper.UriMatches(redirectUri, allowed)))
+            {
+                return true;
+            }
+
+            var allowedLandingUris = UriHelper.ParseUriList(app.PostLogoutRedirectUris);
+            if (allowedLandingUris.Any(allowed => UriHelper.UriMatches(redirectUri, allowed)))
             {
                 return true;
             }

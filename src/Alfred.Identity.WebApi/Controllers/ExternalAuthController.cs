@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Alfred.Identity.WebApi.Controllers;
 
 [ApiController]
-[Route("identity/external-auth")]
+[Route("identity/v{version:apiVersion}/external-auth")]
 public class ExternalAuthController : BaseApiController
 {
     private readonly IMediator _mediator;

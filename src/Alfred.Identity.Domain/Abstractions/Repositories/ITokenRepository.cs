@@ -28,4 +28,9 @@ public interface ITokenRepository : IRepository<Token, TokenId>
 
     Task<IReadOnlyList<Token>> GetActiveSessionsByUserIdAsync(UserId userId,
         CancellationToken cancellationToken = default);
+
+    Task<Token?> GetSsoSessionByReferenceIdAsync(string referenceId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Token>> GetActiveSsoSessionsByUserIdAsync(UserId userId,
+        CancellationToken cancellationToken = default);
 }

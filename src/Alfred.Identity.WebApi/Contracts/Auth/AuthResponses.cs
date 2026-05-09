@@ -55,3 +55,15 @@ public sealed record SessionUserInfoDto
     public string? FullName { get; init; }
     public string? UserName { get; init; }
 }
+
+/// <summary>
+/// Response for direct app-bound token login.
+/// </summary>
+public sealed record DirectLoginResponse
+{
+    public string AccessToken { get; init; } = null!;
+    public string RefreshToken { get; init; } = null!;
+    public int ExpiresIn { get; init; }
+    public string TokenType { get; init; } = "Bearer";
+    public UserInfo User { get; init; } = null!;
+}
